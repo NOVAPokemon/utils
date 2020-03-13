@@ -1,4 +1,4 @@
-package NOVAPokemon
+package utils
 
 type User struct {
 	Username string
