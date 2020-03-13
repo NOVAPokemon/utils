@@ -1,4 +1,4 @@
-package utils
+package main
 
 type User struct {
 	Username string
