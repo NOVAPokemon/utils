@@ -7,6 +7,12 @@ import (
 	"net/http"
 )
 
+func HandleJSONEncodeError(w *http.ResponseWriter, caller string, err error) {
+	log.Warnf("Error encoding in %s response:\n", caller)
+	log.Warn(err)
+	(*w).WriteHeader(http.StatusInternalServerError)
+}
+
 func HandleJSONDecodeError(w *http.ResponseWriter, caller string, err error) {
 	log.Warnf("Error decoding body from %s request:\n", caller)
 	log.Warn(err)
