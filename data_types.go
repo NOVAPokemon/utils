@@ -1,33 +1,42 @@
 package utils
 
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
 type User struct {
-	Username string
-	UID      string
+	// user info
+	Id           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	TrainerId    primitive.ObjectID
+	Username     string
+	PasswordHash [] byte
+	Salt         [] byte // optional
+
 }
 
 type Trainer struct {
-	UserUID  string
-	BagUID   string
-	Pokemons []Pokemon
+	// game info
+	Bag      primitive.ObjectID
+	Pokemons [] primitive.ObjectID
 	Level    int
 	Coins    int
 }
 
 type Bag struct {
-	UID   string
-	Items []Item
+	Id    primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Items [] primitive.ObjectID
 }
 
 type Item struct {
-	UID   string
+	Id    primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	Price int
 }
 
 type Pokemon struct {
-	UID      string
-	OwnerUID string
-	Species  string
-	Level    int
-	HP       int
-	Damage   int
+	Id      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Owner   primitive.ObjectID
+	Species string
+	Level   int
+	HP      int
+	Damage  int
 }
