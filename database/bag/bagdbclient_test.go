@@ -1,7 +1,7 @@
 package bag
 
 import (
-	"NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"

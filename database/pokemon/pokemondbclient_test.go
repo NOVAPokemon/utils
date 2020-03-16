@@ -1,7 +1,7 @@
 package pokemon
 
 import (
-	"NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-var pokemonMockup = utils.Pokemon {
-	Id : primitive.NewObjectIDFromTimestamp(time.Now()),
-	Owner : primitive.NewObjectIDFromTimestamp(time.Now()),
+var pokemonMockup = utils.Pokemon{
+	Id:      primitive.NewObjectIDFromTimestamp(time.Now()),
+	Owner:   primitive.NewObjectIDFromTimestamp(time.Now()),
 	Species: "toDelete",
 	Level:   10,
 	HP:      100,

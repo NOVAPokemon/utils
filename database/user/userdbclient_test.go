@@ -1,8 +1,8 @@
 package user
 
 import (
-	"NOVAPokemon/utils"
 	"crypto/rand"
+	"github.com/NOVAPokemon/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"

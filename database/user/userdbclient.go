@@ -1,8 +1,8 @@
 package user
 
 import (
-	"NOVAPokemon/utils"
 	"context"
+	"github.com/NOVAPokemon/utils"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -25,11 +25,11 @@ type DBCLient struct {
 
 var dbClient DBCLient
 
-func GetAllUsers() [] utils.User {
+func GetAllUsers() []utils.User {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
-	var results [] utils.User
+	var results []utils.User
 
 	cur, err := collection.Find(*ctx, bson.M{})
 
