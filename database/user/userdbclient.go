@@ -54,21 +54,21 @@ func GetAllUsers() []utils.User {
 	return results
 }
 
-func GetUserById(id primitive.ObjectID) (error, utils.User) {
+func GetUserById(id primitive.ObjectID) (error, *utils.User) {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
-	var result utils.User
+	result := &utils.User{}
 
 	filter := bson.M{"_id": id}
-	err := collection.FindOne(*ctx, filter).Decode(&result)
+	err := collection.FindOne(*ctx, filter).Decode(result)
 
 	if err != nil {
 		log.Error(err)
-		return err, utils.User{}
+		return err, nil
 	}
 
-	return err, result
+	return nil, result
 }
 
 func AddUser(user utils.User) (error, primitive.ObjectID) {
@@ -85,7 +85,7 @@ func AddUser(user utils.User) (error, primitive.ObjectID) {
 	return err, res.InsertedID.(primitive.ObjectID)
 }
 
-func UpdateUser(id primitive.ObjectID, user utils.User) (error, utils.User) {
+func UpdateUser(id primitive.ObjectID, user *utils.User) (error, *utils.User) {
 
 	ctx := dbClient.ctx
 	collection := dbClient.collection
@@ -96,7 +96,7 @@ func UpdateUser(id primitive.ObjectID, user utils.User) (error, utils.User) {
 
 	if err != nil {
 		log.Error(err)
-		return err, utils.User{}
+		return err, nil
 	}
 
 	if res.MatchedCount > 0 {
@@ -105,7 +105,7 @@ func UpdateUser(id primitive.ObjectID, user utils.User) (error, utils.User) {
 		log.Errorf("Update User failed because no user matched %+v", id)
 	}
 
-	return err, user
+	return nil, user
 
 }
 
@@ -119,9 +119,10 @@ func DeleteUser(id primitive.ObjectID) error {
 
 	if err != nil {
 		log.Error(err)
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func init() {

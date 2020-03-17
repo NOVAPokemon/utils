@@ -67,7 +67,7 @@ func TestUpdate(t *testing.T) {
 		Salt:         randSeq(32),
 	}
 
-	err, _ := UpdateUser(userMockup.Id, toUpdate)
+	err, _ := UpdateUser(userMockup.Id, &toUpdate)
 
 	if err != nil {
 		log.Error(err)
