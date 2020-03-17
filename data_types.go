@@ -27,8 +27,8 @@ type Bag struct {
 }
 
 type Item struct {
-	Id    primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Price int
+	Id   primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Name string
 }
 
 type Pokemon struct {
