@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
-	"time"
 )
 
 const defaultMongoDBUrl = "mongodb://localhost:27017"
@@ -54,6 +53,19 @@ func GetAllPokemons() []utils.Pokemon {
 
 	return results
 
+}
+
+func GetNumberOfPokemons() int64 {
+	var ctx = dbClient.ctx
+	var collection = dbClient.collection
+
+	num, err := collection.CountDocuments(*ctx, bson.M{})
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	return num
 }
 
 func GetPokemonById(id primitive.ObjectID) (error, utils.Pokemon) {
@@ -140,7 +152,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), timeoutSeconds*time.Second)
+	ctx := context.Background()
 	err = client.Connect(ctx)
 
 	if err != nil {

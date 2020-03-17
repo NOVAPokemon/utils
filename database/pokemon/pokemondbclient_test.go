@@ -37,6 +37,11 @@ func TestGetAll(t *testing.T) {
 	}
 }
 
+func TestGetNumberOfPokemons(t *testing.T) {
+	res := GetNumberOfPokemons()
+	t.Log(res)
+}
+
 func TestGetByID(t *testing.T) {
 
 	err, pokemon := GetPokemonById(pokemonMockup.Id)
