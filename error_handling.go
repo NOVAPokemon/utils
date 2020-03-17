@@ -47,7 +47,6 @@ func HandleCookieError(w *http.ResponseWriter, caller string, err error) {
 
 func HandleToSoonToRefreshError(w *http.ResponseWriter, caller string) {
 	log.Warnf("Error too soon to refresh in %s request:\n", caller)
-	log.Warn(err)
 	(*w).WriteHeader(http.StatusBadRequest)
 }
 
