@@ -20,7 +20,7 @@ var pokemonMockup = utils.Pokemon{
 
 func TestAddPokemon(t *testing.T) {
 
-	err, res := AddPokemon(pokemonMockup)
+	err, res := AddPokemonToUser(pokemonMockup)
 
 	if err != nil {
 		t.Log(err)
@@ -35,11 +35,6 @@ func TestGetAll(t *testing.T) {
 	for i, item := range res {
 		t.Log(i, item)
 	}
-}
-
-func TestGetNumberOfPokemons(t *testing.T) {
-	res := GetNumberOfPokemons()
-	t.Log(res)
 }
 
 func TestGetByID(t *testing.T) {

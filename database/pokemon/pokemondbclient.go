@@ -13,21 +13,20 @@ import (
 
 const defaultMongoDBUrl = "mongodb://localhost:27017"
 const databaseName = "NOVAPokemonDB"
-const collectionName = "Pokemons"
-const timeoutSeconds = 10
+const pokemonCollectionName = "Pokemons"
+const wildPokemonCollectionName = "WildPokemons"
 
 type DBCLient struct {
-	client     *mongo.Client
-	collection *mongo.Collection
-	ctx        *context.Context
+	client      *mongo.Client
+	collections map[string]*mongo.Collection
+	ctx         *context.Context
 }
 
 var dbClient DBCLient
 
 func GetAllPokemons() []utils.Pokemon {
-
 	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var collection = dbClient.collections[pokemonCollectionName]
 	var results []utils.Pokemon
 
 	cur, err := collection.Find(*ctx, bson.M{})
@@ -55,23 +54,9 @@ func GetAllPokemons() []utils.Pokemon {
 
 }
 
-func GetNumberOfPokemons() int {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
-
-	num, err := collection.CountDocuments(*ctx, bson.M{})
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	return int(num)
-}
-
 func GetPokemonById(id primitive.ObjectID) (error, utils.Pokemon) {
-
 	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var collection = dbClient.collections[pokemonCollectionName]
 	var result utils.Pokemon
 
 	filter := bson.M{"_id": id}
@@ -84,10 +69,9 @@ func GetPokemonById(id primitive.ObjectID) (error, utils.Pokemon) {
 	return err, result
 }
 
-func AddPokemon(pokemon utils.Pokemon) (error, primitive.ObjectID) {
-
+func AddPokemonToUser(pokemon utils.Pokemon) (error, primitive.ObjectID) {
 	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var collection = dbClient.collections[pokemonCollectionName]
 	res, err := collection.InsertOne(*ctx, pokemon)
 
 	if err != nil {
@@ -100,10 +84,24 @@ func AddPokemon(pokemon utils.Pokemon) (error, primitive.ObjectID) {
 	return err, res.InsertedID.(primitive.ObjectID)
 }
 
-func UpdatePokemon(id primitive.ObjectID, pokemon utils.Pokemon) (error, utils.Pokemon) {
+func AddWildPokemon(pokemon utils.Pokemon) (error, primitive.ObjectID) {
+	var ctx = dbClient.ctx
+	var collection = dbClient.collections[wildPokemonCollectionName]
+	res, err := collection.InsertOne(*ctx, pokemon)
 
+	if err != nil {
+		log.Error(err)
+		return nil, [12]byte{}
+	}
+
+	log.Infof("Inserted new wild Pokemon %s", res.InsertedID)
+
+	return err, res.InsertedID.(primitive.ObjectID)
+}
+
+func UpdatePokemon(id primitive.ObjectID, pokemon utils.Pokemon) (error, utils.Pokemon) {
 	ctx := dbClient.ctx
-	collection := dbClient.collection
+	collection := dbClient.collections[pokemonCollectionName]
 	filter := bson.M{"_id": id}
 	pokemon.Id = id
 
@@ -124,9 +122,8 @@ func UpdatePokemon(id primitive.ObjectID, pokemon utils.Pokemon) (error, utils.P
 }
 
 func DeletePokemon(id primitive.ObjectID) error {
-
 	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var collection = dbClient.collections[pokemonCollectionName]
 	filter := bson.M{"_id": id}
 
 	_, err := collection.DeleteOne(*ctx, filter)
@@ -139,7 +136,6 @@ func DeletePokemon(id primitive.ObjectID) error {
 }
 
 func init() {
-
 	url, exists := os.LookupEnv("MONGODB_URL")
 
 	if !exists {
@@ -159,6 +155,11 @@ func init() {
 		log.Fatal(err)
 	}
 
-	collection := client.Database(databaseName).Collection(collectionName)
-	dbClient = DBCLient{client: client, ctx: &ctx, collection: collection}
+	userPokemons := client.Database(databaseName).Collection(pokemonCollectionName)
+	wildPokemons := client.Database(databaseName).Collection(wildPokemonCollectionName)
+	collections := map[string]*mongo.Collection{
+		pokemonCollectionName:     userPokemons,
+		wildPokemonCollectionName: wildPokemons,
+	}
+	dbClient = DBCLient{client: client, ctx: &ctx, collections: collections}
 }
