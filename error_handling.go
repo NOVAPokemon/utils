@@ -45,6 +45,20 @@ func HandleCookieError(w *http.ResponseWriter, caller string, err error) {
 	return
 }
 
+func HandleToSoonToRefreshError(w *http.ResponseWriter, caller string) {
+	if err == http.ErrNoCookie {
+		log.Warnf("Error too soon to refresh in %s request:\n", caller)
+		log.Warn(err)
+		(*w).WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	log.Warnf("Error other in %s request:\n", caller)
+	log.Warn(err)
+	(*w).WriteHeader(http.StatusBadRequest)
+	return
+}
+
 func HandleJWTVerifyingError(w *http.ResponseWriter, caller string, err error) {
 	if err == jwt.ErrSignatureInvalid {
 		log.Warnf("Error invalid signature in %s request:\n", caller)
