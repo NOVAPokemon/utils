@@ -14,6 +14,7 @@ type User struct {
 
 type Trainer struct {
 	// game info
+	Id           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	Bag      primitive.ObjectID
 	Pokemons []primitive.ObjectID
 	Level    int
