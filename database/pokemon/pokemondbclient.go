@@ -99,6 +99,20 @@ func AddWildPokemon(pokemon utils.Pokemon) (error, primitive.ObjectID) {
 	return err, res.InsertedID.(primitive.ObjectID)
 }
 
+func DeleteWildPokemons() error {
+	var ctx = dbClient.ctx
+	var collection = dbClient.collections[wildPokemonCollectionName]
+	filter := bson.M{}
+
+	_, err := collection.DeleteOne(*ctx, filter)
+
+	if err != nil {
+		log.Error(err)
+	}
+
+	return err
+}
+
 func UpdatePokemon(id primitive.ObjectID, pokemon utils.Pokemon) (error, utils.Pokemon) {
 	ctx := dbClient.ctx
 	collection := dbClient.collections[pokemonCollectionName]
