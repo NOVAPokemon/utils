@@ -13,7 +13,6 @@ var userMockup = utils.User{
 	Id:           primitive.NewObjectID(),
 	Username:     "John",
 	PasswordHash: randSeq(256),
-	Salt:         randSeq(32),
 }
 
 func randSeq(n int) []byte {
@@ -28,7 +27,7 @@ func randSeq(n int) []byte {
 
 func TestAddUser(t *testing.T) {
 
-	err, res := AddUser(userMockup)
+	err, res := AddUser(&userMockup)
 
 	if err != nil {
 		log.Println(err)
@@ -56,15 +55,25 @@ func TestGetByID(t *testing.T) {
 
 	assert.Equal(t, user.Username, userMockup.Username)
 	assert.Equal(t, user.PasswordHash, userMockup.PasswordHash)
-	assert.Equal(t, user.Salt, userMockup.Salt)
+}
 
+func TestGetByUsername(t *testing.T) {
+
+	err, user := GetUserByUsername(userMockup.Username)
+
+	if err != nil {
+		log.Println(err)
+		t.Fail()
+	}
+
+	assert.Equal(t, user.Username, userMockup.Username)
+	assert.Equal(t, user.PasswordHash, userMockup.PasswordHash)
 }
 
 func TestUpdate(t *testing.T) {
 	toUpdate := utils.User{
 		Username:     "Updated_John",
 		PasswordHash: randSeq(256),
-		Salt:         randSeq(32),
 	}
 
 	err, _ := UpdateUser(userMockup.Id, &toUpdate)
@@ -77,13 +86,12 @@ func TestUpdate(t *testing.T) {
 
 	assert.Equal(t, toUpdate.Username, updatedUser.Username)
 	assert.Equal(t, toUpdate.PasswordHash, updatedUser.PasswordHash)
-	assert.Equal(t, toUpdate.Salt, updatedUser.Salt)
 }
 
 func TestDelete(t *testing.T) {
 
 	userMockup.Id = primitive.NewObjectID()
-	err, oID := AddUser(userMockup)
+	err, oID := AddUser(&userMockup)
 
 	if err != nil {
 		log.Println(err)

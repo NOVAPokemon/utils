@@ -9,22 +9,20 @@ type User struct {
 	Id           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	TrainerId    primitive.ObjectID
 	Username     string
-	PasswordHash [] byte
-	Salt         [] byte // optional
-
+	PasswordHash []byte
 }
 
 type Trainer struct {
 	// game info
 	Bag      primitive.ObjectID
-	Pokemons [] primitive.ObjectID
+	Pokemons []primitive.ObjectID
 	Level    int
 	Coins    int
 }
 
 type Bag struct {
 	Id    primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Items [] primitive.ObjectID
+	Items []primitive.ObjectID
 }
 
 type Item struct {

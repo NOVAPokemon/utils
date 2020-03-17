@@ -71,11 +71,27 @@ func GetUserById(id primitive.ObjectID) (error, *utils.User) {
 	return nil, result
 }
 
-func AddUser(user utils.User) (error, primitive.ObjectID) {
+func GetUserByUsername(username string) (error, *utils.User) {
+	var ctx = dbClient.ctx
+	var collection = dbClient.collection
+	result := &utils.User{}
+
+	filter := bson.M{"username": username}
+	err := collection.FindOne(*ctx, filter).Decode(result)
+
+	if err != nil {
+		log.Error(err)
+		return err, nil
+	}
+
+	return nil, result
+}
+
+func AddUser(user *utils.User) (error, primitive.ObjectID) {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
-	res, err := collection.InsertOne(*ctx, user)
+	res, err := collection.InsertOne(*ctx, *user)
 
 	if err != nil {
 		log.Println(err)
@@ -92,7 +108,7 @@ func UpdateUser(id primitive.ObjectID, user *utils.User) (error, *utils.User) {
 	filter := bson.M{"_id": id}
 	user.Id = id
 
-	res, err := collection.ReplaceOne(*ctx, filter, user)
+	res, err := collection.ReplaceOne(*ctx, filter, *user)
 
 	if err != nil {
 		log.Error(err)
@@ -110,7 +126,6 @@ func UpdateUser(id primitive.ObjectID, user *utils.User) (error, *utils.User) {
 }
 
 func DeleteUser(id primitive.ObjectID) error {
-
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
 	filter := bson.M{"_id": id}
