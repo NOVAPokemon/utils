@@ -9,11 +9,11 @@ import (
 )
 
 var trainerMockup = utils.Trainer{
-	Id:    primitive.NewObjectID(),
-	Bag:   primitive.NewObjectID(),
+	Id:       primitive.NewObjectID(),
+	Bag:      primitive.NewObjectID(),
 	Pokemons: []primitive.ObjectID{},
-	Level: 0,
-	Coins: 0,
+	Level:    0,
+	Coins:    0,
 }
 
 func TestAddTrainer(t *testing.T) {
@@ -97,7 +97,7 @@ func TestAddPokemonToTrainer(t *testing.T) {
 	_ = AddPokemonToTrainer(trainerMockup.Id, pokemonId)
 	_, trainer := GetTrainerById(trainerMockup.Id)
 
-	assert.Contains(t, trainer.Pokemons , pokemonId)
+	assert.Contains(t, trainer.Pokemons, pokemonId)
 
 }
 
@@ -110,7 +110,7 @@ func TestRemovePokemonFromTrainer(t *testing.T) {
 	_, _ = AddTrainer(trainerMockup)
 	_ = AddPokemonToTrainer(trainerMockup.Id, pokemonId)
 	_, trainer := GetTrainerById(trainerMockup.Id)
-	assert.Contains(t, trainer.Pokemons , pokemonId)
+	assert.Contains(t, trainer.Pokemons, pokemonId)
 
 	// remove pokemon from trainer
 	_ = RemovePokemonFromTrainer(trainerMockup.Id, pokemonId)
