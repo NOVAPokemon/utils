@@ -55,7 +55,7 @@ func GetAllPokemons() []utils.Pokemon {
 
 }
 
-func GetNumberOfPokemons() int64 {
+func GetNumberOfPokemons() int {
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
 
@@ -65,7 +65,7 @@ func GetNumberOfPokemons() int64 {
 		log.Println(err)
 	}
 
-	return num
+	return int(num)
 }
 
 func GetPokemonById(id primitive.ObjectID) (error, utils.Pokemon) {
