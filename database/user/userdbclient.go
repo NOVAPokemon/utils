@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
-	"time"
 )
 
 const defaultMongoDBUrl = "mongodb://localhost:27017"
@@ -94,7 +93,7 @@ func AddUser(user *utils.User) (error, primitive.ObjectID) {
 	res, err := collection.InsertOne(*ctx, *user)
 
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return err, [12]byte{}
 	}
 
@@ -154,7 +153,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), timeoutSeconds*time.Second)
+	ctx := context.Background()
 	err = client.Connect(ctx)
 
 	if err != nil {
