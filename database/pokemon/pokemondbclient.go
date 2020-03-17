@@ -104,7 +104,7 @@ func DeleteWildPokemons() error {
 	var collection = dbClient.collections[wildPokemonCollectionName]
 	filter := bson.M{}
 
-	_, err := collection.DeleteOne(*ctx, filter)
+	_, err := collection.DeleteMany(*ctx, filter)
 
 	if err != nil {
 		log.Error(err)
