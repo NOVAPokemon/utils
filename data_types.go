@@ -49,6 +49,6 @@ type Battle struct {
 }
 
 type Lobby struct {
-	id      primitive.ObjectID
-	trainer primitive.ObjectID
+	Id      primitive.ObjectID
+	TrainerId primitive.ObjectID
 }
