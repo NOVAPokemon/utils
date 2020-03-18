@@ -39,3 +39,16 @@ type Pokemon struct {
 	HP      int
 	Damage  int
 }
+
+type Battle struct {
+	Trainer1 primitive.ObjectID
+	Trainer2 primitive.ObjectID
+	Winner   primitive.ObjectID
+	// TODO add more stuff? perharps a log of a battle
+	// logAddr url.URL
+}
+
+type Lobby struct {
+	id      primitive.ObjectID
+	trainer primitive.ObjectID
+}
