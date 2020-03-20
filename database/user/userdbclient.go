@@ -51,23 +51,6 @@ func GetAllUsers() []utils.User {
 	return results
 }
 
-func GetUserById(username string) (error, *utils.User) {
-
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
-	result := &utils.User{}
-
-	filter := bson.M{"username": username}
-	err := collection.FindOne(*ctx, filter).Decode(result)
-
-	if err != nil {
-		log.Error(err)
-		return err, nil
-	}
-
-	return nil, result
-}
-
 func AddUser(user *utils.User) (error, string) {
 
 	var ctx = dbClient.ctx
