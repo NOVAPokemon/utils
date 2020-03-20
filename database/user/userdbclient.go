@@ -52,13 +52,13 @@ func GetAllUsers() []utils.User {
 	return results
 }
 
-func GetUserById(id primitive.ObjectID) (error, *utils.User) {
+func GetUserById(username string) (error, *utils.User) {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
 	result := &utils.User{}
 
-	filter := bson.M{"_id": id}
+	filter := bson.M{"username": username}
 	err := collection.FindOne(*ctx, filter).Decode(result)
 
 	if err != nil {
@@ -123,10 +123,10 @@ func UpdateUser(username string, user *utils.User) (error, *utils.User) {
 
 }
 
-func DeleteUser(id primitive.ObjectID) error {
+func DeleteUser(username string) error {
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
-	filter := bson.M{"_id": id}
+	filter := bson.M{"username": username}
 
 	_, err := collection.DeleteOne(*ctx, filter)
 
