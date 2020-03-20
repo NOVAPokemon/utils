@@ -6,15 +6,14 @@ import (
 
 type User struct {
 	// user info
-	Id           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Username     string `json:"username" bson:"username,omitempty"`
 	TrainerId    primitive.ObjectID
-	Username     string
 	PasswordHash []byte
 }
 
 type Trainer struct {
 	// game info
-	Id       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Username string `json:"username" bson:"username,omitempty"`
 	Bag      primitive.ObjectID
 	Pokemons []primitive.ObjectID
 	Level    int
@@ -49,6 +48,6 @@ type Battle struct {
 }
 
 type Lobby struct {
-	Id      primitive.ObjectID
+	Id        primitive.ObjectID
 	TrainerId primitive.ObjectID
 }

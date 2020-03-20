@@ -14,15 +14,14 @@ import (
 const defaultMongoDBUrl = "mongodb://localhost:27017"
 const databaseName = "NOVAPokemonDB"
 const collectionName = "Users"
-const timeoutSeconds = 10
 
-type DBCLient struct {
+type DBClient struct {
 	client     *mongo.Client
 	collection *mongo.Collection
 	ctx        *context.Context
 }
 
-var dbClient DBCLient
+var dbClient DBClient
 
 func GetAllUsers() []utils.User {
 
@@ -100,12 +99,12 @@ func AddUser(user *utils.User) (error, primitive.ObjectID) {
 	return err, res.InsertedID.(primitive.ObjectID)
 }
 
-func UpdateUser(id primitive.ObjectID, user *utils.User) (error, *utils.User) {
+func UpdateUser(username string, user *utils.User) (error, *utils.User) {
 
 	ctx := dbClient.ctx
 	collection := dbClient.collection
-	filter := bson.M{"_id": id}
-	user.Id = id
+	filter := bson.M{"username": username}
+	user.Username = username
 
 	res, err := collection.ReplaceOne(*ctx, filter, *user)
 
@@ -115,9 +114,9 @@ func UpdateUser(id primitive.ObjectID, user *utils.User) (error, *utils.User) {
 	}
 
 	if res.MatchedCount > 0 {
-		log.Infof("Updated User %+v", id)
+		log.Infof("Updated User %+v", username)
 	} else {
-		log.Errorf("Update User failed because no user matched %+v", id)
+		log.Errorf("Update User failed because no user matched %+v", username)
 	}
 
 	return nil, user
@@ -161,5 +160,15 @@ func init() {
 	}
 
 	collection := client.Database(databaseName).Collection(collectionName)
-	dbClient = DBCLient{client: client, ctx: &ctx, collection: collection}
+
+	op := options.Index()
+	op.SetUnique(true)
+	index := mongo.IndexModel{
+		Keys:    bson.M{"username":1},
+		Options: op,
+	}
+
+	collection.Indexes().CreateOne(ctx, index)
+
+	dbClient = DBClient{client: client, ctx: &ctx, collection: collection}
 }
