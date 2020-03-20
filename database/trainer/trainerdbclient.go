@@ -188,5 +188,15 @@ func init() {
 	}
 
 	collection := client.Database(databaseName).Collection(collectionName)
+
+	op := options.Index()
+	op.SetUnique(true)
+	index := mongo.IndexModel{
+		Keys:    bson.M{"username": 1},
+		Options: op,
+	}
+
+	collection.Indexes().CreateOne(ctx, index)
+
 	dbClient = DBCLient{client: client, ctx: &ctx, collection: collection}
 }
