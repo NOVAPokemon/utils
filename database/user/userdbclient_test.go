@@ -9,7 +9,7 @@ import (
 )
 
 var userMockup = utils.User{
-	Username:     "John",
+	Username:     "user1",
 	PasswordHash: randSeq(256),
 }
 
@@ -87,8 +87,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-
-	userMockup.Username = "teste_user"
+	userMockup.Username = "user2"
 	err, oID := AddUser(&userMockup)
 
 	if err != nil {
