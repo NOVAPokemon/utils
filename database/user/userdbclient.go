@@ -69,6 +69,20 @@ func GetUserById(username string) (error, *utils.User) {
 	return nil, result
 }
 
+func AddUser(user *utils.User) (error, string) {
+
+	var ctx = dbClient.ctx
+	var collection = dbClient.collection
+	res, err := collection.InsertOne(*ctx, *user)
+
+	if err != nil {
+		log.Error(err)
+		return err, ""
+	}
+
+	return nil, user.Username
+}
+
 func GetUserByUsername(username string) (error, *utils.User) {
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
@@ -83,20 +97,6 @@ func GetUserByUsername(username string) (error, *utils.User) {
 	}
 
 	return nil, result
-}
-
-func AddUser(user *utils.User) (error, primitive.ObjectID) {
-
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
-	res, err := collection.InsertOne(*ctx, *user)
-
-	if err != nil {
-		log.Error(err)
-		return err, [12]byte{}
-	}
-
-	return err, res.InsertedID.(primitive.ObjectID)
 }
 
 func UpdateUser(username string, user *utils.User) (error, *utils.User) {

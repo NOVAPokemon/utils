@@ -5,12 +5,10 @@ import (
 	"github.com/NOVAPokemon/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
 )
 
 var userMockup = utils.User{
-	Id:           primitive.NewObjectID(),
 	Username:     "John",
 	PasswordHash: randSeq(256),
 }
@@ -40,13 +38,13 @@ func TestAddUser(t *testing.T) {
 func TestGetAll(t *testing.T) {
 	res := GetAllUsers()
 	for i, item := range res {
-		log.Println(i, item.Id)
+		log.Println(i, item.Username)
 	}
 }
 
 func TestGetByID(t *testing.T) {
 
-	err, user := GetUserById(userMockup.Id)
+	err, user := GetUserById(userMockup.Username)
 
 	if err != nil {
 		log.Println(err)
@@ -76,13 +74,13 @@ func TestUpdate(t *testing.T) {
 		PasswordHash: randSeq(256),
 	}
 
-	err, _ := UpdateUser(userMockup.Id, &toUpdate)
+	err, _ := UpdateUser(userMockup.Username, &toUpdate)
 
 	if err != nil {
 		log.Error(err)
 		t.Fail()
 	}
-	err, updatedUser := GetUserById(userMockup.Id)
+	err, updatedUser := GetUserById(userMockup.Username)
 
 	assert.Equal(t, toUpdate.Username, updatedUser.Username)
 	assert.Equal(t, toUpdate.PasswordHash, updatedUser.PasswordHash)
@@ -90,7 +88,7 @@ func TestUpdate(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 
-	userMockup.Id = primitive.NewObjectID()
+	userMockup.Username = "teste_user"
 	err, oID := AddUser(&userMockup)
 
 	if err != nil {
@@ -108,7 +106,7 @@ func TestDelete(t *testing.T) {
 	users := GetAllUsers()
 
 	for _, user := range users {
-		if user.Id == userMockup.Id {
+		if user.Username == userMockup.Username {
 			log.Errorf("delete did not delete user %+v", user)
 			t.Fail()
 		}
