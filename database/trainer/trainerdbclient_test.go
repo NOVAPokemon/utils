@@ -47,7 +47,7 @@ func TestGetAll(t *testing.T) {
 
 func TestGetByID(t *testing.T) {
 
-	err, trainer := GetTrainerById(trainerMockup.Username)
+	err, trainer := GetTrainerByUsername(trainerMockup.Username)
 
 	if err != nil {
 		t.Log(err)
@@ -73,7 +73,7 @@ func TestUpdate(t *testing.T) {
 		t.Fail()
 	}
 
-	err, updatedTrainer := GetTrainerById(trainerMockup.Username)
+	err, updatedTrainer := GetTrainerByUsername(trainerMockup.Username)
 
 	assert.Equal(t, toUpdate.Level, updatedTrainer.Level)
 	assert.Equal(t, toUpdate.Coins, updatedTrainer.Coins)
@@ -104,7 +104,7 @@ func TestAddPokemonToTrainer(t *testing.T) {
 
 	_, _ = AddTrainer(trainerMockup)
 	_ = AddPokemonToTrainer(trainerMockup.Username, pokemonId)
-	_, trainer := GetTrainerById(trainerMockup.Username)
+	_, trainer := GetTrainerByUsername(trainerMockup.Username)
 
 	assert.Contains(t, trainer.Pokemons, pokemonId)
 
@@ -117,12 +117,12 @@ func TestRemovePokemonFromTrainer(t *testing.T) {
 	// add trainer and pokemon
 	_, _ = AddTrainer(trainerMockup)
 	_ = AddPokemonToTrainer(trainerMockup.Username, pokemonId)
-	_, trainer := GetTrainerById(trainerMockup.Username)
+	_, trainer := GetTrainerByUsername(trainerMockup.Username)
 	assert.Contains(t, trainer.Pokemons, pokemonId)
 
 	// remove pokemon from trainer
 	_ = RemovePokemonFromTrainer(trainerMockup.Username, pokemonId)
-	_, trainer = GetTrainerById(trainerMockup.Username)
+	_, trainer = GetTrainerByUsername(trainerMockup.Username)
 	assert.NotContains(t, trainer.Pokemons, pokemonId)
 
 }
