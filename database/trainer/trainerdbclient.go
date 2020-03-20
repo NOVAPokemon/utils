@@ -14,7 +14,6 @@ import (
 const defaultMongoDBUrl = "mongodb://localhost:27017"
 const databaseName = "NOVAPokemonDB"
 const collectionName = "Trainers"
-const timeoutSeconds = 10
 
 type DBCLient struct {
 	client     *mongo.Client
@@ -53,13 +52,13 @@ func GetAllTrainers() []utils.Trainer {
 	return results
 }
 
-func GetTrainerById(id primitive.ObjectID) (error, utils.Trainer) {
+func GetTrainerById(username string) (error, utils.Trainer) {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
 	var result utils.Trainer
 
-	filter := bson.M{"_id": id}
+	filter := bson.M{"username": username}
 	err := collection.FindOne(*ctx, filter).Decode(&result)
 
 	if err != nil {
@@ -84,12 +83,12 @@ func AddTrainer(trainer utils.Trainer) (error, primitive.ObjectID) {
 	return err, res.InsertedID.(primitive.ObjectID)
 }
 
-func UpdateTrainer(id primitive.ObjectID, trainer utils.Trainer) (error, utils.Trainer) {
+func UpdateTrainer(username string, trainer utils.Trainer) (error, utils.Trainer) {
 
 	ctx := dbClient.ctx
 	collection := dbClient.collection
-	filter := bson.M{"_id": id}
-	trainer.Id = id
+	filter := bson.M{"username": username}
+	trainer.Username = username
 
 	res, err := collection.ReplaceOne(*ctx, filter, trainer)
 
@@ -99,19 +98,19 @@ func UpdateTrainer(id primitive.ObjectID, trainer utils.Trainer) (error, utils.T
 	}
 
 	if res.MatchedCount > 0 {
-		log.Infof("Updated Trainer %+v", id)
+		log.Infof("Updated Trainer %+v", username)
 	} else {
-		log.Errorf("Update Trainer failed because no trainer matched %+v", id)
+		log.Errorf("Update Trainer failed because no trainer matched %+v", username)
 	}
 	return err, trainer
 }
 
-func AddPokemonToTrainer(trainerId primitive.ObjectID, pokemonId primitive.ObjectID) error {
+func AddPokemonToTrainer(username string, pokemonId string) error {
 
 	ctx := dbClient.ctx
 	collection := dbClient.collection
 
-	filter := bson.M{"_id": trainerId}
+	filter := bson.M{"username": username}
 	change := bson.M{"$push": bson.M{"pokemons": pokemonId}}
 
 	_, err := collection.UpdateOne(*ctx, filter, change)
@@ -123,12 +122,12 @@ func AddPokemonToTrainer(trainerId primitive.ObjectID, pokemonId primitive.Objec
 	return err
 }
 
-func RemovePokemonFromTrainer(trainerId primitive.ObjectID, pokemonId primitive.ObjectID) error {
+func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) error {
 
 	ctx := dbClient.ctx
 	collection := dbClient.collection
 
-	filter := bson.M{"_id": trainerId}
+	filter := bson.M{"username": username}
 	change := bson.M{"$pull": bson.M{"pokemons": pokemonId}}
 
 	_, err := collection.UpdateOne(*ctx, filter, change)
@@ -140,11 +139,11 @@ func RemovePokemonFromTrainer(trainerId primitive.ObjectID, pokemonId primitive.
 	return err
 }
 
-func DeleteTrainer(id primitive.ObjectID) error {
+func DeleteTrainer(username string) error {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
-	filter := bson.M{"_id": id}
+	filter := bson.M{"username": username}
 
 	_, err := collection.DeleteOne(*ctx, filter)
 

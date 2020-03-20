@@ -7,7 +7,6 @@ import (
 type User struct {
 	// user info
 	Username     string `json:"username" bson:"username,omitempty"`
-	TrainerId    primitive.ObjectID
 	PasswordHash []byte
 }
 
