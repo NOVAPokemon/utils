@@ -9,7 +9,7 @@ import (
 )
 
 var trainerMockup = utils.Trainer{
-	Id:       primitive.NewObjectID(),
+	Username: "teste_trainer",
 	Bag:      primitive.NewObjectID(),
 	Pokemons: []primitive.ObjectID{},
 	Level:    0,
@@ -37,7 +37,7 @@ func TestGetAll(t *testing.T) {
 
 func TestGetByID(t *testing.T) {
 
-	err, trainer := GetTrainerById(trainerMockup.Id)
+	err, trainer := GetTrainerById(trainerMockup.Username)
 
 	if err != nil {
 		t.Log(err)
@@ -51,27 +51,27 @@ func TestGetByID(t *testing.T) {
 func TestUpdate(t *testing.T) {
 
 	toUpdate := utils.Trainer{
-		Id:    primitive.NewObjectID(),
+		Username: "teste_trainer_3",
 		Bag:   primitive.NewObjectID(),
 		Level: 10,
 		Coins: 10,
 	}
 
-	err, _ := UpdateTrainer(trainerMockup.Id, toUpdate)
+	err, _ := UpdateTrainer(trainerMockup.Username, toUpdate)
 
 	if err != nil {
 		log.Error(err)
 		t.Fail()
 	}
 
-	err, updatedTrainer := GetTrainerById(trainerMockup.Id)
+	err, updatedTrainer := GetTrainerById(trainerMockup.Username)
 
 	assert.Equal(t, toUpdate.Level, updatedTrainer.Level)
 	assert.Equal(t, toUpdate.Coins, updatedTrainer.Coins)
 }
 
 func TestDelete(t *testing.T) {
-	err := DeleteTrainer(trainerMockup.Id)
+	err := DeleteTrainer(trainerMockup.Username)
 
 	if err != nil {
 		log.Error(err)
@@ -81,7 +81,7 @@ func TestDelete(t *testing.T) {
 	trainers := GetAllTrainers()
 
 	for _, trainer := range trainers {
-		if trainer.Id == trainerMockup.Id {
+		if trainer.Username == trainerMockup.Username {
 			t.Fail()
 		}
 
@@ -91,11 +91,11 @@ func TestDelete(t *testing.T) {
 func TestAddPokemonToTrainer(t *testing.T) {
 
 	pokemonId := primitive.NewObjectID()
-	trainerMockup.Id = primitive.NewObjectID()
+	trainerMockup.Username = "teste_trainer_2"
 
 	_, _ = AddTrainer(trainerMockup)
-	_ = AddPokemonToTrainer(trainerMockup.Id, pokemonId)
-	_, trainer := GetTrainerById(trainerMockup.Id)
+	_ = AddPokemonToTrainer(trainerMockup.Username, pokemonId)
+	_, trainer := GetTrainerById(trainerMockup.Username)
 
 	assert.Contains(t, trainer.Pokemons, pokemonId)
 
@@ -104,17 +104,17 @@ func TestAddPokemonToTrainer(t *testing.T) {
 func TestRemovePokemonFromTrainer(t *testing.T) {
 
 	pokemonId := primitive.NewObjectID()
-	trainerMockup.Id = primitive.NewObjectID()
+	trainerMockup.Username = "test_trainer_2"
 
 	// add trainer and pokemon
 	_, _ = AddTrainer(trainerMockup)
-	_ = AddPokemonToTrainer(trainerMockup.Id, pokemonId)
-	_, trainer := GetTrainerById(trainerMockup.Id)
+	_ = AddPokemonToTrainer(trainerMockup.Username, pokemonId)
+	_, trainer := GetTrainerById(trainerMockup.Username)
 	assert.Contains(t, trainer.Pokemons, pokemonId)
 
 	// remove pokemon from trainer
-	_ = RemovePokemonFromTrainer(trainerMockup.Id, pokemonId)
-	_, trainer = GetTrainerById(trainerMockup.Id)
+	_ = RemovePokemonFromTrainer(trainerMockup.Username, pokemonId)
+	_, trainer = GetTrainerById(trainerMockup.Username)
 	assert.NotContains(t, trainer.Pokemons, pokemonId)
 
 }

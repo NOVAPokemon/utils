@@ -105,7 +105,7 @@ func UpdateTrainer(username string, trainer utils.Trainer) (error, utils.Trainer
 	return err, trainer
 }
 
-func AddPokemonToTrainer(username string, pokemonId string) error {
+func AddPokemonToTrainer(username string, pokemonId primitive.ObjectID) error {
 
 	ctx := dbClient.ctx
 	collection := dbClient.collection
