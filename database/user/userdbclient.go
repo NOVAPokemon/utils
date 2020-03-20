@@ -5,7 +5,6 @@ import (
 	"github.com/NOVAPokemon/utils"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
@@ -80,7 +79,7 @@ func AddUser(user *utils.User) (error, string) {
 		return err, ""
 	}
 
-	return nil, user.Username
+	return nil, res.InsertedID.(string)
 }
 
 func GetUserByUsername(username string) (error, *utils.User) {
@@ -164,7 +163,7 @@ func init() {
 	op := options.Index()
 	op.SetUnique(true)
 	index := mongo.IndexModel{
-		Keys:    bson.M{"username":1},
+		Keys:    bson.M{"username": 1},
 		Options: op,
 	}
 
