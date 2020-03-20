@@ -72,14 +72,14 @@ func AddUser(user *utils.User) (error, string) {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
-	res, err := collection.InsertOne(*ctx, *user)
+	_, err := collection.InsertOne(*ctx, *user)
 
 	if err != nil {
 		log.Error(err)
 		return err, ""
 	}
 
-	return nil, res.InsertedID.(string)
+	return nil, user.Username
 }
 
 func GetUserByUsername(username string) (error, *utils.User) {
