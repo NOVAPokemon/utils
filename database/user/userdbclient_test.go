@@ -18,7 +18,7 @@ func randSeq(n int) []byte {
 
 	_, err := rand.Read(key)
 	if err != nil {
-		// handle error here
+		log.Error(err)
 	}
 	return key
 }
