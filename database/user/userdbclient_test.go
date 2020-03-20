@@ -5,12 +5,23 @@ import (
 	"github.com/NOVAPokemon/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
 var userMockup = utils.User{
 	Username:     "user1",
 	PasswordHash: randSeq(256),
+}
+
+func TestMain(m *testing.M) {
+	_ = removeAll()
+
+	res := m.Run()
+
+	_ = removeAll()
+
+	os.Exit(res)
 }
 
 func randSeq(n int) []byte {

@@ -154,6 +154,18 @@ func DeleteTrainer(username string) error {
 	return err
 }
 
+func removeAll() error {
+	ctx := dbClient.ctx
+	collection := dbClient.collection
+	_, err := collection.DeleteMany(*ctx, bson.M{})
+
+	if err != nil {
+		log.Error(err)
+	}
+
+	return err
+}
+
 func init() {
 
 	url, exists := os.LookupEnv("MONGODB_URL")

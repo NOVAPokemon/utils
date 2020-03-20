@@ -131,10 +131,23 @@ func DeleteUser(username string) error {
 
 	if err != nil {
 		log.Error(err)
-		return err
 	}
 
-	return nil
+	return err
+}
+
+func removeAll() error {
+	var ctx = dbClient.ctx
+	var collection = dbClient.collection
+	filter := bson.M{}
+
+	_, err := collection.DeleteMany(*ctx, filter)
+
+	if err != nil {
+		log.Error(err)
+	}
+
+	return err
 }
 
 func init() {

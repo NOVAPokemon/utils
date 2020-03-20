@@ -5,19 +5,29 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"os"
 	"testing"
 )
 
 var trainerMockup = utils.Trainer{
-	Username: "teste_trainer",
+	Username: "trainer1",
 	Bag:      primitive.NewObjectID(),
 	Pokemons: []primitive.ObjectID{},
 	Level:    0,
 	Coins:    0,
 }
 
-func TestAddTrainer(t *testing.T) {
+func TestMain(m *testing.M) {
+	_ = removeAll()
 
+	res := m.Run()
+
+	_ = removeAll()
+
+	os.Exit(res)
+}
+
+func TestAddTrainer(t *testing.T) {
 	err, res := AddTrainer(trainerMockup)
 
 	if err != nil {
@@ -49,9 +59,8 @@ func TestGetByID(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-
 	toUpdate := utils.Trainer{
-		Username: "teste_trainer_3",
+		Username: trainerMockup.Username,
 		Bag:   primitive.NewObjectID(),
 		Level: 10,
 		Coins: 10,
@@ -82,6 +91,7 @@ func TestDelete(t *testing.T) {
 
 	for _, trainer := range trainers {
 		if trainer.Username == trainerMockup.Username {
+			log.Error(trainer.Username)
 			t.Fail()
 		}
 
@@ -91,7 +101,6 @@ func TestDelete(t *testing.T) {
 func TestAddPokemonToTrainer(t *testing.T) {
 
 	pokemonId := primitive.NewObjectID()
-	trainerMockup.Username = "teste_trainer_2"
 
 	_, _ = AddTrainer(trainerMockup)
 	_ = AddPokemonToTrainer(trainerMockup.Username, pokemonId)
@@ -104,7 +113,6 @@ func TestAddPokemonToTrainer(t *testing.T) {
 func TestRemovePokemonFromTrainer(t *testing.T) {
 
 	pokemonId := primitive.NewObjectID()
-	trainerMockup.Username = "test_trainer_2"
 
 	// add trainer and pokemon
 	_, _ = AddTrainer(trainerMockup)
