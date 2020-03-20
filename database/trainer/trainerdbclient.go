@@ -52,7 +52,7 @@ func GetAllTrainers() []utils.Trainer {
 	return results
 }
 
-func GetTrainerById(username string) (error, utils.Trainer) {
+func GetTrainerByUsername(username string) (error, utils.Trainer) {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
@@ -69,7 +69,7 @@ func GetTrainerById(username string) (error, utils.Trainer) {
 	return err, result
 }
 
-func AddTrainer(trainer utils.Trainer) (error, primitive.ObjectID) {
+func AddTrainer(trainer utils.Trainer) (error, string) {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
@@ -77,10 +77,10 @@ func AddTrainer(trainer utils.Trainer) (error, primitive.ObjectID) {
 
 	if err != nil {
 		log.Println(err)
-		return err, [12]byte{}
+		return err, ""
 	}
 
-	return err, res.InsertedID.(primitive.ObjectID)
+	return err, trainer.Username
 }
 
 func UpdateTrainer(username string, trainer utils.Trainer) (error, utils.Trainer) {
