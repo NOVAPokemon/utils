@@ -39,14 +39,14 @@ type Pokemon struct {
 }
 
 type Battle struct {
-	Trainer1 primitive.ObjectID
-	Trainer2 primitive.ObjectID
-	Winner   primitive.ObjectID
+	Trainer1 string
+	Trainer2 string
+	Winner   string
 	// TODO add more stuff? perharps a log of a battle
 	// logAddr url.URL
 }
 
 type Lobby struct {
-	Id        primitive.ObjectID
-	TrainerId primitive.ObjectID
+	Id       primitive.ObjectID
+	Username string
 }
