@@ -14,12 +14,12 @@ const (
 )
 
 type TradeStatus struct {
-	Players       [2]players
+	Players       [2]Players
 	tradeStarted  bool
 	tradeFinished bool
 }
 
-type players struct {
+type Players struct {
 	Items    []string
 	Accepted bool
 }
