@@ -73,7 +73,7 @@ func AddTrainer(trainer utils.Trainer) (error, string) {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
-	res, err := collection.InsertOne(*ctx, trainer)
+	_, err := collection.InsertOne(*ctx, trainer)
 
 	if err != nil {
 		log.Println(err)
