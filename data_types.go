@@ -14,7 +14,7 @@ type Trainer struct {
 	// game info
 	Username string `json:"username" bson:"username,omitempty"`
 	Bag      primitive.ObjectID
-	Pokemons []primitive.ObjectID
+	Pokemons []*Pokemon
 	Level    int
 	Coins    int
 }
@@ -31,7 +31,6 @@ type Item struct {
 
 type Pokemon struct {
 	Id      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Owner   primitive.ObjectID
 	Species string
 	Level   int
 	HP      int
