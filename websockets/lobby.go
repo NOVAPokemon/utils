@@ -18,8 +18,8 @@ type Lobby struct {
 
 	trainerConnections []*websocket.Conn
 
-	started  bool
-	finished bool
+	Started  bool
+	Finished bool
 }
 
 func NewLobby(id primitive.ObjectID, ) *Lobby {
@@ -29,8 +29,8 @@ func NewLobby(id primitive.ObjectID, ) *Lobby {
 		trainerConnections: make([]*websocket.Conn, 0),
 		TrainerInChannels:  make([]*chan *string, 0),
 		TrainerOutChannels: make([]*chan *string, 0),
-		started:            false,
-		finished:           false,
+		Started:            false,
+		Finished:           false,
 	}
 }
 
