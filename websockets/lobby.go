@@ -48,7 +48,6 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 }
 
 func CloseLobby(lobby *Lobby) {
-
 	// TODO
 }
 
