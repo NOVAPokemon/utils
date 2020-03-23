@@ -15,8 +15,8 @@ const (
 
 type TradeStatus struct {
 	Players       [2]Players
-	tradeStarted  bool
-	tradeFinished bool
+	TradeStarted  bool
+	TradeFinished bool
 }
 
 type Players struct {
@@ -25,6 +25,6 @@ type Players struct {
 }
 
 type TradeMessage struct {
-	msgType string
-	msgArgs []string
+	MsgType string
+	MsgArgs []string
 }
