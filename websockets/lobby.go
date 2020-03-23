@@ -23,7 +23,6 @@ type Lobby struct {
 }
 
 func NewLobby(id primitive.ObjectID, ) *Lobby {
-
 	return &Lobby{
 		Id:                 id,
 		trainerConnections: make([]*websocket.Conn, 0),
@@ -61,7 +60,7 @@ func handleSend(conn *websocket.Conn, channel chan *string) {
 		if err != nil {
 			log.Error("write err:", err)
 		} else {
-			log.Debugf("Wrote %s into the channel", msg)
+			log.Debugf("Wrote %s into the channel", *msg)
 		}
 
 	}

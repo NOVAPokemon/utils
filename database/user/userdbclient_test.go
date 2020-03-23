@@ -55,7 +55,7 @@ func TestGetAll(t *testing.T) {
 
 func TestGetByID(t *testing.T) {
 
-	err, user := GetUserById(userMockup.Username)
+	err, user := GetUserByUsername(userMockup.Username)
 
 	if err != nil {
 		log.Println(err)
@@ -91,7 +91,7 @@ func TestUpdate(t *testing.T) {
 		log.Error(err)
 		t.Fail()
 	}
-	err, updatedUser := GetUserById(userMockup.Username)
+	err, updatedUser := GetUserByUsername(userMockup.Username)
 
 	assert.Equal(t, toUpdate.Username, updatedUser.Username)
 	assert.Equal(t, toUpdate.PasswordHash, updatedUser.PasswordHash)
