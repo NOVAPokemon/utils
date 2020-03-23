@@ -13,18 +13,18 @@ func ParseMessage(msg *string) (error, *TradeMessage) {
 	}
 
 	return nil, &TradeMessage{
-		msgType: msgParts[0],
-		msgArgs: msgParts[1:],
+		MsgType: msgParts[0],
+		MsgArgs: msgParts[1:],
 	}
 }
 
 func SendMessage(msg *TradeMessage, channel chan *string) {
 	builder := strings.Builder{}
 
-	builder.WriteString(msg.msgType)
+	builder.WriteString(msg.MsgType)
 	builder.WriteString(" ")
 
-	for _, arg := range msg.msgArgs {
+	for _, arg := range msg.MsgArgs {
 		builder.WriteString(arg)
 		builder.WriteString(" ")
 	}
