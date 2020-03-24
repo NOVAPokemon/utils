@@ -45,6 +45,7 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 	lobby.TrainerInChannels = append(lobby.TrainerInChannels, &trainerChanIn)
 	lobby.TrainerOutChannels = append(lobby.TrainerOutChannels, &trainerChanOut)
 
+	lobby.trainerConnections = append(lobby.trainerConnections, trainerConn)
 }
 
 func CloseLobby(lobby *Lobby) {
