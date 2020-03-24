@@ -30,7 +30,5 @@ func SendMessage(msg *TradeMessage, channel chan *string) {
 	}
 
 	toSend := builder.String()
-	select {
-	case channel <- &toSend:
-	}
+	channel <- &toSend
 }
