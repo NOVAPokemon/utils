@@ -49,8 +49,12 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 }
 
 func CloseLobby(lobby *Lobby) {
-	lobby.trainerConnections[0].Close()
-	lobby.trainerConnections[1].Close()
+	for i := 0; i < 2; i++ {
+		lobby.trainerConnections[i].Close()
+		close(*lobby.TrainerInChannels[i])
+		close(*lobby.TrainerOutChannels[i])
+	}
+
 }
 
 func handleSend(conn *websocket.Conn, channel chan *string) {
