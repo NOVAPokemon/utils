@@ -61,7 +61,7 @@ func handleSend(conn *websocket.Conn, channel chan *string) {
 		msg := <-channel
 		err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
 		if err != nil {
-			log.Error("write err:", err)
+			return
 		} else {
 			log.Debugf("Wrote %s into the channel", *msg)
 		}
@@ -76,7 +76,7 @@ func handleRecv(conn *websocket.Conn, channel chan *string) {
 		_, message, err := conn.ReadMessage()
 
 		if err != nil {
-			log.Println(err)
+			return
 		} else {
 			msg := strings.TrimSpace(string(message))
 			log.Infof("Message received: %s", msg)
