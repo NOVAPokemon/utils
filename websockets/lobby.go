@@ -51,13 +51,11 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 func CloseLobby(lobby *Lobby) {
 	for i := 0; i < 2; i++ {
 		lobby.trainerConnections[i].Close()
-		close(*lobby.TrainerInChannels[i])
-		close(*lobby.TrainerOutChannels[i])
 	}
-
 }
 
 func handleSend(conn *websocket.Conn, channel chan *string) {
+	defer close(channel)
 
 	for {
 		msg := <-channel
@@ -69,10 +67,10 @@ func handleSend(conn *websocket.Conn, channel chan *string) {
 		}
 
 	}
-
 }
 
 func handleRecv(conn *websocket.Conn, channel chan *string) {
+	defer close(channel)
 
 	for {
 		_, message, err := conn.ReadMessage()
