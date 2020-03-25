@@ -12,7 +12,7 @@ import (
 var trainerMockup = utils.Trainer{
 	Username: "trainer1",
 	Bag:      primitive.NewObjectID(),
-	Pokemons: []utils.Pokemon{},
+	Pokemons: []*utils.Pokemon{},
 	Level:    0,
 	Coins:    0,
 }
