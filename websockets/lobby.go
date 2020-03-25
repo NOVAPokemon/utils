@@ -75,7 +75,7 @@ func handleRecv(conn *websocket.Conn, channel chan *string) {
 	for {
 		msgType, message, err := conn.ReadMessage()
 
-		log.Info("Msg Type: %d", msgType)
+		log.Info("Message Type: ", msgType)
 
 		if err != nil {
 			log.Error(err)
