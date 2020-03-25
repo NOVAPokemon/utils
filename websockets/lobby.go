@@ -73,10 +73,13 @@ func handleRecv(conn *websocket.Conn, channel chan *string) {
 	defer close(channel)
 
 	for {
-		_, message, err := conn.ReadMessage()
+		msgType, message, err := conn.ReadMessage()
 
 		if err != nil {
 			return
+		} else if msgType == websocket.CloseMessage{
+			log.Info("Connection closed")
+			conn.Close()
 		} else {
 			msg := strings.TrimSpace(string(message))
 			log.Infof("Message received: %s", msg)
