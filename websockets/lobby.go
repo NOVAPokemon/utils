@@ -55,8 +55,8 @@ func CloseLobby(lobby *Lobby) {
 	log.Warn("Triggering end connection on remaining go routines...")
 	close(lobby.EndConnectionChannel)
 
-	//lobby.trainerConnections[0].Close()
-	//lobby.trainerConnections[1].Close()
+	lobby.trainerConnections[0].Close()
+	lobby.trainerConnections[1].Close()
 }
 
 func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}) {
