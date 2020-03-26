@@ -172,7 +172,7 @@ func removeAll() error {
 
 // BAG OPERATIONS
 
-func AppendItemToTrainer(username string, item utils.Item) (*utils.Item, error) {
+func AddItemToTrainer(username string, item utils.Item) (*utils.Item, error) {
 
 	ctx := dbClient.ctx
 	collection := dbClient.collection
