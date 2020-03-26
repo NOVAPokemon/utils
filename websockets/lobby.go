@@ -54,11 +54,13 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 func CloseLobby(lobby *Lobby) {
 	log.Warn("Triggering end connection on remaining go routines...")
 	lobby.EndConnectionChannel <- true
+	lobby.trainerConnections[0].Close()
+	lobby.trainerConnections[1].Close()
 }
 
 func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan bool) {
 	defer close(inChannel)
-	defer log.Warn("Closing send thread")
+	defer log.Warn("Closing send routine")
 
 	for {
 		select {
@@ -70,7 +72,6 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 				log.Infof("Wrote %s into the channel", *msg)
 			}
 		case b := <-endConnection:
-			log.Warn("Canceling send routine")
 			if b {
 				return
 			}
@@ -81,7 +82,7 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 
 func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection chan bool) {
 	defer close(outChannel)
-	defer log.Warn("Closing recv thread")
+	defer log.Warn("Closing recv routine")
 
 	for {
 		select {
