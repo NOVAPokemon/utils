@@ -40,10 +40,9 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 
 	trainerChanIn := make(chan *string)
 	trainerChanOut := make(chan *string)
-	endConnection := make(chan bool)
 
-	go handleRecv(trainerConn, trainerChanIn, endConnection)
-	go handleSend(trainerConn, trainerChanOut, endConnection)
+	go handleRecv(trainerConn, trainerChanIn, lobby.EndConnectionChannel)
+	go handleSend(trainerConn, trainerChanOut, lobby.EndConnectionChannel)
 
 	lobby.Trainers = append(lobby.Trainers, &trainer)
 	lobby.TrainerInChannels = append(lobby.TrainerInChannels, &trainerChanIn)
