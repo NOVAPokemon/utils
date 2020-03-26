@@ -58,19 +58,20 @@ func CloseLobby(lobby *Lobby) {
 
 func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan bool) {
 	defer close(inChannel)
+	defer log.Warn("Closing send thread")
 
 	for {
 		select {
 		case msg := <-inChannel:
 			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
 			if err != nil {
-				return
+				break
 			} else {
 				log.Debugf("Wrote %s into the channel", *msg)
 			}
 		case b := <-endConnection:
 			if b {
-				return
+				break
 			}
 		}
 
@@ -79,6 +80,7 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 
 func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection chan bool) {
 	defer close(outChannel)
+	defer log.Warn("Closing recv thread")
 
 	for {
 		select {
