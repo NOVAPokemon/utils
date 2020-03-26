@@ -154,7 +154,7 @@ func TestAppendAndRemove(t *testing.T) {
 	}
 
 	// add item, verify that it is in trainer
-	item, err := AppendItemToTrainer(userName, toAppend)
+	item, err := AddItemToTrainer(userName, toAppend)
 
 	if err != nil {
 		t.Error(err)
@@ -172,7 +172,7 @@ func TestAppendAndRemove(t *testing.T) {
 	assert.Contains(t, trainer.Items, item)
 
 	// add another item, verify that trainer has both items
-	item2, err := AppendItemToTrainer(userName, toAppend2)
+	item2, err := AddItemToTrainer(userName, toAppend2)
 
 	if err != nil {
 		t.Error(err)

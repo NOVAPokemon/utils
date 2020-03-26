@@ -79,7 +79,7 @@ func GetAllTrainers() []utils.Trainer {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
-	var results []utils.Trainer
+	var results = make([]utils.Trainer, 0)
 
 	cur, err := collection.Find(*ctx, bson.M{})
 
