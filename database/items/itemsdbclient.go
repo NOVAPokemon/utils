@@ -14,19 +14,18 @@ import (
 const defaultMongoDBUrl = "mongodb://localhost:27017"
 const databaseName = "NOVAPokemonDB"
 const itemsCollectionName = "Items"
-const catchableItemsCollectionName = "CatchableItems"
 
 type DBCLient struct {
-	client      *mongo.Client
-	collections map[string]*mongo.Collection
-	ctx         *context.Context
+	client     *mongo.Client
+	collection *mongo.Collection
+	ctx        *context.Context
 }
 
 var dbClient DBCLient
 
 func GetAllItems() []utils.Item {
 	var ctx = dbClient.ctx
-	var collection = dbClient.collections[itemsCollectionName]
+	var collection = dbClient.collection
 	var results []utils.Item
 
 	cur, err := collection.Find(*ctx, bson.M{})
@@ -51,70 +50,11 @@ func GetAllItems() []utils.Item {
 	}
 
 	return results
-}
-
-func GetCatchableItems() []utils.Item {
-
-	var ctx = dbClient.ctx
-	var collection = dbClient.collections[catchableItemsCollectionName]
-	var results []utils.Item
-
-	cur, err := collection.Find(*ctx, bson.M{})
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	defer cur.Close(*ctx)
-	for cur.Next(*ctx) {
-		var result utils.Item
-		err := cur.Decode(&result)
-		if err != nil {
-			log.Error(err)
-		} else {
-			results = append(results, result)
-		}
-	}
-
-	if err := cur.Err(); err != nil {
-		log.Error(err)
-	}
-
-	return results
-}
-
-func DeleteCatchableItems() error {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collections[catchableItemsCollectionName]
-	filter := bson.M{}
-
-	_, err := collection.DeleteMany(*ctx, filter)
-
-	if err != nil {
-		log.Error(err)
-	}
-
-	return err
-}
-
-func AddCatchableItem(item utils.Item) (error, primitive.ObjectID) {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collections[catchableItemsCollectionName]
-	res, err := collection.InsertOne(*ctx, item)
-
-	if err != nil {
-		log.Error(err)
-		return err, [12]byte{}
-	}
-
-	log.Infof("Inserted new Catchable Item %+v", item)
-
-	return err, res.InsertedID.(primitive.ObjectID)
 }
 
 func AddItems(item utils.Item) (error, primitive.ObjectID) {
 	var ctx = dbClient.ctx
-	var collection = dbClient.collections[itemsCollectionName]
+	var collection = dbClient.collection
 	res, err := collection.InsertOne(*ctx, item)
 
 	if err != nil {
@@ -148,12 +88,5 @@ func init() {
 	}
 
 	itemsCollection := client.Database(databaseName).Collection(itemsCollectionName)
-	catchableItemsCollection := client.Database(databaseName).Collection(catchableItemsCollectionName)
-
-	collections := map[string]*mongo.Collection{
-		itemsCollectionName:          itemsCollection,
-		catchableItemsCollectionName: catchableItemsCollection,
-	}
-
-	dbClient = DBCLient{client: client, ctx: &ctx, collections: collections}
+	dbClient = DBCLient{client: client, ctx: &ctx, collection: itemsCollection}
 }
