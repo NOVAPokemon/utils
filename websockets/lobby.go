@@ -18,6 +18,8 @@ type Lobby struct {
 
 	trainerConnections []*websocket.Conn
 
+	EndConnectionChannel  chan bool
+
 	Started  bool
 	Finished bool
 }
@@ -28,6 +30,7 @@ func NewLobby(id primitive.ObjectID, ) *Lobby {
 		trainerConnections: make([]*websocket.Conn, 0),
 		TrainerInChannels:  make([]*chan *string, 0),
 		TrainerOutChannels: make([]*chan *string, 0),
+		EndConnectionChannel: make(chan bool),
 		Started:            false,
 		Finished:           false,
 	}
@@ -37,9 +40,10 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 
 	trainerChanIn := make(chan *string)
 	trainerChanOut := make(chan *string)
+	endConnection := make(chan bool)
 
-	go handleRecv(trainerConn, trainerChanIn)
-	go handleSend(trainerConn, trainerChanOut)
+	go handleRecv(trainerConn, trainerChanIn, endConnection)
+	go handleSend(trainerConn, trainerChanOut, endConnection)
 
 	lobby.Trainers = append(lobby.Trainers, &trainer)
 	lobby.TrainerInChannels = append(lobby.TrainerInChannels, &trainerChanIn)
@@ -49,43 +53,50 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 }
 
 func CloseLobby(lobby *Lobby) {
-	for i := 0; i < 2; i++ {
-		lobby.trainerConnections[i].Close()
-	}
+	lobby.EndConnectionChannel <- true
 }
 
-func handleSend(conn *websocket.Conn, channel chan *string) {
-	defer close(channel)
+func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan bool) {
+	defer close(inChannel)
 
 	for {
-		msg := <-channel
-		err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
-		if err != nil {
-			return
-		} else {
-			log.Debugf("Wrote %s into the channel", *msg)
+		select {
+		case msg := <-inChannel:
+			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
+			if err != nil {
+				return
+			} else {
+				log.Debugf("Wrote %s into the channel", *msg)
+			}
+		case b := <-endConnection:
+			if b {
+				return
+			}
 		}
 
 	}
 }
 
-func handleRecv(conn *websocket.Conn, channel chan *string) {
-	defer close(channel)
+func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection chan bool) {
+	defer close(outChannel)
 
 	for {
-		msgType, message, err := conn.ReadMessage()
+		select {
+		case b := <-endConnection:
+			if b {
+				return
+			}
+		default:
+			_, message, err := conn.ReadMessage()
 
-		if err != nil {
-			log.Error(err)
-			return
-		} else if msgType == websocket.CloseMessage {
-			log.Info("Connection closed")
-			conn.Close()
-			return
-		} else {
-			msg := strings.TrimSpace(string(message))
-			log.Infof("Message received: %s", msg)
-			channel <- &msg
+			if err != nil {
+				log.Error(err)
+				return
+			} else {
+				msg := strings.TrimSpace(string(message))
+				log.Infof("Message received: %s", msg)
+				outChannel <- &msg
+			}
 		}
 	}
 }
