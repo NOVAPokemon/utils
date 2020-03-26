@@ -71,6 +71,7 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 				log.Infof("Wrote %s into the channel", *msg)
 			}
 		case b := <-endConnection:
+			log.Warn("Canceling send routine")
 			if b {
 				return
 			}
