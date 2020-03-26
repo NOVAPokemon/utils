@@ -1,6 +1,5 @@
 package battles
 
-
 // Message Types
 const (
 	ATTACK   = "ATTACK"
@@ -23,9 +22,7 @@ const (
 	ERROR = "ERROR"
 )
 
-
 type BattleMessage struct {
 	MsgType string
 	MsgArgs []string
 }
-
