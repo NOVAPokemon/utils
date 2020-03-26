@@ -18,7 +18,7 @@ type Lobby struct {
 
 	trainerConnections []*websocket.Conn
 
-	EndConnectionChannel  chan bool
+	EndConnectionChannel chan bool
 
 	Started  bool
 	Finished bool
@@ -26,13 +26,13 @@ type Lobby struct {
 
 func NewLobby(id primitive.ObjectID, ) *Lobby {
 	return &Lobby{
-		Id:                 id,
-		trainerConnections: make([]*websocket.Conn, 0),
-		TrainerInChannels:  make([]*chan *string, 0),
-		TrainerOutChannels: make([]*chan *string, 0),
+		Id:                   id,
+		trainerConnections:   make([]*websocket.Conn, 0),
+		TrainerInChannels:    make([]*chan *string, 0),
+		TrainerOutChannels:   make([]*chan *string, 0),
 		EndConnectionChannel: make(chan bool),
-		Started:            false,
-		Finished:           false,
+		Started:              false,
+		Finished:             false,
 	}
 }
 
@@ -53,9 +53,14 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 
 func CloseLobby(lobby *Lobby) {
 	log.Warn("Triggering end connection on remaining go routines...")
-	lobby.EndConnectionChannel <- true
-	lobby.trainerConnections[0].Close()
-	lobby.trainerConnections[1].Close()
+
+	//Sending 4 trues since whenever a channel reads from it consumes a value
+	for i := 0; i < 4; i++ {
+		lobby.EndConnectionChannel <- true
+	}
+
+	//lobby.trainerConnections[0].Close()
+	//lobby.trainerConnections[1].Close()
 }
 
 func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan bool) {
