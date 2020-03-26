@@ -65,13 +65,13 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 		case msg := <-inChannel:
 			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
 			if err != nil {
-				break
+				return
 			} else {
 				log.Debugf("Wrote %s into the channel", *msg)
 			}
 		case b := <-endConnection:
 			if b {
-				break
+				return
 			}
 		}
 
