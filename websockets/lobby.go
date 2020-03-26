@@ -53,6 +53,7 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 }
 
 func CloseLobby(lobby *Lobby) {
+	log.Warn("Triggering end connection on remaining go routines...")
 	lobby.EndConnectionChannel <- true
 }
 
@@ -67,7 +68,7 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 			if err != nil {
 				return
 			} else {
-				log.Debugf("Wrote %s into the channel", *msg)
+				log.Infof("Wrote %s into the channel", *msg)
 			}
 		case b := <-endConnection:
 			if b {
