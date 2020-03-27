@@ -2,40 +2,38 @@ package trainer
 
 import (
 	"github.com/NOVAPokemon/utils"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"os"
 	"testing"
 )
 
 var trainerMockup = utils.Trainer{
 	Username: "trainer1",
-	Bag:      primitive.NewObjectID(),
-	Pokemons: []utils.Pokemon{},
+	Pokemons: []*utils.Pokemon{},
+	Items:    []*utils.Item{},
 	Level:    0,
 	Coins:    0,
 }
 
 func TestMain(m *testing.M) {
 	_ = removeAll()
-
 	res := m.Run()
-
 	_ = removeAll()
 
 	os.Exit(res)
 }
 
 func TestAddTrainer(t *testing.T) {
-	err, res := AddTrainer(trainerMockup)
+	res, err := AddTrainer(trainerMockup)
 
 	if err != nil {
 		t.Log(err)
 		t.Fail()
 	}
 
-	t.Log(res)
+	t.Log("added: " + res)
+
+	_ = DeleteTrainer(res)
 }
 
 func TestGetAll(t *testing.T) {
@@ -45,53 +43,66 @@ func TestGetAll(t *testing.T) {
 	}
 }
 
-func TestGetByID(t *testing.T) {
+func TestGetByUsername(t *testing.T) {
 
-	err, trainer := GetTrainerByUsername(trainerMockup.Username)
+	_, _ = AddTrainer(trainerMockup)
+	trainer, err := GetTrainerByUsername(trainerMockup.Username)
 
 	if err != nil {
-		t.Log(err)
-		t.Fail()
+		t.Error(err)
+		t.FailNow()
 	}
 
 	t.Log(trainer)
+	_ = DeleteTrainer(trainer.Username)
 
 }
 
 func TestUpdate(t *testing.T) {
+
+	_, _ = AddTrainer(trainerMockup)
+
 	toUpdate := utils.Trainer{
 		Username: trainerMockup.Username,
-		Bag:   primitive.NewObjectID(),
-		Level: 10,
-		Coins: 10,
+		Level:    10,
+		Coins:    10,
 	}
 
 	err, _ := UpdateTrainer(trainerMockup.Username, toUpdate)
 
 	if err != nil {
-		log.Error(err)
+		t.Error(err)
 		t.Fail()
 	}
 
-	err, updatedTrainer := GetTrainerByUsername(trainerMockup.Username)
+	updatedTrainer, err := GetTrainerByUsername(trainerMockup.Username)
+
+	if err != nil {
+		t.Error(err)
+		t.Fail()
+	}
 
 	assert.Equal(t, toUpdate.Level, updatedTrainer.Level)
 	assert.Equal(t, toUpdate.Coins, updatedTrainer.Coins)
+
+	_ = DeleteTrainer(toUpdate.Username)
 }
 
 func TestDelete(t *testing.T) {
+
+	_, _ = AddTrainer(trainerMockup)
 	err := DeleteTrainer(trainerMockup.Username)
 
 	if err != nil {
-		log.Error(err)
-		t.Fail()
+		t.Error(err)
+		t.FailNow()
 	}
 
 	trainers := GetAllTrainers()
 
 	for _, trainer := range trainers {
 		if trainer.Username == trainerMockup.Username {
-			log.Error(trainer.Username)
+			t.Error(trainer.Username)
 			t.Fail()
 		}
 
@@ -100,29 +111,120 @@ func TestDelete(t *testing.T) {
 
 func TestAddPokemonToTrainer(t *testing.T) {
 
-	pokemonId := primitive.NewObjectID()
-
+	pokemon := utils.Pokemon{}
 	_, _ = AddTrainer(trainerMockup)
-	_ = AddPokemonToTrainer(trainerMockup.Username, pokemonId)
-	_, trainer := GetTrainerByUsername(trainerMockup.Username)
+
+	pokemonId, _ := AddPokemonToTrainer(trainerMockup.Username, pokemon)
+	trainer, _ := GetTrainerByUsername(trainerMockup.Username)
 
 	assert.Contains(t, trainer.Pokemons, pokemonId)
+
+	_ = DeleteTrainer(trainerMockup.Username)
 
 }
 
 func TestRemovePokemonFromTrainer(t *testing.T) {
 
-	pokemonId := primitive.NewObjectID()
-
 	// add trainer and pokemon
 	_, _ = AddTrainer(trainerMockup)
-	_ = AddPokemonToTrainer(trainerMockup.Username, pokemonId)
-	_, trainer := GetTrainerByUsername(trainerMockup.Username)
-	assert.Contains(t, trainer.Pokemons, pokemonId)
+	pokemon, _ := AddPokemonToTrainer(trainerMockup.Username, utils.Pokemon{})
+	trainer, _ := GetTrainerByUsername(trainerMockup.Username)
+
+	assert.Contains(t, trainer.Pokemons, pokemon)
 
 	// remove pokemon from trainer
-	_ = RemovePokemonFromTrainer(trainerMockup.Username, pokemonId)
-	_, trainer = GetTrainerByUsername(trainerMockup.Username)
-	assert.NotContains(t, trainer.Pokemons, pokemonId)
+	_ = RemovePokemonFromTrainer(trainerMockup.Username, pokemon.Id)
+	trainer, _ = GetTrainerByUsername(trainerMockup.Username)
+	assert.NotContains(t, trainer.Pokemons, pokemon.Id)
+
+	_ = DeleteTrainer(trainerMockup.Username)
+
+}
+
+func TestAppendAndRemove(t *testing.T) {
+
+	userName, err := AddTrainer(trainerMockup)
+
+	toAppend := utils.Item{
+		Name: "Soup",
+	}
+
+	toAppend2 := utils.Item{
+		Name: "Soup",
+	}
+
+	// add item, verify that it is in trainer
+	item, err := AddItemToTrainer(userName, toAppend)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	trainer, err := GetTrainerByUsername(userName)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	assert.True(t, len(trainer.Items) == 1)
+	assert.Contains(t, trainer.Items, item)
+
+	// add another item, verify that trainer has both items
+	item2, err := AddItemToTrainer(userName, toAppend2)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	trainer, err = GetTrainerByUsername(userName)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	assert.True(t, len(trainer.Items) == 2)
+	assert.Contains(t, trainer.Items, item)
+	assert.Contains(t, trainer.Items, item2)
+
+	// delete one item, verify that trainer has  the remaining Item
+	err = RemoveItemFromTrainer(userName, item.Id)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	trainer, err = GetTrainerByUsername(userName)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	assert.True(t, len(trainer.Items) == 1)
+	assert.NotContains(t, trainer.Items, item)
+	assert.Contains(t, trainer.Items, item2)
+
+	// Remove remaining item, assure there are no items remaining
+	err = RemoveItemFromTrainer(userName, item2.Id)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	trainer, err = GetTrainerByUsername(userName)
+
+	if err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+
+	assert.True(t, len(trainer.Items) == 0)
+	_ = DeleteTrainer(userName)
 
 }

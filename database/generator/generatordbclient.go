@@ -1,4 +1,4 @@
-package items
+package generator
 
 import (
 	"context"
@@ -13,48 +13,47 @@ import (
 
 const defaultMongoDBUrl = "mongodb://localhost:27017"
 const databaseName = "NOVAPokemonDB"
-const itemsCollectionName = "Items"
+const wildPokemonCollectionName = "WildPokemons"
 const catchableItemsCollectionName = "CatchableItems"
 
 type DBCLient struct {
 	client      *mongo.Client
-	collections map[string]*mongo.Collection
+	collections  map[string]*mongo.Collection
 	ctx         *context.Context
 }
 
 var dbClient DBCLient
 
-func GetAllItems() []utils.Item {
+func AddWildPokemon(pokemon utils.Pokemon) (error, primitive.ObjectID) {
 	var ctx = dbClient.ctx
-	var collection = dbClient.collections[itemsCollectionName]
-	var results []utils.Item
-
-	cur, err := collection.Find(*ctx, bson.M{})
+	var collection = dbClient.collections[wildPokemonCollectionName]
+	res, err := collection.InsertOne(*ctx, pokemon)
 
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
+		return nil, [12]byte{}
 	}
 
-	defer cur.Close(*ctx)
-	for cur.Next(*ctx) {
-		var result utils.Item
-		err := cur.Decode(&result)
-		if err != nil {
-			log.Error(err)
-		} else {
-			results = append(results, result)
-		}
-	}
+	log.Infof("Inserted new wild Pokemon %s", res.InsertedID)
 
-	if err := cur.Err(); err != nil {
+	return err, res.InsertedID.(primitive.ObjectID)
+}
+
+func DeleteWildPokemons() error {
+	var ctx = dbClient.ctx
+	var collection = dbClient.collections[wildPokemonCollectionName]
+	filter := bson.M{}
+
+	_, err := collection.DeleteMany(*ctx, filter)
+
+	if err != nil {
 		log.Error(err)
 	}
 
-	return results
+	return err
 }
 
 func GetCatchableItems() []utils.Item {
-
 	var ctx = dbClient.ctx
 	var collection = dbClient.collections[catchableItemsCollectionName]
 	var results []utils.Item
@@ -112,21 +111,6 @@ func AddCatchableItem(item utils.Item) (error, primitive.ObjectID) {
 	return err, res.InsertedID.(primitive.ObjectID)
 }
 
-func AddItems(item utils.Item) (error, primitive.ObjectID) {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collections[itemsCollectionName]
-	res, err := collection.InsertOne(*ctx, item)
-
-	if err != nil {
-		log.Error(err)
-		return err, [12]byte{}
-	}
-
-	log.Infof("Inserted new Item %+v", item)
-
-	return err, res.InsertedID.(primitive.ObjectID)
-}
-
 func init() {
 	url, exists := os.LookupEnv("MONGODB_URL")
 
@@ -147,13 +131,13 @@ func init() {
 		log.Fatal(err)
 	}
 
-	itemsCollection := client.Database(databaseName).Collection(itemsCollectionName)
 	catchableItemsCollection := client.Database(databaseName).Collection(catchableItemsCollectionName)
+	wildPokemons := client.Database(databaseName).Collection(wildPokemonCollectionName)
 
 	collections := map[string]*mongo.Collection{
-		itemsCollectionName:          itemsCollection,
+		wildPokemonCollectionName:          wildPokemons,
 		catchableItemsCollectionName: catchableItemsCollection,
 	}
-
 	dbClient = DBCLient{client: client, ctx: &ctx, collections: collections}
 }
+
