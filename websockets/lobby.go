@@ -10,7 +10,8 @@ import (
 
 // Lobby maintains the connections from both trainers and the status of the battle
 type Lobby struct {
-	Id primitive.ObjectID
+	Id      primitive.ObjectID
+	ErrChan chan error
 
 	Trainers           []*utils.Trainer
 	TrainerInChannels  []*chan *string
@@ -24,7 +25,7 @@ type Lobby struct {
 	Finished bool
 }
 
-func NewLobby(id primitive.ObjectID, ) *Lobby {
+func NewLobby(id primitive.ObjectID, ErrChan chan error) *Lobby {
 	return &Lobby{
 		Id:                   id,
 		trainerConnections:   make([]*websocket.Conn, 0),
