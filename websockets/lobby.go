@@ -10,7 +10,9 @@ import (
 
 // Lobby maintains the connections from both trainers and the status of the battle
 type Lobby struct {
-	Id      primitive.ObjectID
+	Id primitive.ObjectID
+
+	TrainersJoined int
 
 	Trainers           []*utils.Trainer
 	TrainerInChannels  []*chan *string
@@ -27,9 +29,11 @@ type Lobby struct {
 func NewLobby(id primitive.ObjectID) *Lobby {
 	return &Lobby{
 		Id:                   id,
-		trainerConnections:   make([]*websocket.Conn, 0),
-		TrainerInChannels:    make([]*chan *string, 0),
-		TrainerOutChannels:   make([]*chan *string, 0),
+		TrainersJoined:       0,
+		Trainers:             make([]*utils.Trainer, 2),
+		trainerConnections:   make([]*websocket.Conn, 2),
+		TrainerInChannels:    make([]*chan *string, 2),
+		TrainerOutChannels:   make([]*chan *string, 2),
 		EndConnectionChannel: make(chan struct{}),
 		Started:              false,
 		Finished:             false,
@@ -44,19 +48,24 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 	go handleRecv(trainerConn, trainerChanIn, lobby)
 	go handleSend(trainerConn, trainerChanOut, lobby)
 
-	lobby.Trainers = append(lobby.Trainers, &trainer)
-	lobby.TrainerInChannels = append(lobby.TrainerInChannels, &trainerChanIn)
-	lobby.TrainerOutChannels = append(lobby.TrainerOutChannels, &trainerChanOut)
-
-	lobby.trainerConnections = append(lobby.trainerConnections, trainerConn)
+	lobby.Trainers[lobby.TrainersJoined] = &trainer
+	lobby.TrainerInChannels[lobby.TrainersJoined] = &trainerChanIn
+	lobby.TrainerOutChannels[lobby.TrainersJoined] = &trainerChanOut
+	lobby.trainerConnections[lobby.TrainersJoined] = trainerConn
+	lobby.TrainersJoined++
 }
 
 func CloseLobby(lobby *Lobby) {
 	log.Warn("Triggering end connection on remaining go routines...")
 	endConnection(lobby)
 
-	lobby.trainerConnections[0].Close()
-	lobby.trainerConnections[1].Close()
+	if lobby.trainerConnections[0] != nil {
+		lobby.trainerConnections[0].Close()
+	}
+
+	if lobby.trainerConnections[1] != nil {
+		lobby.trainerConnections[1].Close()
+	}
 }
 
 func handleSend(conn *websocket.Conn, inChannel chan *string, lobby *Lobby) {
@@ -68,7 +77,7 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, lobby *Lobby) {
 		case msg := <-inChannel:
 			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
 			if err != nil {
-				endConnection(lobby)
+				CloseLobby(lobby)
 				log.Error(err)
 				return
 			} else {
@@ -93,7 +102,7 @@ func handleRecv(conn *websocket.Conn, outChannel chan *string, lobby *Lobby) {
 			_, message, err := conn.ReadMessage()
 
 			if err != nil {
-				endConnection(lobby)
+				CloseLobby(lobby)
 				log.Error(err)
 				return
 			} else {
