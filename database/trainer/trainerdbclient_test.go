@@ -9,8 +9,8 @@ import (
 
 var trainerMockup = utils.Trainer{
 	Username: "trainer1",
-	Pokemons: []utils.Pokemon{},
-	Items:    []utils.Item{},
+	Pokemons: map[string]utils.Pokemon{},
+	Items:    map[string]utils.Item{},
 	Level:    0,
 	Coins:    0,
 }
@@ -68,7 +68,7 @@ func TestUpdate(t *testing.T) {
 		Coins:    10,
 	}
 
-	err, _ := UpdateTrainer(trainerMockup.Username, toUpdate)
+	_, err := UpdateTrainerStats(trainerMockup.Username, toUpdate)
 
 	if err != nil {
 		t.Error(err)
@@ -114,10 +114,10 @@ func TestAddPokemonToTrainer(t *testing.T) {
 	pokemon := utils.Pokemon{}
 	_, _ = AddTrainer(trainerMockup)
 
-	pokemonId, _ := AddPokemonToTrainer(trainerMockup.Username, pokemon)
+	pokemonNew, _ := AddPokemonToTrainer(trainerMockup.Username, pokemon)
 	trainer, _ := GetTrainerByUsername(trainerMockup.Username)
 
-	assert.Contains(t, trainer.Pokemons, pokemonId)
+	assert.Contains(t, trainer.Pokemons, pokemonNew.Id.Hex())
 
 	_ = DeleteTrainer(trainerMockup.Username)
 
@@ -130,12 +130,12 @@ func TestRemovePokemonFromTrainer(t *testing.T) {
 	pokemon, _ := AddPokemonToTrainer(trainerMockup.Username, utils.Pokemon{})
 	trainer, _ := GetTrainerByUsername(trainerMockup.Username)
 
-	assert.Contains(t, trainer.Pokemons, pokemon)
+	assert.Contains(t, trainer.Pokemons, pokemon.Id.Hex())
 
 	// remove pokemon from trainer
 	_ = RemovePokemonFromTrainer(trainerMockup.Username, pokemon.Id)
 	trainer, _ = GetTrainerByUsername(trainerMockup.Username)
-	assert.NotContains(t, trainer.Pokemons, pokemon.Id)
+	assert.NotContains(t, trainer.Pokemons, pokemon.Id.Hex())
 
 	_ = DeleteTrainer(trainerMockup.Username)
 
@@ -169,7 +169,7 @@ func TestAppendAndRemove(t *testing.T) {
 	}
 
 	assert.True(t, len(trainer.Items) == 1)
-	assert.Contains(t, trainer.Items, item)
+	assert.Contains(t, trainer.Items, item.Id.Hex())
 
 	// add another item, verify that trainer has both items
 	item2, err := AddItemToTrainer(userName, toAppend2)
@@ -187,11 +187,11 @@ func TestAppendAndRemove(t *testing.T) {
 	}
 
 	assert.True(t, len(trainer.Items) == 2)
-	assert.Contains(t, trainer.Items, item)
-	assert.Contains(t, trainer.Items, item2)
+	assert.Contains(t, trainer.Items, item.Id.Hex())
+	assert.Contains(t, trainer.Items, item2.Id.Hex())
 
 	// delete one item, verify that trainer has  the remaining Item
-	err = RemoveItemFromTrainer(userName, item.Id)
+	_, err = RemoveItemFromTrainer(userName, item.Id)
 
 	if err != nil {
 		t.Error(err)
@@ -206,11 +206,11 @@ func TestAppendAndRemove(t *testing.T) {
 	}
 
 	assert.True(t, len(trainer.Items) == 1)
-	assert.NotContains(t, trainer.Items, item)
-	assert.Contains(t, trainer.Items, item2)
+	assert.NotContains(t, trainer.Items, item.Id.Hex())
+	assert.Contains(t, trainer.Items, item2.Id.Hex())
 
 	// Remove remaining item, assure there are no items remaining
-	err = RemoveItemFromTrainer(userName, item2.Id)
+	_, err = RemoveItemFromTrainer(userName, item2.Id)
 
 	if err != nil {
 		t.Error(err)

@@ -210,7 +210,7 @@ func AddItemToTrainer(username string, item utils.Item) (*utils.Item, error) {
 	return &item, err
 }
 
-func AddItemsToTrainer(username string, items []*utils.Item) (*[]*utils.Item, error) {
+func AddItemsToTrainer(username string, items []*utils.Item) ([]*utils.Item, error) {
 	ctx := dbClient.ctx
 	collection := dbClient.collection
 
@@ -236,7 +236,7 @@ func AddItemsToTrainer(username string, items []*utils.Item) (*[]*utils.Item, er
 		}
 	}
 
-	return &items, err
+	return items, err
 }
 
 func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*utils.Item, error) {
@@ -262,7 +262,9 @@ func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*utils.I
 
 	log.Info(trainer)
 
-	return trainer.Items[itemId.Hex()], nil
+	item := trainer.Items[itemId.Hex()]
+
+	return &item, nil
 }
 
 func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*utils.Item, error) {
@@ -298,7 +300,8 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*u
 
 	returnItems := make([]*utils.Item, len(itemIds))
 	for i, item := range itemIds {
-		returnItems[i] = trainer.Items[item.Hex()]
+		item := trainer.Items[item.Hex()]
+		returnItems[i] = &item
 	}
 
 	return returnItems, nil
