@@ -53,7 +53,7 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 
 func CloseLobby(lobby *Lobby) {
 	log.Warn("Triggering end connection on remaining go routines...")
-	close(lobby.EndConnectionChannel)
+	endConnection(lobby)
 
 	lobby.trainerConnections[0].Close()
 	lobby.trainerConnections[1].Close()
