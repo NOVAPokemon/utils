@@ -13,8 +13,8 @@ type User struct {
 type Trainer struct {
 	// game info
 	Username string `json:"username" bson:"username,omitempty"`
-	Pokemons []*Pokemon
-	Items    []*Item
+	Pokemons map[string]*Pokemon
+	Items    map[string]*Item
 
 	Level    int
 	Coins    int
@@ -44,4 +44,9 @@ type Battle struct {
 type Lobby struct {
 	Id       primitive.ObjectID
 	Username string
+}
+
+type UserJSON struct{
+	Username     string `json:"username"`
+	Password string `json:"password"`
 }

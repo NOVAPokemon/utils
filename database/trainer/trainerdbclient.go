@@ -181,7 +181,7 @@ func AddItemToTrainer(username string, item utils.Item) (*utils.Item, error) {
 	item.Id = itemId
 
 	filter := bson.M{"username": username}
-	change := bson.M{"$push": bson.M{"Items": item}}
+	change := bson.M{"$set": bson.M{"items." + itemId.Hex(): item}}
 
 	res, err := collection.UpdateOne(*ctx, filter, change)
 
@@ -199,26 +199,98 @@ func AddItemToTrainer(username string, item utils.Item) (*utils.Item, error) {
 	return &item, err
 }
 
-func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) error {
+func AddItemsToTrainer(username string, items []*utils.Item) (*[]*utils.Item, error) {
+	ctx := dbClient.ctx
+	collection := dbClient.collection
 
+	itemsObjects := make(map[string]*utils.Item, len(items))
+
+	for _, item := range items {
+		itemId := primitive.NewObjectID()
+		item.Id = itemId
+		itemsObjects["items." + item.Id.Hex()] = item
+	}
+
+	filter := bson.M{"username": username}
+	change := bson.M{"$set": itemsObjects}
+
+	_, err := collection.UpdateOne(*ctx, filter, change)
+
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Update failed because no username matched: %s", username))
+	} else {
+		log.Infof("Added items to user %s:", username)
+		for _, item := range items {
+			log.Info(item.Id)
+		}
+	}
+
+	return &items, err
+}
+
+func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*utils.Item, error) {
 	ctx := dbClient.ctx
 	collection := dbClient.collection
 	filter := bson.M{"username": username}
-	change := bson.M{"$pull": bson.M{"Items": bson.M{"_id": itemId}}}
+	change := bson.M{"$unset": bson.M{"items." + itemId.Hex(): nil}}
 
-	res, err := collection.UpdateOne(*ctx, filter, change)
+	oldTrainer := collection.FindOne(*ctx, filter)
+	_, err := collection.UpdateOne(*ctx, filter, change)
 
 	if err != nil {
-		log.Error(err)
-	}
-
-	if res.MatchedCount > 0 {
-		log.Infof("Removed item %s from user: %s", itemId, username)
+		return nil, errors.New(fmt.Sprintf("Update failed because no username matched: %s", username))
 	} else {
-		return errors.New(fmt.Sprintf("Update failed because no username matched: %s", username))
+		log.Infof("Removed item %s from user: %s", itemId, username)
 	}
 
-	return err
+	trainer := &utils.Trainer{}
+	if err := oldTrainer.Decode(trainer); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	log.Info(trainer)
+
+	return trainer.Items[itemId.Hex()], nil
+}
+
+func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*utils.Item, error) {
+	ctx := dbClient.ctx
+	collection := dbClient.collection
+	filter := bson.M{"username": username}
+
+	itemsObjects := make(map[string]*struct{}, len(itemIds))
+
+	for _, id := range itemIds {
+		itemsObjects["items." + id.Hex()] = nil
+	}
+
+	change := bson.M{"$unset": itemsObjects}
+
+	oldTrainer := collection.FindOne(*ctx, filter)
+	_, err := collection.UpdateOne(*ctx, filter, change)
+
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Update failed because no username matched: %s", username))
+	} else {
+		log.Infof("Removed items from user %s:", username)
+		for _, item := range itemIds {
+			log.Info(item)
+		}
+	}
+
+	trainer := &utils.Trainer{}
+	if err := oldTrainer.Decode(trainer); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	returnItems := make([]*utils.Item, len(itemIds))
+	for i, item := range itemIds {
+		returnItems[i] = trainer.Items[item.Hex()]
+	}
+
+	return returnItems, nil
 }
 
 // POKEMON OPERATIONS
@@ -232,7 +304,7 @@ func AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon
 	pokemon.Id = pokemonId
 
 	filter := bson.M{"username": username}
-	change := bson.M{"$push": bson.M{"Pokemons": pokemon}}
+	change := bson.M{"$set": bson.M{"pokemons." + pokemon.Id.Hex(): pokemon}}
 
 	_, err := collection.UpdateOne(*ctx, filter, change)
 
@@ -249,7 +321,7 @@ func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) err
 	collection := dbClient.collection
 
 	filter := bson.M{"username": username}
-	change := bson.M{"$pull": bson.M{"Pokemons": pokemonId}}
+	change := bson.M{"$unset": bson.M{"pokemons." + pokemonId.Hex(): nil}}
 
 	_, err := collection.UpdateOne(*ctx, filter, change)
 
