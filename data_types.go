@@ -13,8 +13,9 @@ type User struct {
 type Trainer struct {
 	// game info
 	Username string `json:"username" bson:"username,omitempty"`
-	Pokemons []*Pokemon
-	Items    []*Item
+
+	Pokemons []Pokemon
+	Items    []Item
 
 	Level    int
 	Coins    int

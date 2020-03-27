@@ -9,8 +9,8 @@ import (
 
 var trainerMockup = utils.Trainer{
 	Username: "trainer1",
-	Pokemons: []*utils.Pokemon{},
-	Items:    []*utils.Item{},
+	Pokemons: []utils.Pokemon{},
+	Items:    []utils.Item{},
 	Level:    0,
 	Coins:    0,
 }

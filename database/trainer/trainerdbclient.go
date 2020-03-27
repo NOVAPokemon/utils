@@ -121,18 +121,29 @@ func GetTrainerByUsername(username string) (*utils.Trainer, error) {
 	return &result, nil
 }
 
-func UpdateTrainer(username string, trainer utils.Trainer) (error, utils.Trainer) {
+func UpdateTrainerStats(username string, trainer utils.Trainer) (*utils.Trainer, error) {
 
 	ctx := dbClient.ctx
 	collection := dbClient.collection
+
+	if trainer.Level < 0 {
+		return nil, errors.New("Invalid level")
+	}
+
+	if trainer.Coins < 0 {
+		return nil, errors.New("Invalid coin ammount")
+	}
+
 	filter := bson.M{"username": username}
+	changes := bson.M{"$set": bson.M{"Level": trainer.Level, "Coins": trainer.Coins}}
+
 	trainer.Username = username
 
-	res, err := collection.ReplaceOne(*ctx, filter, trainer)
+	res, err := collection.UpdateOne(*ctx, filter, changes)
 
 	if err != nil {
 		log.Error(err)
-		return err, utils.Trainer{}
+		return nil, err
 	}
 
 	if res.MatchedCount > 0 {
@@ -140,7 +151,7 @@ func UpdateTrainer(username string, trainer utils.Trainer) (error, utils.Trainer
 	} else {
 		log.Errorf("Update Trainer failed because no trainer matched %+v", username)
 	}
-	return err, trainer
+	return &trainer, err
 }
 
 func DeleteTrainer(username string) error {
