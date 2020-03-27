@@ -10,7 +10,8 @@ import (
 
 // Lobby maintains the connections from both trainers and the status of the battle
 type Lobby struct {
-	Id primitive.ObjectID
+	Id      primitive.ObjectID
+	ErrChan chan error
 
 	Trainers           []*utils.Trainer
 	TrainerInChannels  []*chan *string
@@ -24,7 +25,7 @@ type Lobby struct {
 	Finished bool
 }
 
-func NewLobby(id primitive.ObjectID, ) *Lobby {
+func NewLobby(id primitive.ObjectID, ErrChan chan error) *Lobby {
 	return &Lobby{
 		Id:                   id,
 		trainerConnections:   make([]*websocket.Conn, 0),
@@ -41,8 +42,8 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 	trainerChanIn := make(chan *string)
 	trainerChanOut := make(chan *string)
 
-	go handleRecv(trainerConn, trainerChanIn, lobby.EndConnectionChannel)
-	go handleSend(trainerConn, trainerChanOut, lobby.EndConnectionChannel)
+	go handleRecv(trainerConn, trainerChanIn, lobby)
+	go handleSend(trainerConn, trainerChanOut, lobby)
 
 	lobby.Trainers = append(lobby.Trainers, &trainer)
 	lobby.TrainerInChannels = append(lobby.TrainerInChannels, &trainerChanIn)
@@ -55,11 +56,11 @@ func CloseLobby(lobby *Lobby) {
 	log.Warn("Triggering end connection on remaining go routines...")
 	close(lobby.EndConnectionChannel)
 
-	//lobby.trainerConnections[0].Close()
-	//lobby.trainerConnections[1].Close()
+	lobby.trainerConnections[0].Close()
+	lobby.trainerConnections[1].Close()
 }
 
-func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}) {
+func handleSend(conn *websocket.Conn, inChannel chan *string, lobby *Lobby) {
 	defer close(inChannel)
 	defer log.Warn("Closing send routine")
 
@@ -68,29 +69,32 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 		case msg := <-inChannel:
 			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
 			if err != nil {
+				endConnection(lobby)
+				log.Error(err)
 				return
 			} else {
 				log.Infof("Wrote %s into the channel", *msg)
 			}
-		case <-endConnection:
+		case <-lobby.EndConnectionChannel:
 			return
 		}
 
 	}
 }
 
-func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{}) {
+func handleRecv(conn *websocket.Conn, outChannel chan *string, lobby *Lobby) {
 	defer close(outChannel)
 	defer log.Warn("Closing recv routine")
 
 	for {
 		select {
-		case <-endConnection:
+		case <-lobby.EndConnectionChannel:
 			return
 		default:
 			_, message, err := conn.ReadMessage()
 
 			if err != nil {
+				endConnection(lobby)
 				log.Error(err)
 				return
 			} else {
@@ -99,5 +103,14 @@ func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection cha
 				outChannel <- &msg
 			}
 		}
+	}
+}
+
+func endConnection(lobby *Lobby) {
+	select {
+	case <-lobby.EndConnectionChannel:
+		return
+	default:
+		close(lobby.EndConnectionChannel)
 	}
 }
