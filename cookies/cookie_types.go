@@ -20,13 +20,13 @@ type TrainerStatsToken struct {
 }
 
 type ItemsToken struct {
-	Items     []utils.Item
+	Items     map[string]utils.Item
 	ItemsHash []byte
 	Claims    jwt.StandardClaims
 }
 
 type PokemonsToken struct {
-	Pokemons      map[string][]utils.Pokemon
+	Pokemons      map[string]utils.Pokemon
 	PokemonHashes map[string][]byte
 	Claims        jwt.StandardClaims
 }
