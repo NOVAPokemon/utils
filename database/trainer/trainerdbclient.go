@@ -2,7 +2,6 @@ package trainer
 
 import (
 	"context"
-	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -16,6 +15,14 @@ import (
 const defaultMongoDBUrl = "mongodb://localhost:27017"
 const databaseName = "NOVAPokemonDB"
 const collectionName = "Trainers"
+
+var (
+	ErrTrainerNotFound = errors.New("Trainer Not Found")
+	ErrInvalidLevel    = errors.New("Invalid level")
+	ErrInvalidCoins    = errors.New("Invalid coin ammount")
+	ErrItemNotFound    = errors.New("Item not found")
+	ErrPokemonNotFound = errors.New("Pokemon not found")
+)
 
 type DBCLient struct {
 	client     *mongo.Client
@@ -66,7 +73,6 @@ func AddTrainer(trainer utils.Trainer) (string, error) {
 	_, err := collection.InsertOne(*ctx, trainer)
 
 	if err != nil {
-		log.Println(err)
 		return "", err
 	} else {
 		log.Infof("Added new trainer: %+v", trainer)
@@ -75,7 +81,7 @@ func AddTrainer(trainer utils.Trainer) (string, error) {
 
 }
 
-func GetAllTrainers() []utils.Trainer {
+func GetAllTrainers() (error, []utils.Trainer) {
 
 	var ctx = dbClient.ctx
 	var collection = dbClient.collection
@@ -85,6 +91,7 @@ func GetAllTrainers() []utils.Trainer {
 
 	if err != nil {
 		log.Error(err)
+		return err, []utils.Trainer{}
 	}
 
 	defer cur.Close(*ctx)
@@ -101,7 +108,7 @@ func GetAllTrainers() []utils.Trainer {
 	if err := cur.Err(); err != nil {
 		log.Error(err)
 	}
-	return results
+	return nil, results
 }
 
 func GetTrainerByUsername(username string) (*utils.Trainer, error) {
@@ -127,11 +134,11 @@ func UpdateTrainerStats(username string, trainer utils.Trainer) (*utils.Trainer,
 	collection := dbClient.collection
 
 	if trainer.Level < 0 {
-		return nil, errors.New("Invalid level")
+		return nil, ErrInvalidLevel
 	}
 
 	if trainer.Coins < 0 {
-		return nil, errors.New("Invalid coin ammount")
+		return nil, ErrInvalidCoins
 	}
 
 	filter := bson.M{"username": username}
@@ -149,9 +156,10 @@ func UpdateTrainerStats(username string, trainer utils.Trainer) (*utils.Trainer,
 	if res.MatchedCount > 0 {
 		log.Infof("Updated Trainer %+v", username)
 	} else {
-		log.Errorf("Update Trainer failed because no trainer matched %+v", username)
+		return nil, ErrTrainerNotFound
 	}
-	return &trainer, err
+
+	return &trainer, nil
 }
 
 func DeleteTrainer(username string) error {
@@ -201,12 +209,15 @@ func AddItemToTrainer(username string, item utils.Item) (*utils.Item, error) {
 		return nil, err
 	}
 
-	if res.MatchedCount > 0 {
-		log.Infof("Added item %s to user: %s", item.Name, username)
-	} else {
-		return nil, errors.New(fmt.Sprintf("Update failed because no username matched: %s", username))
+	if res.MatchedCount < 0 {
+		return nil, ErrTrainerNotFound
 	}
 
+	if res.ModifiedCount < 0 {
+		return nil, ErrItemNotFound
+	}
+
+	log.Infof("Added item %s to user: %s", item.Name, username)
 	return &item, err
 }
 
@@ -219,7 +230,7 @@ func AddItemsToTrainer(username string, items []*utils.Item) ([]*utils.Item, err
 	for _, item := range items {
 		itemId := primitive.NewObjectID()
 		item.Id = itemId
-		itemsObjects["items." + item.Id.Hex()] = item
+		itemsObjects["items."+item.Id.Hex()] = item
 	}
 
 	filter := bson.M{"username": username}
@@ -228,12 +239,12 @@ func AddItemsToTrainer(username string, items []*utils.Item) ([]*utils.Item, err
 	_, err := collection.UpdateOne(*ctx, filter, change)
 
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Update failed because no username matched: %s", username))
-	} else {
-		log.Infof("Added items to user %s:", username)
-		for _, item := range items {
-			log.Info(item.Id)
-		}
+		return nil, ErrTrainerNotFound
+	}
+
+	log.Infof("Added items to user %s:", username)
+	for _, item := range items {
+		log.Info(item.Id)
 	}
 
 	return items, err
@@ -246,13 +257,21 @@ func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*utils.I
 	change := bson.M{"$unset": bson.M{"items." + itemId.Hex(): nil}}
 
 	oldTrainer := collection.FindOne(*ctx, filter)
-	_, err := collection.UpdateOne(*ctx, filter, change)
+	res, err := collection.UpdateOne(*ctx, filter, change)
 
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Update failed because no username matched: %s", username))
-	} else {
-		log.Infof("Removed item %s from user: %s", itemId, username)
+		panic(ErrTrainerNotFound)
 	}
+
+	if res.ModifiedCount < 1 {
+		return nil, ErrItemNotFound
+	}
+
+	if res.ModifiedCount < 1 {
+		return nil, ErrItemNotFound
+	}
+
+	log.Infof("Removed item %s from user: %s", itemId, username)
 
 	trainer := &utils.Trainer{}
 	if err := oldTrainer.Decode(trainer); err != nil {
@@ -267,7 +286,7 @@ func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*utils.I
 	return &item, nil
 }
 
-func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*utils.Item, error) {
+func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]utils.Item, error) {
 	ctx := dbClient.ctx
 	collection := dbClient.collection
 	filter := bson.M{"username": username}
@@ -275,7 +294,7 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*u
 	itemsObjects := make(map[string]*struct{}, len(itemIds))
 
 	for _, id := range itemIds {
-		itemsObjects["items." + id.Hex()] = nil
+		itemsObjects["items."+id.Hex()] = nil
 	}
 
 	change := bson.M{"$unset": itemsObjects}
@@ -284,9 +303,9 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*u
 	_, err := collection.UpdateOne(*ctx, filter, change)
 
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Update failed because no username matched: %s", username))
+		return nil, ErrTrainerNotFound
 	} else {
-		log.Infof("Removed items from user %s:", username)
+		log.Infof("Removed items from user %s: ", username)
 		for _, item := range itemIds {
 			log.Info(item)
 		}
@@ -298,10 +317,10 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*u
 		return nil, err
 	}
 
-	returnItems := make([]*utils.Item, len(itemIds))
+	returnItems := make([]utils.Item, len(itemIds))
 	for i, item := range itemIds {
 		item := trainer.Items[item.Hex()]
-		returnItems[i] = &item
+		returnItems[i] = item
 	}
 
 	return returnItems, nil
