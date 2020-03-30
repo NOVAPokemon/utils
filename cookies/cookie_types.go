@@ -7,10 +7,10 @@ import (
 )
 
 // Types
-type UserToken struct {
+type AuthToken struct {
 	Id       primitive.ObjectID
 	Username string
-	jwt.StandardClaims
+	Claims   jwt.StandardClaims
 }
 
 type TrainerStatsToken struct {
