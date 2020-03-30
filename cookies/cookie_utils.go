@@ -108,7 +108,7 @@ func ExtractItemsToken(r *http.Request) (items *ItemsToken, err error) {
 	return items, nil
 }
 
-func SetPokemonsCookie(pokemons map[string][]utils.Pokemon, w http.ResponseWriter, key []byte) {
+func SetPokemonsCookie(pokemons map[string]utils.Pokemon, w http.ResponseWriter, key []byte) {
 
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerStatsToken := &PokemonsToken{
@@ -177,7 +177,7 @@ func SetTrainerStatsCookie(stats utils.TrainerStats, w http.ResponseWriter, key 
 		})
 }
 
-func generatePokemonHashes(pokemons map[string][]utils.Pokemon) map[string][]byte {
+func generatePokemonHashes(pokemons map[string]utils.Pokemon) map[string][]byte {
 	toReturn := make(map[string][]byte, len(pokemons))
 	for pokemonId, pokemon := range pokemons {
 		marshaled, _ := json.Marshal(pokemon)
