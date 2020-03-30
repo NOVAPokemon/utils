@@ -15,7 +15,7 @@ type Trainer struct {
 	Username string `json:"username" bson:"username,omitempty"`
 	Pokemons map[string]Pokemon
 	Items    map[string]Item
-	Stats TrainerStats
+	Stats    TrainerStats
 }
 
 type TrainerStats struct {
@@ -52,4 +52,11 @@ type Lobby struct {
 type UserJSON struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type Notification struct {
+	Id       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Username string
+	Type     string
+	Content  string
 }

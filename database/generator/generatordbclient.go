@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"github.com/NOVAPokemon/utils"
+	databaseUtils "github.com/NOVAPokemon/utils/database"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,17 +17,11 @@ const databaseName = "NOVAPokemonDB"
 const wildPokemonCollectionName = "WildPokemons"
 const catchableItemsCollectionName = "CatchableItems"
 
-type DBCLient struct {
-	client      *mongo.Client
-	collections  map[string]*mongo.Collection
-	ctx         *context.Context
-}
-
-var dbClient DBCLient
+var dbClient databaseUtils.DBClientMultipleCollections
 
 func AddWildPokemon(pokemon utils.Pokemon) (error, primitive.ObjectID) {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collections[wildPokemonCollectionName]
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[wildPokemonCollectionName]
 	res, err := collection.InsertOne(*ctx, pokemon)
 
 	if err != nil {
@@ -40,8 +35,8 @@ func AddWildPokemon(pokemon utils.Pokemon) (error, primitive.ObjectID) {
 }
 
 func DeleteWildPokemons() error {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collections[wildPokemonCollectionName]
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[wildPokemonCollectionName]
 	filter := bson.M{}
 
 	_, err := collection.DeleteMany(*ctx, filter)
@@ -54,8 +49,8 @@ func DeleteWildPokemons() error {
 }
 
 func GetCatchableItems() []utils.Item {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collections[catchableItemsCollectionName]
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[catchableItemsCollectionName]
 	var results []utils.Item
 
 	cur, err := collection.Find(*ctx, bson.M{})
@@ -83,8 +78,8 @@ func GetCatchableItems() []utils.Item {
 }
 
 func DeleteCatchableItems() error {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collections[catchableItemsCollectionName]
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[catchableItemsCollectionName]
 	filter := bson.M{}
 
 	_, err := collection.DeleteMany(*ctx, filter)
@@ -97,8 +92,8 @@ func DeleteCatchableItems() error {
 }
 
 func AddCatchableItem(item utils.Item) (error, primitive.ObjectID) {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collections[catchableItemsCollectionName]
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[catchableItemsCollectionName]
 	res, err := collection.InsertOne(*ctx, item)
 
 	if err != nil {
@@ -138,6 +133,6 @@ func init() {
 		wildPokemonCollectionName:          wildPokemons,
 		catchableItemsCollectionName: catchableItemsCollection,
 	}
-	dbClient = DBCLient{client: client, ctx: &ctx, collections: collections}
+	dbClient = databaseUtils.DBClientMultipleCollections{Client: client, Ctx: &ctx, Collections: collections}
 }
 

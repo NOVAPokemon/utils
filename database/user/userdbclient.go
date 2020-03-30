@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"github.com/NOVAPokemon/utils"
+	databaseUtils"github.com/NOVAPokemon/utils/database"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,18 +15,14 @@ const defaultMongoDBUrl = "mongodb://localhost:27017"
 const databaseName = "NOVAPokemonDB"
 const collectionName = "Users"
 
-type DBClient struct {
-	client     *mongo.Client
-	collection *mongo.Collection
-	ctx        *context.Context
-}
 
-var dbClient DBClient
+
+var dbClient databaseUtils.DBClient
 
 func GetAllUsers() []utils.User {
 
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collection
 	var results []utils.User
 
 	cur, err := collection.Find(*ctx, bson.M{})
@@ -53,8 +50,8 @@ func GetAllUsers() []utils.User {
 
 func AddUser(user *utils.User) (error, string) {
 
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collection
 	_, err := collection.InsertOne(*ctx, *user)
 
 	if err != nil {
@@ -66,8 +63,8 @@ func AddUser(user *utils.User) (error, string) {
 }
 
 func GetUserByUsername(username string) (error, *utils.User) {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collection
 	result := &utils.User{}
 
 	filter := bson.M{"username": username}
@@ -83,8 +80,8 @@ func GetUserByUsername(username string) (error, *utils.User) {
 
 func UpdateUser(username string, user *utils.User) (error, *utils.User) {
 
-	ctx := dbClient.ctx
-	collection := dbClient.collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	filter := bson.M{"username": username}
 	user.Username = username
 
@@ -106,8 +103,8 @@ func UpdateUser(username string, user *utils.User) (error, *utils.User) {
 }
 
 func DeleteUser(username string) error {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collection
 	filter := bson.M{"username": username}
 
 	_, err := collection.DeleteOne(*ctx, filter)
@@ -120,8 +117,8 @@ func DeleteUser(username string) error {
 }
 
 func removeAll() error {
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collection
 	filter := bson.M{}
 
 	_, err := collection.DeleteMany(*ctx, filter)
@@ -165,5 +162,5 @@ func init() {
 
 	collection.Indexes().CreateOne(ctx, index)
 
-	dbClient = DBClient{client: client, ctx: &ctx, collection: collection}
+	dbClient = databaseUtils.DBClient{Client: client, Ctx: &ctx, Collection: collection}
 }

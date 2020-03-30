@@ -3,6 +3,7 @@ package trainer
 import (
 	"context"
 	"github.com/NOVAPokemon/utils"
+	databaseUtils "github.com/NOVAPokemon/utils/database"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,13 +25,7 @@ var (
 	ErrPokemonNotFound = errors.New("Pokemon not found")
 )
 
-type DBCLient struct {
-	client     *mongo.Client
-	collection *mongo.Collection
-	ctx        *context.Context
-}
-
-var dbClient DBCLient
+var dbClient databaseUtils.DBClient
 
 func init() {
 
@@ -63,13 +58,13 @@ func init() {
 	}
 
 	_, _ = collection.Indexes().CreateOne(ctx, index)
-	dbClient = DBCLient{client: client, ctx: &ctx, collection: collection}
+	dbClient = databaseUtils.DBClient{Client: client, Ctx: &ctx, Collection: collection}
 }
 
 func AddTrainer(trainer utils.Trainer) (string, error) {
 
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collection
 	_, err := collection.InsertOne(*ctx, trainer)
 
 	if err != nil {
@@ -83,8 +78,8 @@ func AddTrainer(trainer utils.Trainer) (string, error) {
 
 func GetAllTrainers() (error, []utils.Trainer) {
 
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collection
 	var results = make([]utils.Trainer, 0)
 
 	cur, err := collection.Find(*ctx, bson.M{})
@@ -113,8 +108,8 @@ func GetAllTrainers() (error, []utils.Trainer) {
 
 func GetTrainerByUsername(username string) (*utils.Trainer, error) {
 
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collection
 	var result utils.Trainer
 
 	filter := bson.M{"username": username}
@@ -130,19 +125,19 @@ func GetTrainerByUsername(username string) (*utils.Trainer, error) {
 
 func UpdateTrainerStats(username string, trainer utils.Trainer) (*utils.Trainer, error) {
 
-	ctx := dbClient.ctx
-	collection := dbClient.collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 
-	if trainer.Level < 0 {
+	if trainer.Stats.Level < 0 {
 		return nil, ErrInvalidLevel
 	}
 
-	if trainer.Coins < 0 {
+	if trainer.Stats.Coins < 0 {
 		return nil, ErrInvalidCoins
 	}
 
 	filter := bson.M{"username": username}
-	changes := bson.M{"$set": bson.M{"Level": trainer.Level, "Coins": trainer.Coins}}
+	changes := bson.M{"$set": bson.M{"Level": trainer.Stats.Level, "Coins": trainer.Stats.Coins}}
 
 	trainer.Username = username
 
@@ -164,8 +159,8 @@ func UpdateTrainerStats(username string, trainer utils.Trainer) (*utils.Trainer,
 
 func DeleteTrainer(username string) error {
 
-	var ctx = dbClient.ctx
-	var collection = dbClient.collection
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collection
 	filter := bson.M{"username": username}
 
 	_, err := collection.DeleteOne(*ctx, filter)
@@ -178,8 +173,8 @@ func DeleteTrainer(username string) error {
 }
 
 func removeAll() error {
-	ctx := dbClient.ctx
-	collection := dbClient.collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	_, err := collection.DeleteMany(*ctx, bson.M{})
 
 	if err != nil {
@@ -193,8 +188,8 @@ func removeAll() error {
 
 func AddItemToTrainer(username string, item utils.Item) (*utils.Item, error) {
 
-	ctx := dbClient.ctx
-	collection := dbClient.collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 
 	itemId := primitive.NewObjectID()
 	item.Id = itemId
@@ -222,8 +217,8 @@ func AddItemToTrainer(username string, item utils.Item) (*utils.Item, error) {
 }
 
 func AddItemsToTrainer(username string, items []*utils.Item) ([]*utils.Item, error) {
-	ctx := dbClient.ctx
-	collection := dbClient.collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 
 	itemsObjects := make(map[string]*utils.Item, len(items))
 
@@ -251,8 +246,8 @@ func AddItemsToTrainer(username string, items []*utils.Item) ([]*utils.Item, err
 }
 
 func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*utils.Item, error) {
-	ctx := dbClient.ctx
-	collection := dbClient.collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	filter := bson.M{"username": username}
 	change := bson.M{"$unset": bson.M{"items." + itemId.Hex(): nil}}
 
@@ -287,8 +282,8 @@ func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*utils.I
 }
 
 func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]utils.Item, error) {
-	ctx := dbClient.ctx
-	collection := dbClient.collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	filter := bson.M{"username": username}
 
 	itemsObjects := make(map[string]*struct{}, len(itemIds))
@@ -330,8 +325,8 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]ut
 
 func AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon, error) {
 
-	ctx := dbClient.ctx
-	collection := dbClient.collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 
 	pokemonId := primitive.NewObjectID()
 	pokemon.Id = pokemonId
@@ -350,8 +345,8 @@ func AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon
 
 func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) error {
 
-	ctx := dbClient.ctx
-	collection := dbClient.collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 
 	filter := bson.M{"username": username}
 	change := bson.M{"$unset": bson.M{"pokemons." + pokemonId.Hex(): nil}}
