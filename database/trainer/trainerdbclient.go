@@ -107,7 +107,6 @@ func GetAllTrainers() ([]utils.Trainer, error) {
 }
 
 func GetTrainerByUsername(username string) (*utils.Trainer, error) {
-
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
 	var result utils.Trainer
