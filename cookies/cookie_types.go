@@ -20,7 +20,7 @@ type TrainerStatsToken struct {
 }
 
 type ItemsToken struct {
-	Items     []utils.Item
+	Items     map[string]utils.Item
 	ItemsHash []byte
 	Claims    jwt.StandardClaims
 }

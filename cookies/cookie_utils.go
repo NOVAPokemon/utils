@@ -55,6 +55,11 @@ func ExtractAndVerifyAuthToken(w *http.ResponseWriter, r *http.Request, caller s
 func ExtractTrainerStatsToken(r *http.Request) (trainerStats *TrainerStatsToken, err error) {
 
 	c, err := r.Cookie(statsTokenCookieName)
+
+	if err != nil {
+		return nil, err
+	}
+
 	tknStr := c.Value
 	trainerStats = &TrainerStatsToken{}
 	err = json.Unmarshal([]byte(tknStr), trainerStats)
@@ -69,6 +74,10 @@ func ExtractTrainerStatsToken(r *http.Request) (trainerStats *TrainerStatsToken,
 func ExtractPokemonsToken(r *http.Request) (pokemons *PokemonsToken, err error) {
 	c, err := r.Cookie(pokemonsTokenCookieName)
 
+	if err != nil {
+		return nil, err
+	}
+
 	tknStr := c.Value
 
 	pokemons = &PokemonsToken{}
@@ -81,19 +90,22 @@ func ExtractPokemonsToken(r *http.Request) (pokemons *PokemonsToken, err error) 
 	return pokemons, nil
 }
 
-func ExtractItemsToken(r *http.Request) (pokemons *PokemonsToken, err error) {
-	c, err := r.Cookie(pokemonsTokenCookieName)
-
-	tknStr := c.Value
-
-	pokemons = &PokemonsToken{}
-	err = json.Unmarshal([]byte(tknStr), pokemons)
+func ExtractItemsToken(r *http.Request) (items *ItemsToken, err error) {
+	c, err := r.Cookie(itemsTokenCookieName)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return pokemons, nil
+	tknStr := c.Value
+	items = &ItemsToken{}
+	err = json.Unmarshal([]byte(tknStr), items)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }
 
 func SetPokemonsCookie(pokemons map[string][]utils.Pokemon, w http.ResponseWriter, key []byte) {
@@ -119,7 +131,7 @@ func SetPokemonsCookie(pokemons map[string][]utils.Pokemon, w http.ResponseWrite
 		})
 }
 
-func SetItemsCookie(items []utils.Item, w http.ResponseWriter, key []byte) {
+func SetItemsCookie(items map[string]utils.Item, w http.ResponseWriter, key []byte) {
 
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerItemsToken := &ItemsToken{
@@ -181,7 +193,7 @@ func generateTrainerStatsHash(stats utils.TrainerStats) []byte {
 	return hash[:]
 }
 
-func generateItemsHash(items []utils.Item) []byte {
+func generateItemsHash(items map[string]utils.Item) []byte {
 	marshaled, _ := json.Marshal(items)
 	hash := md5.Sum(marshaled)
 	return hash[:]
