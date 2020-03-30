@@ -76,7 +76,7 @@ func AddTrainer(trainer utils.Trainer) (string, error) {
 
 }
 
-func GetAllTrainers() (error, []utils.Trainer) {
+func GetAllTrainers() ([]utils.Trainer, error) {
 
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
@@ -86,7 +86,7 @@ func GetAllTrainers() (error, []utils.Trainer) {
 
 	if err != nil {
 		log.Error(err)
-		return err, []utils.Trainer{}
+		return []utils.Trainer{}, err
 	}
 
 	defer cur.Close(*ctx)
@@ -103,7 +103,7 @@ func GetAllTrainers() (error, []utils.Trainer) {
 	if err := cur.Err(); err != nil {
 		log.Error(err)
 	}
-	return nil, results
+	return results, nil
 }
 
 func GetTrainerByUsername(username string) (*utils.Trainer, error) {
@@ -137,7 +137,7 @@ func UpdateTrainerStats(username string, trainer utils.Trainer) (*utils.Trainer,
 	}
 
 	filter := bson.M{"username": username}
-	changes := bson.M{"$set": bson.M{"Level": trainer.Stats.Level, "Coins": trainer.Stats.Coins}}
+	changes := bson.M{"$set": bson.M{"stats.level": trainer.Stats.Level, "stats.coins": trainer.Stats.Coins}}
 
 	trainer.Username = username
 
@@ -281,7 +281,7 @@ func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*utils.I
 	return &item, nil
 }
 
-func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]utils.Item, error) {
+func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*utils.Item, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 	filter := bson.M{"username": username}
@@ -312,10 +312,10 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]ut
 		return nil, err
 	}
 
-	returnItems := make([]utils.Item, len(itemIds))
+	returnItems := make([]*utils.Item, len(itemIds))
 	for i, item := range itemIds {
 		item := trainer.Items[item.Hex()]
-		returnItems[i] = item
+		returnItems[i] = &item
 	}
 
 	return returnItems, nil

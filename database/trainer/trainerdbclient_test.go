@@ -2,6 +2,7 @@ package trainer
 
 import (
 	"github.com/NOVAPokemon/utils"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -11,8 +12,10 @@ var trainerMockup = utils.Trainer{
 	Username: "trainer1",
 	Pokemons: map[string]utils.Pokemon{},
 	Items:    map[string]utils.Item{},
-	Level:    0,
-	Coins:    0,
+	Stats: utils.TrainerStats{
+		Level: 0,
+		Coins: 0,
+	},
 }
 
 func TestMain(m *testing.M) {
@@ -37,7 +40,12 @@ func TestAddTrainer(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	res := GetAllTrainers()
+	res, err := GetAllTrainers()
+	if err != nil {
+		log.Error(err)
+		t.Fail()
+	}
+
 	for i, item := range res {
 		t.Log(i, item)
 	}
@@ -64,8 +72,10 @@ func TestUpdate(t *testing.T) {
 
 	toUpdate := utils.Trainer{
 		Username: trainerMockup.Username,
-		Level:    10,
-		Coins:    10,
+		Stats: utils.TrainerStats{
+			Level: 10,
+			Coins: 10,
+		},
 	}
 
 	_, err := UpdateTrainerStats(trainerMockup.Username, toUpdate)
@@ -82,8 +92,8 @@ func TestUpdate(t *testing.T) {
 		t.Fail()
 	}
 
-	assert.Equal(t, toUpdate.Level, updatedTrainer.Level)
-	assert.Equal(t, toUpdate.Coins, updatedTrainer.Coins)
+	assert.Equal(t, toUpdate.Stats.Level, updatedTrainer.Stats.Level)
+	assert.Equal(t, toUpdate.Stats.Coins, updatedTrainer.Stats.Coins)
 
 	_ = DeleteTrainer(toUpdate.Username)
 }
@@ -98,7 +108,12 @@ func TestDelete(t *testing.T) {
 		t.FailNow()
 	}
 
-	trainers := GetAllTrainers()
+	trainers, err := GetAllTrainers()
+
+	if err != nil {
+		log.Error(err)
+		t.Fail()
+	}
 
 	for _, trainer := range trainers {
 		if trainer.Username == trainerMockup.Username {
