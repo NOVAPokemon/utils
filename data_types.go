@@ -56,7 +56,9 @@ type UserJSON struct {
 
 type Notification struct {
 	Id       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Username string
+	Username string             `json:"username" bson:"username,omitempty"`
 	Type     string
 	Content  string
 }
+
+type NotificationHandler = func(notification Notification) error
