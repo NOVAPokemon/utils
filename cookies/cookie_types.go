@@ -8,9 +8,9 @@ import (
 
 // Types
 type AuthToken struct {
-	Id       primitive.ObjectID
-	Username string
-	Claims   jwt.StandardClaims
+	Id             primitive.ObjectID
+	Username       string
+	jwt.StandardClaims
 }
 
 type TrainerStatsToken struct {
