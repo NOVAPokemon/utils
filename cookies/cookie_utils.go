@@ -25,7 +25,7 @@ var (
 	authJWTKey = []byte("authJWTKey") // TODO change
 )
 
-func GenerateAuthToken(username, caller string, w *http.ResponseWriter) error {
+func SetAuthToken(username, caller string, w *http.ResponseWriter) error {
 	expirationTime := time.Now().Add(JWTDuration)
 	claims := &AuthToken{
 		Username:       username,
