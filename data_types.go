@@ -61,4 +61,9 @@ type Notification struct {
 	Content  string
 }
 
+type StoreItem struct {
+	Name  string
+	Price int
+}
+
 type NotificationHandler = func(notification Notification) error

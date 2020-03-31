@@ -1,5 +1,6 @@
 package utils
 
+
 const (
 	Host = "localhost"
 
@@ -9,4 +10,5 @@ const (
 	NotificationsPort = 8004
 	TradesPort = 8005
 	TrainersPort = 8006
+	StorePort = 8007
 )

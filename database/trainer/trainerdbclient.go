@@ -122,24 +122,21 @@ func GetTrainerByUsername(username string) (*utils.Trainer, error) {
 	return &result, nil
 }
 
-func UpdateTrainerStats(username string, trainer utils.Trainer) (*utils.Trainer, error) {
+func UpdateTrainerStats(username string, stats utils.TrainerStats) (*utils.TrainerStats, error) {
 
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
-	if trainer.Stats.Level < 0 {
+	if stats.Level < 0 {
 		return nil, ErrInvalidLevel
 	}
 
-	if trainer.Stats.Coins < 0 {
+	if stats.Coins < 0 {
 		return nil, ErrInvalidCoins
 	}
 
 	filter := bson.M{"username": username}
-	changes := bson.M{"$set": bson.M{"stats.level": trainer.Stats.Level, "stats.coins": trainer.Stats.Coins}}
-
-	trainer.Username = username
-
+	changes := bson.M{"$set": bson.M{"stats.level": stats.Level, "stats.coins": stats.Coins}}
 	res, err := collection.UpdateOne(*ctx, filter, changes)
 
 	if err != nil {
@@ -153,7 +150,7 @@ func UpdateTrainerStats(username string, trainer utils.Trainer) (*utils.Trainer,
 		return nil, ErrTrainerNotFound
 	}
 
-	return &trainer, nil
+	return &stats, nil
 }
 
 func DeleteTrainer(username string) error {
