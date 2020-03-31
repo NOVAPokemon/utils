@@ -25,6 +25,30 @@ var (
 	authJWTKey = []byte("authJWTKey") // TODO change
 )
 
+func GenerateAuthToken(username, caller string, w *http.ResponseWriter) error {
+	expirationTime := time.Now().Add(JWTDuration)
+	claims := &AuthToken{
+		Username:       username,
+		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(authJWTKey)
+
+	if err != nil {
+		utils.HandleJWTSigningError(w, caller, err)
+		return err
+	}
+
+	http.SetCookie(*w,
+		&http.Cookie{
+			Name:    authTokenCookieName,
+			Value:   tokenString,
+			Expires: time.Now().Add(JWTDuration),
+		})
+
+	return nil
+}
+
 func ExtractAndVerifyAuthToken(w *http.ResponseWriter, r *http.Request, caller string) (authToken *AuthToken, err error) {
 	c, err := r.Cookie(authTokenCookieName)
 
@@ -35,7 +59,7 @@ func ExtractAndVerifyAuthToken(w *http.ResponseWriter, r *http.Request, caller s
 
 	tknStr := c.Value
 	authToken = &AuthToken{}
-	tkn, err := jwt.ParseWithClaims(tknStr, authToken.Claims, func(token *jwt.Token) (interface{}, error) {
+	tkn, err := jwt.ParseWithClaims(tknStr, authToken.StandardClaims, func(token *jwt.Token) (interface{}, error) {
 		return authJWTKey, nil
 	})
 
@@ -44,7 +68,7 @@ func ExtractAndVerifyAuthToken(w *http.ResponseWriter, r *http.Request, caller s
 		return nil, err
 	}
 
-	if !tkn.Valid && time.Unix(authToken.Claims.ExpiresAt, 0).Unix() < time.Now().Unix() {
+	if !tkn.Valid || time.Unix(authToken.StandardClaims.ExpiresAt, 0).Unix() < time.Now().Unix() {
 		(*w).WriteHeader(http.StatusUnauthorized)
 		return nil, err
 	}
