@@ -16,17 +16,17 @@ type AuthToken struct {
 type TrainerStatsToken struct {
 	TrainerStats utils.TrainerStats
 	TrainerHash  []byte
-	Claims       jwt.StandardClaims
+	jwt.StandardClaims
 }
 
 type ItemsToken struct {
 	Items     map[string]utils.Item
 	ItemsHash []byte
-	Claims    jwt.StandardClaims
+	jwt.StandardClaims
 }
 
 type PokemonsToken struct {
 	Pokemons      map[string]utils.Pokemon
 	PokemonHashes map[string][]byte
-	Claims        jwt.StandardClaims
+	jwt.StandardClaims
 }

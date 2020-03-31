@@ -1,5 +1,9 @@
 package trades
 
+import (
+	"github.com/NOVAPokemon/utils"
+)
+
 // Message Types
 const (
 	TRADE  = "TRADE"
@@ -20,7 +24,7 @@ type TradeStatus struct {
 }
 
 type Players struct {
-	Items    []string
+	Items    []*utils.Item
 	Accepted bool
 }
 
@@ -28,3 +32,12 @@ type TradeMessage struct {
 	MsgType string
 	MsgArgs []string
 }
+
+type ItemsMap = map[string]utils.Item
+
+type UpdateMessage struct {
+	message *TradeMessage
+	sendTo  int
+}
+
+const Everyone = -1

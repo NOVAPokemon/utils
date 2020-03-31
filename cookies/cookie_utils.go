@@ -15,42 +15,18 @@ var ErrInvalidToken = errors.New("Invalid Token")
 const (
 	JWTDuration = 30 * time.Minute
 
-	authTokenCookieName     = "auth_token"
-	statsTokenCookieName    = "stats_token"
-	pokemonsTokenCookieName = "pokemons_token"
-	itemsTokenCookieName    = "items_token"
+	AuthTokenCookieName     = "auth_token"
+	StatsTokenCookieName    = "stats_token"
+	PokemonsTokenCookieName = "pokemons_token"
+	ItemsTokenCookieName    = "items_token"
 )
 
 var (
 	authJWTKey = []byte("authJWTKey") // TODO change
 )
 
-func SetAuthToken(username, caller string, w *http.ResponseWriter) error {
-	expirationTime := time.Now().Add(JWTDuration)
-	claims := &AuthToken{
-		Username:       username,
-		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(authJWTKey)
-
-	if err != nil {
-		utils.HandleJWTSigningError(w, caller, err)
-		return err
-	}
-
-	http.SetCookie(*w,
-		&http.Cookie{
-			Name:    authTokenCookieName,
-			Value:   tokenString,
-			Expires: time.Now().Add(JWTDuration),
-		})
-
-	return nil
-}
-
 func ExtractAndVerifyAuthToken(w *http.ResponseWriter, r *http.Request, caller string) (authToken *AuthToken, err error) {
-	c, err := r.Cookie(authTokenCookieName)
+	c, err := r.Cookie(AuthTokenCookieName)
 
 	if err != nil {
 		utils.HandleCookieError(w, caller, err)
@@ -59,7 +35,7 @@ func ExtractAndVerifyAuthToken(w *http.ResponseWriter, r *http.Request, caller s
 
 	tknStr := c.Value
 	authToken = &AuthToken{}
-	tkn, err := jwt.ParseWithClaims(tknStr, authToken.StandardClaims, func(token *jwt.Token) (interface{}, error) {
+	tkn, err := jwt.ParseWithClaims(tknStr, authToken, func(token *jwt.Token) (interface{}, error) {
 		return authJWTKey, nil
 	})
 
@@ -78,7 +54,7 @@ func ExtractAndVerifyAuthToken(w *http.ResponseWriter, r *http.Request, caller s
 
 func ExtractTrainerStatsToken(r *http.Request) (trainerStats *TrainerStatsToken, err error) {
 
-	c, err := r.Cookie(statsTokenCookieName)
+	c, err := r.Cookie(StatsTokenCookieName)
 
 	if err != nil {
 		return nil, err
@@ -96,7 +72,7 @@ func ExtractTrainerStatsToken(r *http.Request) (trainerStats *TrainerStatsToken,
 }
 
 func ExtractPokemonsToken(r *http.Request) (pokemons *PokemonsToken, err error) {
-	c, err := r.Cookie(pokemonsTokenCookieName)
+	c, err := r.Cookie(PokemonsTokenCookieName)
 
 	if err != nil {
 		return nil, err
@@ -114,34 +90,61 @@ func ExtractPokemonsToken(r *http.Request) (pokemons *PokemonsToken, err error) 
 	return pokemons, nil
 }
 
-func ExtractItemsToken(r *http.Request) (items *ItemsToken, err error) {
-	c, err := r.Cookie(itemsTokenCookieName)
+func ExtractItemsToken(r *http.Request) (itemsTkn *ItemsToken, err error) {
+	c, err := r.Cookie(ItemsTokenCookieName)
 
 	if err != nil {
 		return nil, err
 	}
 
 	tknStr := c.Value
-	items = &ItemsToken{}
-	err = json.Unmarshal([]byte(tknStr), items)
+	itemsTkn = &ItemsToken{}
+	_, err = jwt.ParseWithClaims(tknStr, itemsTkn, func(token *jwt.Token) (interface{}, error) {
+		return authJWTKey, nil
+	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return items, nil
+	return itemsTkn, nil
 }
 
-func SetPokemonsCookie(pokemons map[string]utils.Pokemon, w http.ResponseWriter, key []byte) {
+func SetAuthToken(username, caller string, w *http.ResponseWriter) error {
+	expirationTime := time.Now().Add(JWTDuration)
+	claims := &AuthToken{
+		Username:       username,
+		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(authJWTKey)
 
+	if err != nil {
+		utils.HandleJWTSigningError(w, caller, err)
+		return err
+	}
+
+	http.SetCookie(*w,
+		&http.Cookie{
+			Name:    AuthTokenCookieName,
+			Value:   tokenString,
+			Path:    "/",
+			Domain:  utils.Host,
+			Expires: time.Now().Add(JWTDuration),
+		})
+
+	return nil
+}
+
+func SetPokemonsCookie(pokemons map[string]utils.Pokemon, w http.ResponseWriter) {
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerStatsToken := &PokemonsToken{
-		Pokemons:      pokemons,
-		PokemonHashes: generatePokemonHashes(pokemons),
-		Claims:        jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
+		Pokemons:       pokemons,
+		PokemonHashes:  generatePokemonHashes(pokemons),
+		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, trainerStatsToken.Claims)
-	tokenString, err := token.SignedString(key)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, trainerStatsToken)
+	tokenString, err := token.SignedString(authJWTKey)
 
 	if err != nil {
 		panic(err)
@@ -149,22 +152,23 @@ func SetPokemonsCookie(pokemons map[string]utils.Pokemon, w http.ResponseWriter,
 
 	http.SetCookie(w,
 		&http.Cookie{
-			Name:    itemsTokenCookieName,
+			Name:    PokemonsTokenCookieName,
 			Value:   tokenString,
+			Path:    "/",
+			Domain:  utils.Host,
 			Expires: time.Now().Add(JWTDuration),
 		})
 }
 
-func SetItemsCookie(items map[string]utils.Item, w http.ResponseWriter, key []byte) {
-
+func SetItemsCookie(items map[string]utils.Item, w http.ResponseWriter) {
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerItemsToken := &ItemsToken{
-		Items:     items,
-		ItemsHash: generateItemsHash(items),
-		Claims:    jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
+		Items:          items,
+		ItemsHash:      generateItemsHash(items),
+		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, trainerItemsToken.Claims)
-	tokenString, err := token.SignedString(key)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, trainerItemsToken)
+	tokenString, err := token.SignedString(authJWTKey)
 
 	if err != nil {
 		panic(err)
@@ -172,22 +176,23 @@ func SetItemsCookie(items map[string]utils.Item, w http.ResponseWriter, key []by
 
 	http.SetCookie(w,
 		&http.Cookie{
-			Name:    itemsTokenCookieName,
+			Name:    ItemsTokenCookieName,
 			Value:   tokenString,
+			Path:    "/",
+			Domain:  utils.Host,
 			Expires: time.Now().Add(JWTDuration),
 		})
 }
 
-func SetTrainerStatsCookie(stats utils.TrainerStats, w http.ResponseWriter, key []byte) {
-
+func SetTrainerStatsCookie(stats utils.TrainerStats, w http.ResponseWriter) {
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerStatsToken := &TrainerStatsToken{
-		TrainerStats: stats,
-		TrainerHash:  generateTrainerStatsHash(stats),
-		Claims:       jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
+		TrainerStats:   stats,
+		TrainerHash:    generateTrainerStatsHash(stats),
+		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, trainerStatsToken.Claims)
-	tokenString, err := token.SignedString(key)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, trainerStatsToken)
+	tokenString, err := token.SignedString(authJWTKey)
 
 	if err != nil {
 		panic(err)
@@ -195,8 +200,10 @@ func SetTrainerStatsCookie(stats utils.TrainerStats, w http.ResponseWriter, key 
 
 	http.SetCookie(w,
 		&http.Cookie{
-			Name:    statsTokenCookieName,
+			Name:    StatsTokenCookieName,
 			Value:   tokenString,
+			Path:    "/",
+			Domain:  utils.Host,
 			Expires: time.Now().Add(JWTDuration),
 		})
 }

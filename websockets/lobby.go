@@ -1,7 +1,6 @@
 package websockets
 
 import (
-	"github.com/NOVAPokemon/utils"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,13 +11,12 @@ import (
 type Lobby struct {
 	Id primitive.ObjectID
 
-	TrainersJoined int
+	TrainersJoined     int
+	TrainerUsernames   [2]string
+	TrainerInChannels  [2]*chan *string
+	TrainerOutChannels [2]*chan *string
 
-	Trainers           []*utils.Trainer
-	TrainerInChannels  []*chan *string
-	TrainerOutChannels []*chan *string
-
-	trainerConnections []*websocket.Conn
+	trainerConnections [2]*websocket.Conn
 
 	EndConnectionChannel chan struct{}
 
@@ -30,17 +28,17 @@ func NewLobby(id primitive.ObjectID) *Lobby {
 	return &Lobby{
 		Id:                   id,
 		TrainersJoined:       0,
-		Trainers:             make([]*utils.Trainer, 2),
-		trainerConnections:   make([]*websocket.Conn, 2),
-		TrainerInChannels:    make([]*chan *string, 2),
-		TrainerOutChannels:   make([]*chan *string, 2),
+		TrainerUsernames:     [2]string{},
+		trainerConnections:   [2]*websocket.Conn{},
+		TrainerInChannels:    [2]*chan *string{},
+		TrainerOutChannels:   [2]*chan *string{},
 		EndConnectionChannel: make(chan struct{}),
 		Started:              false,
 		Finished:             false,
 	}
 }
 
-func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn) {
+func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) {
 
 	trainerChanIn := make(chan *string)
 	trainerChanOut := make(chan *string)
@@ -48,7 +46,7 @@ func AddTrainer(lobby *Lobby, trainer utils.Trainer, trainerConn *websocket.Conn
 	go handleRecv(trainerConn, trainerChanIn, lobby)
 	go handleSend(trainerConn, trainerChanOut, lobby)
 
-	lobby.Trainers[lobby.TrainersJoined] = &trainer
+	lobby.TrainerUsernames[lobby.TrainersJoined] = username
 	lobby.TrainerInChannels[lobby.TrainersJoined] = &trainerChanIn
 	lobby.TrainerOutChannels[lobby.TrainersJoined] = &trainerChanOut
 	lobby.trainerConnections[lobby.TrainersJoined] = trainerConn
