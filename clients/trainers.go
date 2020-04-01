@@ -17,12 +17,27 @@ type TrainersClient struct {
 
 // TRAINER
 
-func (c *TrainersClient) Init(addr string, jar *cookiejar.Jar) {
-	c.TrainersAddr = addr
-	c.Jar = jar
-	c.httpClient = &http.Client{
-		Jar: jar,
+func NewTrainersClient(addr string, jar *cookiejar.Jar) *TrainersClient {
+	return &TrainersClient{
+		TrainersAddr: addr,
+		Jar:          jar,
+		httpClient: &http.Client{
+			Jar: jar,
+		},
 	}
+}
+
+func (c *TrainersClient) AddTrainer(trainer utils.Trainer) (*utils.Trainer, error) {
+	req, err := BuildRequest("POST", c.TrainersAddr, api.AddTrainerPath, trainer)
+	if err != nil {
+		return nil, err
+	}
+
+	var user utils.Trainer
+
+	err = DoRequest(c.httpClient, req, &user)
+
+	return &user, err
 }
 
 func (c *TrainersClient) ListTrainers() (*[]utils.Trainer, error) {

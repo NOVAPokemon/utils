@@ -16,7 +16,17 @@ import (
 type NotificationClient struct {
 	NotificationsAddr    string
 	Jar                  *cookiejar.Jar
+	client               *http.Client
 	notificationHandlers map[string]utils.NotificationHandler
+}
+
+func NewNotificationClient(addr string, jar *cookiejar.Jar) *NotificationClient {
+	return &NotificationClient{
+		NotificationsAddr:    addr,
+		Jar:                  jar,
+		client:               &http.Client{},
+		notificationHandlers: make(map[string]utils.NotificationHandler, 5),
+	}
 }
 
 func (client *NotificationClient) ListenToNotifications() {
@@ -86,4 +96,13 @@ func (client *NotificationClient) readNotifications(conn *websocket.Conn) {
 
 		log.Debugf("Received %s from the websocket", notification.Content)
 	}
+}
+
+func (c *NotificationClient) AddNotification(notification utils.Notification) error {
+	req, err := BuildRequest("POST", c.NotificationsAddr, api.NotificationPath, notification)
+	if err != nil {
+		return err
+	}
+	err = DoRequest(c.client, req, nil)
+	return err
 }
