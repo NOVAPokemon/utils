@@ -2,6 +2,7 @@ package trades
 
 import (
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/websockets"
 )
 
 // Message Types
@@ -28,16 +29,11 @@ type Players struct {
 	Accepted bool
 }
 
-type TradeMessage struct {
-	MsgType string
-	MsgArgs []string
+type UpdateMessage struct {
+	message *websockets.Message
+	sendTo  int
 }
 
 type ItemsMap = map[string]utils.Item
-
-type UpdateMessage struct {
-	message *TradeMessage
-	sendTo  int
-}
 
 const Everyone = -1

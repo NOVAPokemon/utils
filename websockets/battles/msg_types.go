@@ -1,5 +1,6 @@
 package battles
 
+// Battle message types
 // Message Types
 const (
 	ATTACK   = "ATTACK"
@@ -15,14 +16,8 @@ const (
 
 	// Setup Message Types
 	SELECT_POKEMON = "SELECT_POKEMON"
-
-	STATUS = "STATUS"
+	STATUS         = "STATUS"
 
 	// Error
 	ERROR = "ERROR"
 )
-
-type BattleMessage struct {
-	MsgType string
-	MsgArgs []string
-}

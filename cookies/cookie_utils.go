@@ -3,10 +3,12 @@ package cookies
 import (
 	"crypto/md5"
 	"encoding/json"
+	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -17,12 +19,12 @@ const (
 
 	AuthTokenCookieName     = "auth_token"
 	StatsTokenCookieName    = "stats_token"
-	PokemonsTokenCookieName = "pokemons_token"
+	PokemonsTokenCookieName = "pokemon_token"
 	ItemsTokenCookieName    = "items_token"
 )
 
 var (
-	authJWTKey = []byte("authJWTKey") // TODO change
+	authJWTKey = []byte("authJWTKey")
 )
 
 func ExtractAndVerifyAuthToken(w *http.ResponseWriter, r *http.Request, caller string) (authToken *AuthToken, err error) {
@@ -52,7 +54,7 @@ func ExtractAndVerifyAuthToken(w *http.ResponseWriter, r *http.Request, caller s
 	return authToken, nil
 }
 
-func ExtractTrainerStatsToken(r *http.Request) (trainerStats *TrainerStatsToken, err error) {
+func ExtractTrainerStatsToken(r *http.Request) (statsTkn *TrainerStatsToken, err error) {
 
 	c, err := r.Cookie(StatsTokenCookieName)
 
@@ -61,33 +63,33 @@ func ExtractTrainerStatsToken(r *http.Request) (trainerStats *TrainerStatsToken,
 	}
 
 	tknStr := c.Value
-	trainerStats = &TrainerStatsToken{}
-	err = json.Unmarshal([]byte(tknStr), trainerStats)
-
+	statsTkn = &TrainerStatsToken{}
+	_, err = jwt.ParseWithClaims(tknStr, statsTkn, func(token *jwt.Token) (interface{}, error) {
+		return authJWTKey, nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return trainerStats, nil
+	return statsTkn, nil
 }
 
-func ExtractPokemonsToken(r *http.Request) (pokemons *PokemonsToken, err error) {
-	c, err := r.Cookie(PokemonsTokenCookieName)
-
-	if err != nil {
-		return nil, err
+func ExtractPokemonTokens(r *http.Request) (pokemonsTkns []PokemonToken) {
+	for _, v := range r.Cookies() {
+		if strings.Contains(v.Name, PokemonsTokenCookieName) {
+			tknStr := v.Value
+			pokemonTkn := &PokemonToken{}
+			_, err := jwt.ParseWithClaims(tknStr, pokemonTkn, func(token *jwt.Token) (interface{}, error) {
+				return authJWTKey, nil
+			})
+			if err != nil {
+				continue
+			}
+			pokemonsTkns = append(pokemonsTkns, *pokemonTkn)
+		}
 	}
 
-	tknStr := c.Value
-
-	pokemons = &PokemonsToken{}
-	err = json.Unmarshal([]byte(tknStr), pokemons)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return pokemons, nil
+	return pokemonsTkns
 }
 
 func ExtractItemsToken(r *http.Request) (itemsTkn *ItemsToken, err error) {
@@ -136,63 +138,49 @@ func SetAuthToken(username, caller string, w *http.ResponseWriter) error {
 	return nil
 }
 
-func SetPokemonsCookie(pokemons map[string]utils.Pokemon, w http.ResponseWriter) {
+func SetPokemonsCookies(pokemons map[string]utils.Pokemon, w http.ResponseWriter) {
 	expirationTime := time.Now().Add(JWTDuration)
-	trainerStatsToken := &PokemonsToken{
-		Pokemons:       pokemons,
-		PokemonHashes:  generatePokemonHashes(pokemons),
-		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, trainerStatsToken)
-	tokenString, err := token.SignedString(authJWTKey)
 
-	if err != nil {
-		panic(err)
+	for k, v := range pokemons {
+		pokemonToken := &PokemonToken{
+			Pokemon:        v,
+			PokemonHash:    generateHash(v),
+			StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
+		}
+
+		SetTokenAsCookie(fmt.Sprintf("%s-%s", PokemonsTokenCookieName, k), pokemonToken, w)
 	}
 
-	http.SetCookie(w,
-		&http.Cookie{
-			Name:    PokemonsTokenCookieName,
-			Value:   tokenString,
-			Path:    "/",
-			Domain:  utils.Host,
-			Expires: time.Now().Add(JWTDuration),
-		})
 }
 
 func SetItemsCookie(items map[string]utils.Item, w http.ResponseWriter) {
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerItemsToken := &ItemsToken{
 		Items:          items,
-		ItemsHash:      generateItemsHash(items),
+		ItemsHash:      generateHash(items),
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, trainerItemsToken)
-	tokenString, err := token.SignedString(authJWTKey)
 
-	if err != nil {
-		panic(err)
-	}
+	SetTokenAsCookie(ItemsTokenCookieName, trainerItemsToken, w)
 
-	http.SetCookie(w,
-		&http.Cookie{
-			Name:    ItemsTokenCookieName,
-			Value:   tokenString,
-			Path:    "/",
-			Domain:  utils.Host,
-			Expires: time.Now().Add(JWTDuration),
-		})
 }
 
 func SetTrainerStatsCookie(stats utils.TrainerStats, w http.ResponseWriter) {
+
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerStatsToken := &TrainerStatsToken{
 		TrainerStats:   stats,
-		TrainerHash:    generateTrainerStatsHash(stats),
+		TrainerHash:    generateHash(&stats),
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, trainerStatsToken)
-	tokenString, err := token.SignedString(authJWTKey)
+
+	SetTokenAsCookie(StatsTokenCookieName, trainerStatsToken, w)
+
+}
+
+func SetTokenAsCookie(name string, token interface{ jwt.Claims }, w http.ResponseWriter) {
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, token)
+	tokenString, err := jwtToken.SignedString(authJWTKey)
 
 	if err != nil {
 		panic(err)
@@ -200,7 +188,7 @@ func SetTrainerStatsCookie(stats utils.TrainerStats, w http.ResponseWriter) {
 
 	http.SetCookie(w,
 		&http.Cookie{
-			Name:    StatsTokenCookieName,
+			Name:    name,
 			Value:   tokenString,
 			Path:    "/",
 			Domain:  utils.Host,
@@ -208,24 +196,8 @@ func SetTrainerStatsCookie(stats utils.TrainerStats, w http.ResponseWriter) {
 		})
 }
 
-func generatePokemonHashes(pokemons map[string]utils.Pokemon) map[string][]byte {
-	toReturn := make(map[string][]byte, len(pokemons))
-	for pokemonId, pokemon := range pokemons {
-		marshaled, _ := json.Marshal(pokemon)
-		hash := md5.Sum(marshaled)
-		toReturn[pokemonId] = hash[:]
-	}
-	return toReturn
-}
-
-func generateTrainerStatsHash(stats utils.TrainerStats) []byte {
-	marshaled, _ := json.Marshal(stats)
-	hash := md5.Sum(marshaled)
-	return hash[:]
-}
-
-func generateItemsHash(items map[string]utils.Item) []byte {
-	marshaled, _ := json.Marshal(items)
+func generateHash(toHash interface{}) []byte {
+	marshaled, _ := json.Marshal(toHash)
 	hash := md5.Sum(marshaled)
 	return hash[:]
 }

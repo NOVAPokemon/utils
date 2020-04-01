@@ -8,8 +8,8 @@ import (
 
 // Types
 type AuthToken struct {
-	Id             primitive.ObjectID
-	Username       string
+	Id       primitive.ObjectID
+	Username string
 	jwt.StandardClaims
 }
 
@@ -25,8 +25,8 @@ type ItemsToken struct {
 	jwt.StandardClaims
 }
 
-type PokemonsToken struct {
-	Pokemons      map[string]utils.Pokemon
-	PokemonHashes map[string][]byte
+type PokemonToken struct {
+	Pokemon       utils.Pokemon
+	PokemonHash []byte
 	jwt.StandardClaims
 }

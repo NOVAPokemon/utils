@@ -1,24 +1,24 @@
-package battles
+package websockets
 
 import (
 	"errors"
 	"strings"
 )
 
-func ParseMessage(msg *string) (error, *BattleMessage) {
+func ParseMessage(msg *string) (error, *Message) {
 	msgParts := strings.Split(*msg, " ")
 
 	if len(msgParts) < 1 {
 		return errors.New("invalid msg format"), nil
 	}
 
-	return nil, &BattleMessage{
+	return nil, &Message{
 		MsgType: msgParts[0],
 		MsgArgs: msgParts[1:],
 	}
 }
 
-func SendMessage(msg *BattleMessage, channel chan *string) {
+func SendMessage(msg Message, channel chan *string) {
 	builder := strings.Builder{}
 
 	builder.WriteString(msg.MsgType)
@@ -30,9 +30,5 @@ func SendMessage(msg *BattleMessage, channel chan *string) {
 	}
 
 	toSend := builder.String()
-	select {
-	case channel <- &toSend:
-	default:
-		close(channel)
-	}
+	channel <- &toSend
 }
