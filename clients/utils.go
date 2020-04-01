@@ -2,11 +2,18 @@ package clients
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"os"
 )
 
@@ -72,4 +79,67 @@ func MainLoop(conn *websocket.Conn, writeChannel chan *string, finished chan str
 			Send(conn, msg)
 		}
 	}
+}
+
+
+// REQUESTS
+
+func BuildRequest(method, host, path string, body interface{}) (request *http.Request, err error) {
+	hostUrl := url.URL{
+		Scheme: "http",
+		Host:   host,
+		Path:   path,
+	}
+
+	var buf *bytes.Buffer
+	if body != nil {
+		jsonStr, err := json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+		bytes.NewBuffer(jsonStr)
+	}
+
+	req, err := http.NewRequest(method, hostUrl.String(), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	return req, nil
+}
+
+// For now this function assumes that a response should always have 200 code
+func DoRequest(httpClient *http.Client, request *http.Request, responseBody interface{}) error {
+	resp, err := httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("got status code %d", resp.StatusCode))
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(responseBody)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CreateJarWithCookies(cookies ...*http.Cookie) (*cookiejar.Jar, error) {
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	jar.SetCookies(&url.URL{
+		Scheme: "http",
+		Host:   utils.Host,
+		Path:   "/",
+	}, cookies)
+
+	return jar, nil
 }
