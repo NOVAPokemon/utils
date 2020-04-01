@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/NOVAPokemon/utils"
-	"github.com/NOVAPokemon/utils/routes"
+	"github.com/NOVAPokemon/utils/api"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -31,7 +31,7 @@ func (c *TrainersClient) ListTrainers() ([]utils.Trainer, error) {
 }
 
 func (c *TrainersClient) GetTrainerByUsername(username string) (*utils.Trainer, error) {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.GetTrainerByUsernamePath, username), nil)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.GetTrainerByUsernamePath, username), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (c *TrainersClient) GetTrainerByUsername(username string) (*utils.Trainer, 
 }
 
 func (c *TrainersClient) UpdateTrainerStats(username string, newStats utils.TrainerStats) (*utils.TrainerStats, error) {
-	req, err := c.newRequest("PUT", fmt.Sprintf(routes.UpdateTrainerStatsPath, username), newStats)
+	req, err := c.newRequest("PUT", fmt.Sprintf(api.UpdateTrainerStatsPath, username), newStats)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (c *TrainersClient) UpdateTrainerStats(username string, newStats utils.Trai
 // BAG
 
 func (c *TrainersClient) RemoveItemFromBag(username string, itemId string) error {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.RemoveItemFromBagPath, username, itemId), nil)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.RemoveItemFromBagPath, username, itemId), nil)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (c *TrainersClient) RemoveItemFromBag(username string, itemId string) error
 }
 
 func (c *TrainersClient) AddItemToBag(username string, item utils.Item) (*utils.Item, error) {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.AddItemToBagPath, username, ), item)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.AddItemToBagPath, username, ), item)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (c *TrainersClient) AddItemToBag(username string, item utils.Item) (*utils.
 // POKEMON
 
 func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon, error) {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.AddPokemonPath, username), pokemon)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.AddPokemonPath, username), pokemon)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon utils.Poke
 }
 
 func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId string) error {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.RemovePokemonPath, username, pokemonId), nil)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.RemovePokemonPath, username, pokemonId), nil)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId str
 // TOKENS
 
 func (c *TrainersClient) GetAllTrainerTokens(username string) error {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.GenerateAllTokensPath, username), nil)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.GenerateAllTokensPath, username), nil)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (c *TrainersClient) GetAllTrainerTokens(username string) error {
 }
 
 func (c *TrainersClient) GetTrainerStatsToken(username string) error {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.GenerateTrainerStatsTokenPath, username), nil)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.GenerateTrainerStatsTokenPath, username), nil)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (c *TrainersClient) GetTrainerStatsToken(username string) error {
 }
 
 func (c *TrainersClient) GetPokemonsToken(username string) error {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.GeneratePokemonsTokenPath, username), nil)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.GeneratePokemonsTokenPath, username), nil)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (c *TrainersClient) GetPokemonsToken(username string) error {
 }
 
 func (c *TrainersClient) GetItemsToken(username string) error {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.GenerateItemsTokenPath, username), nil)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.GenerateItemsTokenPath, username), nil)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (c *TrainersClient) GetItemsToken(username string) error {
 // verifications of tokens
 
 func (c *TrainersClient) VerifyItems(username string, hash []byte) (*bool, error) {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.VerifyItemsPath, username), hash)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.VerifyItemsPath, username), hash)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (c *TrainersClient) VerifyItems(username string, hash []byte) (*bool, error
 }
 
 func (c *TrainersClient) VerifyPokemon(username string, pokemonId string, hash []byte) (*bool, error) {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.VerifyPokemonPath, username, pokemonId), hash)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.VerifyPokemonPath, username, pokemonId), hash)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (c *TrainersClient) VerifyPokemon(username string, pokemonId string, hash [
 }
 
 func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte) (*bool, error) {
-	req, err := c.newRequest("GET", fmt.Sprintf(routes.VerifyTrainerStatsPath, username), hash)
+	req, err := c.newRequest("GET", fmt.Sprintf(api.VerifyTrainerStatsPath, username), hash)
 	if err != nil {
 		return nil, err
 	}

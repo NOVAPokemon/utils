@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/NOVAPokemon/utils"
-	"github.com/NOVAPokemon/utils/routes"
+	"github.com/NOVAPokemon/utils/api"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,7 +21,7 @@ type TradeLobbyClient struct {
 }
 
 func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
-	u := url.URL{Scheme: "http", Host: client.TradesAddr, Path: routes.GetTradesPath}
+	u := url.URL{Scheme: "http", Host: client.TradesAddr, Path: api.GetTradesPath}
 
 	httpClient := &http.Client{
 		Jar: client.Jar,
@@ -46,7 +46,7 @@ func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
 }
 
 func (client *TradeLobbyClient) CreateTradeLobby() {
-	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: routes.StartTradePath}
+	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: api.StartTradePath}
 	log.Infof("Connecting to: %s", u.String())
 
 	dialer := &websocket.Dialer{
@@ -75,7 +75,7 @@ func (client *TradeLobbyClient) CreateTradeLobby() {
 }
 
 func (client *TradeLobbyClient) JoinTradeLobby(battleId primitive.ObjectID) {
-	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: fmt.Sprintf(routes.JoinTradePath, battleId.Hex())}
+	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: fmt.Sprintf(api.JoinTradePath, battleId.Hex())}
 	log.Infof("Connecting to: %s", u.String())
 
 	dialer := &websocket.Dialer{

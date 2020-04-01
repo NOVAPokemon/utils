@@ -1,4 +1,4 @@
-package routes
+package api
 
 const GetBattlesPath = "/battles"
 const StartBattlePath = "/battles/join"
