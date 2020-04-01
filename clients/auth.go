@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NOVAPokemon/utils"
-	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/routes"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/cookiejar"
@@ -32,7 +32,7 @@ func (client *AuthClient) LoginWithUsernameAndPassword(username, password string
 	loginUrl := url.URL{
 		Scheme: "http",
 		Host:   host,
-		Path:   api.LoginPath,
+		Path:   routes.LoginPath,
 	}
 
 	req, err := http.NewRequest("POST", loginUrl.String(), bytes.NewBuffer(jsonStr))
@@ -63,7 +63,7 @@ func (client *AuthClient) GetInitialTokens(username string) error {
 	generateTokensUrl := url.URL{
 		Scheme: "http",
 		Host:   host,
-		Path:   fmt.Sprintf(api.GenerateAllTokensPath, username),
+		Path:   fmt.Sprintf(routes.GenerateAllTokensPath, username),
 	}
 
 	log.Info("requesting tokens at ", generateTokensUrl.String())
@@ -104,7 +104,7 @@ func (client *AuthClient) Register(username string, password string) {
 	loginUrl := url.URL{
 		Scheme: "http",
 		Host:   host,
-		Path:   api.RegisterPath,
+		Path:   routes.RegisterPath,
 	}
 
 	req, err := http.NewRequest("POST", loginUrl.String(), bytes.NewBuffer(jsonStr))

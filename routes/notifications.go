@@ -1,4 +1,4 @@
-package api
+package routes
 
 const NotificationPath = "/notification"
 const SubscribeNotificationPath = "/subscribe"

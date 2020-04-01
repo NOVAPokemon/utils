@@ -1,4 +1,4 @@
-package api
+package routes
 
 const StatusPath = "/"
 const RegisterPath = "/register"

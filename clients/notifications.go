@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/NOVAPokemon/utils"
-	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/routes"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -20,7 +20,7 @@ type NotificationClient struct {
 }
 
 func (client *NotificationClient) ListenToNotifications() {
-	u := url.URL{Scheme: "ws", Host: client.NotificationsAddr, Path: api.SubscribeNotificationPath}
+	u := url.URL{Scheme: "ws", Host: client.NotificationsAddr, Path: routes.SubscribeNotificationPath}
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
