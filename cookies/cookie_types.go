@@ -26,7 +26,7 @@ type ItemsToken struct {
 }
 
 type PokemonToken struct {
-	Pokemon       utils.Pokemon
+	Pokemon     utils.Pokemon
 	PokemonHash []byte
 	jwt.StandardClaims
 }

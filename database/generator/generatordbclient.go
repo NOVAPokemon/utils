@@ -130,9 +130,8 @@ func init() {
 	wildPokemons := client.Database(databaseName).Collection(wildPokemonCollectionName)
 
 	collections := map[string]*mongo.Collection{
-		wildPokemonCollectionName:          wildPokemons,
+		wildPokemonCollectionName:    wildPokemons,
 		catchableItemsCollectionName: catchableItemsCollection,
 	}
 	dbClient = databaseUtils.DBClientMultipleCollections{Client: client, Ctx: &ctx, Collections: collections}
 }
-

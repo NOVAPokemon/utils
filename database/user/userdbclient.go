@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"github.com/NOVAPokemon/utils"
-	databaseUtils"github.com/NOVAPokemon/utils/database"
+	databaseUtils "github.com/NOVAPokemon/utils/database"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,8 +14,6 @@ import (
 const defaultMongoDBUrl = "mongodb://localhost:27017"
 const databaseName = "NOVAPokemonDB"
 const collectionName = "Users"
-
-
 
 var dbClient databaseUtils.DBClient
 
