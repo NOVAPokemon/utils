@@ -68,14 +68,11 @@ func TestGetByUsername(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 
-	_, _ = AddTrainer(trainerMockup)
+	trainer, _ := AddTrainer(trainerMockup)
 
-	toUpdate := utils.Trainer{
-		Username: trainerMockup.Username,
-		Stats: utils.TrainerStats{
-			Level: 10,
-			Coins: 10,
-		},
+	toUpdate := utils.TrainerStats{
+		Level: 10,
+		Coins: 10,
 	}
 
 	_, err := UpdateTrainerStats(trainerMockup.Username, toUpdate)
@@ -92,10 +89,10 @@ func TestUpdate(t *testing.T) {
 		t.Fail()
 	}
 
-	assert.Equal(t, toUpdate.Stats.Level, updatedTrainer.Stats.Level)
-	assert.Equal(t, toUpdate.Stats.Coins, updatedTrainer.Stats.Coins)
+	assert.Equal(t, toUpdate.Level, updatedTrainer.Stats.Level)
+	assert.Equal(t, toUpdate.Coins, updatedTrainer.Stats.Coins)
 
-	_ = DeleteTrainer(toUpdate.Username)
+	_ = DeleteTrainer(trainer)
 }
 
 func TestDelete(t *testing.T) {
