@@ -58,12 +58,10 @@ type Notification struct {
 	Id       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	Username string             `json:"username" bson:"username,omitempty"`
 	Type     string
-	Content  string
+	Content  []byte
 }
 
 type StoreItem struct {
 	Name  string
 	Price int
 }
-
-type NotificationHandler = func(notification Notification) error

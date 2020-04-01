@@ -90,8 +90,8 @@ func BuildRequest(method, host, path string, body interface{}) (request *http.Re
 		Path:   path,
 	}
 
-
 	if body != nil {
+		log.Info(body)
 		jsonStr, err := json.Marshal(body)
 		if err != nil {
 			return nil, err
@@ -112,6 +112,14 @@ func BuildRequest(method, host, path string, body interface{}) (request *http.Re
 
 // For now this function assumes that a response should always have 200 code
 func DoRequest(httpClient *http.Client, request *http.Request, responseBody interface{}) error {
+	if httpClient == nil {
+		return errors.New(fmt.Sprintf("httpclient is nil for: %s", request.URL.String()))
+	}
+
+	if httpClient.Jar == nil {
+		return errors.New(fmt.Sprintf("jar is nil for: %s", request.URL.String()))
+	}
+
 	resp, err := httpClient.Do(request)
 	if err != nil {
 		return err

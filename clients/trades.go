@@ -16,8 +16,19 @@ import (
 
 type TradeLobbyClient struct {
 	TradesAddr string
+	httpClient *http.Client
 	Jar        *cookiejar.Jar
 	conn       *websocket.Conn
+}
+
+func NewTradesClient(addr string, jar *cookiejar.Jar) *TradeLobbyClient {
+	return &TradeLobbyClient{
+		TradesAddr: addr,
+		Jar:        jar,
+		httpClient: &http.Client{
+			Jar: jar,
+		},
+	}
 }
 
 func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
@@ -45,37 +56,32 @@ func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
 	return battles
 }
 
-func (client *TradeLobbyClient) CreateTradeLobby() {
-	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: api.StartTradePath}
-	log.Infof("Connecting to: %s", u.String())
-
-	dialer := &websocket.Dialer{
-		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 45 * time.Second,
-		Jar:              client.Jar,
-	}
-
-	c, _, err := dialer.Dial(u.String(), nil)
+func (client *TradeLobbyClient) CreateTradeLobby(username string) *primitive.ObjectID {
+	body := api.CreateLobbyRequest{Username: username}
+	req, err := BuildRequest("POST", client.TradesAddr, api.StartTradePath, &body)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
+		return nil
 	}
 
-	defer c.Close()
-	client.conn = c
+	var lobbyIdHex string
+	err = DoRequest(client.httpClient, req, &lobbyIdHex)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
 
-	finished := make(chan struct{})
-	writeChannel := make(chan *string)
+	lobbyId, err := primitive.ObjectIDFromHex(lobbyIdHex)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
 
-	go ReadMessages(c, finished)
-	go WriteMessage(writeChannel)
-
-	MainLoop(c, writeChannel, finished)
-
-	log.Info("Finishing...")
+	return &lobbyId
 }
 
-func (client *TradeLobbyClient) JoinTradeLobby(battleId primitive.ObjectID) {
-	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: fmt.Sprintf(api.JoinTradePath, battleId.Hex())}
+func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID) {
+	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: fmt.Sprintf(api.JoinTradePath, tradeId.Hex())}
 	log.Infof("Connecting to: %s", u.String())
 
 	dialer := &websocket.Dialer{

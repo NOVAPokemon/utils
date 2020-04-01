@@ -12,7 +12,7 @@ type TrainersClient struct {
 	TrainersAddr string
 	UserAgent    string
 	httpClient   *http.Client
-	Jar          *cookiejar.Jar
+	jar          *cookiejar.Jar
 }
 
 // TRAINER
@@ -20,7 +20,7 @@ type TrainersClient struct {
 func NewTrainersClient(addr string, jar *cookiejar.Jar) *TrainersClient {
 	return &TrainersClient{
 		TrainersAddr: addr,
-		Jar:          jar,
+		jar:          jar,
 		httpClient: &http.Client{
 			Jar: jar,
 		},
@@ -71,6 +71,11 @@ func (c *TrainersClient) UpdateTrainerStats(username string, newStats utils.Trai
 	var resultStats utils.TrainerStats
 	err = DoRequest(c.httpClient, req, &resultStats)
 	return &resultStats, err
+}
+
+func (c *TrainersClient) SetJar(jar *cookiejar.Jar) {
+	c.jar = jar
+	c.httpClient.Jar = jar
 }
 
 // BAG
@@ -162,7 +167,7 @@ func (c *TrainersClient) GetItemsToken(username string) error {
 // verifications of tokens
 
 func (c *TrainersClient) VerifyItems(username string, hash []byte) (*bool, error) {
-	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.VerifyItemsPath, username), hash)
+	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.VerifyItemsPath, username), hash)
 	if err != nil {
 		return nil, err
 	}
@@ -192,3 +197,4 @@ func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte) (*bool
 	err = DoRequest(c.httpClient, req, &res)
 	return &res, err
 }
+
