@@ -5,8 +5,8 @@ import "fmt"
 // PATHS
 
 // trainer
-const AddTrainerPath = "/trainers/"
-const GetTrainersPath = "/trainers/"
+const AddTrainerPath = "/trainers"
+const GetTrainersPath = "/trainers"
 
 const GetTrainerByUsernamePath = "/trainers/%s"
 const UpdateTrainerStatsPath = "/trainers/%s"
@@ -34,23 +34,27 @@ const UsernameVar = "username"
 const PokemonIdVar = "pokemonId"
 const ItemIdVar = "itemId"
 
-var GetTrainerByUsernameRoute = fmt.Sprintf(GetTrainerByUsernamePath, UsernameVar)
-var UpdateTrainerStatsRoute = fmt.Sprintf(UpdateTrainerStatsPath, UsernameVar)
+const UsernameRouteVar = "{username}"
+const PokemonIdRouteVar = "{pokemonId}"
+const ItemIdRouteVar = "{itemId}"
+
+var GetTrainerByUsernameRoute = fmt.Sprintf(GetTrainerByUsernamePath, UsernameRouteVar)
+var UpdateTrainerStatsRoute = fmt.Sprintf(UpdateTrainerStatsPath, UsernameRouteVar)
 
 // trainer pokemons
-var AddPokemonRoute = fmt.Sprintf(AddPokemonPath, UsernameVar)
-var RemovePokemonRoute = fmt.Sprintf(RemovePokemonPath, UsernameVar, PokemonIdVar)
+var AddPokemonRoute = fmt.Sprintf(AddPokemonPath, UsernameRouteVar)
+var RemovePokemonRoute = fmt.Sprintf(RemovePokemonPath, UsernameRouteVar, PokemonIdRouteVar)
 
 // trainer bag
-var AddItemToBagRoute = fmt.Sprintf(AddItemToBagPath, UsernameVar)
-var RemoveItemFromBagRoute = fmt.Sprintf(RemoveItemFromBagPath, UsernameVar, ItemIdVar)
+var AddItemToBagRoute = fmt.Sprintf(AddItemToBagPath, UsernameRouteVar)
+var RemoveItemFromBagRoute = fmt.Sprintf(RemoveItemFromBagPath, UsernameRouteVar, ItemIdRouteVar)
 
 // Tokens
-var VerifyTrainerStatsRoute = fmt.Sprintf(VerifyTrainerStatsPath, UsernameVar)
-var VerifyPokemonRoute = fmt.Sprintf(VerifyPokemonPath, UsernameVar, PokemonIdVar)
-var VerifyItemsRoute = fmt.Sprintf(VerifyItemsPath, UsernameVar)
+var VerifyTrainerStatsRoute = fmt.Sprintf(VerifyTrainerStatsPath, UsernameRouteVar)
+var VerifyPokemonRoute = fmt.Sprintf(VerifyPokemonPath, UsernameRouteVar, PokemonIdRouteVar)
+var VerifyItemsRoute = fmt.Sprintf(VerifyItemsPath, UsernameRouteVar)
 
-var GenerateAllTokensRoute = fmt.Sprintf(GenerateAllTokensPath, UsernameVar)
-var GenerateTrainerStatsTokenRoute = fmt.Sprintf(GenerateTrainerStatsTokenPath, UsernameVar)
-var GenerateItemsTokenRoute = fmt.Sprintf(GenerateItemsTokenPath, UsernameVar)
-var GeneratePokemonsTokenRoute = fmt.Sprintf(GeneratePokemonsTokenPath, UsernameVar)
+var GenerateAllTokensRoute = fmt.Sprintf(GenerateAllTokensPath, UsernameRouteVar)
+var GenerateTrainerStatsTokenRoute = fmt.Sprintf(GenerateTrainerStatsTokenPath, UsernameRouteVar)
+var GenerateItemsTokenRoute = fmt.Sprintf(GenerateItemsTokenPath, UsernameRouteVar)
+var GeneratePokemonsTokenRoute = fmt.Sprintf(GeneratePokemonsTokenPath, UsernameRouteVar)

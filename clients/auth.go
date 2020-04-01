@@ -83,7 +83,7 @@ func (client *AuthClient) GetInitialTokens(username string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("unexpected reponse")
+		return errors.New(fmt.Sprintf("unexpected reponse %d", resp.StatusCode))
 	}
 
 	return nil

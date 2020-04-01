@@ -81,7 +81,6 @@ func MainLoop(conn *websocket.Conn, writeChannel chan *string, finished chan str
 	}
 }
 
-
 // REQUESTS
 
 func BuildRequest(method, host, path string, body interface{}) (request *http.Request, err error) {
@@ -91,23 +90,24 @@ func BuildRequest(method, host, path string, body interface{}) (request *http.Re
 		Path:   path,
 	}
 
-	var buf *bytes.Buffer
+
 	if body != nil {
 		jsonStr, err := json.Marshal(body)
 		if err != nil {
 			return nil, err
 		}
-		bytes.NewBuffer(jsonStr)
+		request, err = http.NewRequest(method, hostUrl.String(), bytes.NewBuffer(jsonStr))
+	} else {
+		request, err = http.NewRequest(method, hostUrl.String(), nil)
 	}
 
-	req, err := http.NewRequest(method, hostUrl.String(), buf)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Content-Type", "application/json")
 
-	return req, nil
+	return request, nil
 }
 
 // For now this function assumes that a response should always have 200 code
@@ -121,9 +121,11 @@ func DoRequest(httpClient *http.Client, request *http.Request, responseBody inte
 		return errors.New(fmt.Sprintf("got status code %d", resp.StatusCode))
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(responseBody)
-	if err != nil {
-		return err
+	if responseBody != nil {
+		err = json.NewDecoder(resp.Body).Decode(responseBody)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
