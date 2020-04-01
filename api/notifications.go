@@ -8,4 +8,4 @@ const SpecificNotificationPath = "/notification/%s"
 
 const IdPathVar = "id"
 
-var SpecificNotificationRoute = fmt.Sprintf("/notification/{%s}", IdPathVar)
+var SpecificNotificationRoute = fmt.Sprintf(SpecificNotificationPath, fmt.Sprintf("{%s}", IdPathVar))
