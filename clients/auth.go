@@ -17,7 +17,8 @@ type AuthClient struct {
 	Jar *cookiejar.Jar
 }
 
-func (client *AuthClient) LoginWithUsernameAndPassword(username, password string) {
+func (client *AuthClient) LoginWithUsernameAndPassword(username, password string) error {
+
 	httpClient := &http.Client{
 		Jar: client.Jar,
 	}
@@ -38,19 +39,23 @@ func (client *AuthClient) LoginWithUsernameAndPassword(username, password string
 
 	if err != nil {
 		log.Error(err)
-		return
+		return err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := httpClient.Do(req)
 
-	log.Info(resp)
-
 	if err != nil {
 		log.Error(err)
-		return
+		return err
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("unexpected reponse %d", resp.StatusCode))
+	}
+
+	return nil
 }
 
 func (client *AuthClient) GetInitialTokens(username string) error {
@@ -82,17 +87,15 @@ func (client *AuthClient) GetInitialTokens(username string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("unexpected reponse %d", resp.StatusCode))
+		return errors.New(fmt.Sprintf("unexpected reponse %s", resp.Status))
 	}
 
 	return nil
 }
 
-func (client *AuthClient) Register(username string, password string) {
+func (client *AuthClient) Register(username string, password string) error {
 
-	httpClient := &http.Client{
-		Jar: client.Jar,
-	}
+	httpClient := &http.Client{}
 
 	jsonStr, err := json.Marshal(utils.UserJSON{Username: username, Password: password})
 	if err != nil {
@@ -110,17 +113,21 @@ func (client *AuthClient) Register(username string, password string) {
 
 	if err != nil {
 		log.Error(err)
-		return
+		return err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := httpClient.Do(req)
-
-	log.Info(resp)
+	res, err := httpClient.Do(req)
 
 	if err != nil {
 		log.Error(err)
-		return
+		return err
 	}
+
+	if res.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("unexpected reponse %d", res.StatusCode))
+	}
+
+	return nil
 }

@@ -177,8 +177,8 @@ func (c *TrainersClient) VerifyItems(username string, hash []byte) (*bool, error
 	return &res, err
 }
 
-func (c *TrainersClient) VerifyPokemon(username string, pokemonId string, hash []byte) (*bool, error) {
-	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.VerifyPokemonPath, username, pokemonId), hash)
+func (c *TrainersClient) VerifyPokemons(username string, hashes map[string][]byte) (*bool, error) {
+	req, err := BuildRequest("GET", c.TrainersAddr, api.VerifyPokemonsPath, hashes)
 	if err != nil {
 		return nil, err
 	}

@@ -21,7 +21,7 @@ const RemoveItemFromBagPath = "/trainers/%s/bag/%s"
 
 // Tokens
 const VerifyTrainerStatsPath = "/trainers/%s/stats/verify"
-const VerifyPokemonPath = "/trainers/%s/pokemons/%s/verify"
+const VerifyPokemonsPath = "/trainers/%s/pokemons/verify"
 
 const VerifyItemsPath = "/trainers/%s/bag/verify"
 const GenerateAllTokensPath = "/trainers/%s/tokens"
@@ -51,7 +51,7 @@ var RemoveItemFromBagRoute = fmt.Sprintf(RemoveItemFromBagPath, UsernameRouteVar
 
 // Tokens
 var VerifyTrainerStatsRoute = fmt.Sprintf(VerifyTrainerStatsPath, UsernameRouteVar)
-var VerifyPokemonRoute = fmt.Sprintf(VerifyPokemonPath, UsernameRouteVar, PokemonIdRouteVar)
+var VerifyPokemonRoute = fmt.Sprintf(VerifyPokemonsPath, UsernameRouteVar)
 var VerifyItemsRoute = fmt.Sprintf(VerifyItemsPath, UsernameRouteVar)
 
 var GenerateAllTokensRoute = fmt.Sprintf(GenerateAllTokensPath, UsernameRouteVar)

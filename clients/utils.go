@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/websockets"
+	"github.com/NOVAPokemon/utils/websockets/battles"
 	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -51,6 +52,12 @@ func ReadMessages(conn *websocket.Conn, finished chan struct{}) {
 
 		if tradeMsg.MsgType == trades.FINISH {
 			log.Info("Finished trade.")
+			return
+		}
+
+		if tradeMsg.MsgType == battles.FINISH {
+			log.Info("Finished trade.")
+			_ = conn.Close()
 			return
 		}
 	}
