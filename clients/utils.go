@@ -6,14 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
 	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"os"
 )
@@ -118,45 +116,26 @@ func BuildRequest(method, host, path string, body interface{}) (request *http.Re
 }
 
 // For now this function assumes that a response should always have 200 code
-func DoRequest(httpClient *http.Client, request *http.Request, responseBody interface{}) error {
+func DoRequest(httpClient *http.Client, request *http.Request, responseBody interface{}) (*http.Response, error) {
 	if httpClient == nil {
-		return errors.New(fmt.Sprintf("httpclient is nil for: %s", request.URL.String()))
-	}
-
-	if httpClient.Jar == nil {
-		return errors.New(fmt.Sprintf("jar is nil for: %s", request.URL.String()))
+		return nil, errors.New(fmt.Sprintf("httpclient is nil for: %s", request.URL.String()))
 	}
 
 	resp, err := httpClient.Do(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("got status code %d", resp.StatusCode))
+		return nil, errors.New(fmt.Sprintf("got status code %d", resp.StatusCode))
 	}
 
 	if responseBody != nil {
 		err = json.NewDecoder(resp.Body).Decode(responseBody)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
-}
-
-func CreateJarWithCookies(cookies ...*http.Cookie) (*cookiejar.Jar, error) {
-	jar, err := cookiejar.New(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	jar.SetCookies(&url.URL{
-		Scheme: "http",
-		Host:   utils.Host,
-		Path:   "/",
-	}, cookies)
-
-	return jar, nil
+	return resp, nil
 }

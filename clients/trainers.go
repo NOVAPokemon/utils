@@ -4,26 +4,27 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/tokens"
 	"net/http"
-	"net/http/cookiejar"
+	"strings"
 )
 
 type TrainersClient struct {
 	TrainersAddr string
 	UserAgent    string
 	httpClient   *http.Client
-	jar          *cookiejar.Jar
+
+	TrainerStatsToken string
+	ItemsToken        string
+	PokemonTokens     map[string]string
 }
 
 // TRAINER
 
-func NewTrainersClient(addr string, jar *cookiejar.Jar) *TrainersClient {
+func NewTrainersClient(addr string) *TrainersClient {
 	return &TrainersClient{
 		TrainersAddr: addr,
-		jar:          jar,
-		httpClient: &http.Client{
-			Jar: jar,
-		},
+		httpClient:   &http.Client{},
 	}
 }
 
@@ -35,7 +36,7 @@ func (c *TrainersClient) AddTrainer(trainer utils.Trainer) (*utils.Trainer, erro
 
 	var user utils.Trainer
 
-	err = DoRequest(c.httpClient, req, &user)
+	_, err = DoRequest(c.httpClient, req, &user)
 
 	return &user, err
 }
@@ -47,7 +48,7 @@ func (c *TrainersClient) ListTrainers() (*[]utils.Trainer, error) {
 	}
 
 	var users []utils.Trainer
-	err = DoRequest(c.httpClient, req, &users)
+	_, err = DoRequest(c.httpClient, req, &users)
 	return &users, err
 }
 
@@ -58,7 +59,7 @@ func (c *TrainersClient) GetTrainerByUsername(username string) (*utils.Trainer, 
 	}
 
 	var user utils.Trainer
-	err = DoRequest(c.httpClient, req, &user)
+	_, err = DoRequest(c.httpClient, req, &user)
 	return &user, err
 }
 
@@ -69,13 +70,8 @@ func (c *TrainersClient) UpdateTrainerStats(username string, newStats utils.Trai
 	}
 
 	var resultStats utils.TrainerStats
-	err = DoRequest(c.httpClient, req, &resultStats)
+	_, err = DoRequest(c.httpClient, req, &resultStats)
 	return &resultStats, err
-}
-
-func (c *TrainersClient) SetJar(jar *cookiejar.Jar) {
-	c.jar = jar
-	c.httpClient.Jar = jar
 }
 
 // BAG
@@ -86,7 +82,7 @@ func (c *TrainersClient) RemoveItemFromBag(username string, itemId string) error
 		return err
 	}
 
-	err = DoRequest(c.httpClient, req, nil)
+	_, err = DoRequest(c.httpClient, req, nil)
 	return err
 }
 
@@ -97,7 +93,7 @@ func (c *TrainersClient) AddItemToBag(username string, item utils.Item) (*utils.
 	}
 
 	var res utils.Item
-	err = DoRequest(c.httpClient, req, &res)
+	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
 }
 
@@ -110,7 +106,7 @@ func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon utils.Poke
 	}
 
 	var res utils.Pokemon
-	err = DoRequest(c.httpClient, req, &res)
+	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
 }
 
@@ -120,19 +116,33 @@ func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId str
 		return err
 	}
 
-	err = DoRequest(c.httpClient, req, nil)
+	_, err = DoRequest(c.httpClient, req, nil)
 	return err
 }
 
 // TOKENS
 
-func (c *TrainersClient) GetAllTrainerTokens(username string) error {
+func (c *TrainersClient) GetAllTrainerTokens(username string) (err error) {
 	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.GenerateAllTokensPath, username), nil)
 	if err != nil {
 		return err
 	}
 
-	err = DoRequest(c.httpClient, req, nil)
+	resp, err := DoRequest(c.httpClient, req, nil)
+
+	if err != nil {
+		return err
+	}
+
+	c.TrainerStatsToken = resp.Header.Get(tokens.StatsTokenHeaderName)
+	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenTokenName)
+	for name, v := range resp.Header {
+		if strings.Contains(name, tokens.PokemonsTokenTokenName) {
+			split := strings.Split(name, "-")
+			c.PokemonTokens[split[len(split)]] = v[0]
+		}
+	}
+
 	return err
 }
 
@@ -141,7 +151,11 @@ func (c *TrainersClient) GetTrainerStatsToken(username string) error {
 	if err != nil {
 		return err
 	}
-	err = DoRequest(c.httpClient, req, nil)
+	resp, err := DoRequest(c.httpClient, req, nil)
+	if err != nil {
+		return err
+	}
+	c.TrainerStatsToken = resp.Header.Get(tokens.StatsTokenHeaderName)
 	return err
 }
 
@@ -150,8 +164,19 @@ func (c *TrainersClient) GetPokemonsToken(username string) error {
 	if err != nil {
 		return err
 	}
-	err = DoRequest(c.httpClient, req, nil)
-	return err
+	resp, err := DoRequest(c.httpClient, req, nil)
+	if err != nil {
+		return err
+	}
+
+	for name, v := range resp.Header {
+		if strings.Contains(name, tokens.PokemonsTokenTokenName) {
+			split := strings.Split(name, "-")
+			c.PokemonTokens[split[len(split)]] = v[0]
+		}
+	}
+
+	return nil
 }
 
 func (c *TrainersClient) GetItemsToken(username string) error {
@@ -159,8 +184,11 @@ func (c *TrainersClient) GetItemsToken(username string) error {
 	if err != nil {
 		return err
 	}
-
-	err = DoRequest(c.httpClient, req, nil)
+	resp, err := DoRequest(c.httpClient, req, nil)
+	if err != nil {
+		return err
+	}
+	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenTokenName)
 	return err
 }
 
@@ -173,7 +201,7 @@ func (c *TrainersClient) VerifyItems(username string, hash []byte) (*bool, error
 	}
 
 	var res bool
-	err = DoRequest(c.httpClient, req, &res)
+	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
 }
 
@@ -184,7 +212,7 @@ func (c *TrainersClient) VerifyPokemons(username string, hashes map[string][]byt
 	}
 
 	var res bool
-	err = DoRequest(c.httpClient, req, &res)
+	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
 }
 
@@ -194,7 +222,6 @@ func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte) (*bool
 		return nil, err
 	}
 	var res bool
-	err = DoRequest(c.httpClient, req, &res)
+	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
 }
-

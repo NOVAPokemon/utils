@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"time"
 )
@@ -17,16 +17,13 @@ import (
 type TradeLobbyClient struct {
 	TradesAddr string
 	httpClient *http.Client
-	Jar        *cookiejar.Jar
 	conn       *websocket.Conn
 }
 
-func NewTradesClient(addr string, jar *cookiejar.Jar) *TradeLobbyClient {
+func NewTradesClient(addr string) *TradeLobbyClient {
 	return &TradeLobbyClient{
 		TradesAddr: addr,
-		Jar:        jar,
 		httpClient: &http.Client{
-			Jar: jar,
 		},
 	}
 }
@@ -35,7 +32,6 @@ func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
 	u := url.URL{Scheme: "http", Host: client.TradesAddr, Path: api.GetTradesPath}
 
 	httpClient := &http.Client{
-		Jar: client.Jar,
 	}
 
 	resp, err := httpClient.Get(u.String())
@@ -56,7 +52,7 @@ func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
 	return battles
 }
 
-func (client *TradeLobbyClient) CreateTradeLobby(username string) *primitive.ObjectID {
+func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken string, itemsToken string) *primitive.ObjectID {
 	body := api.CreateLobbyRequest{Username: username}
 	req, err := BuildRequest("POST", client.TradesAddr, api.StartTradePath, &body)
 	if err != nil {
@@ -64,8 +60,11 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string) *primitive.Obj
 		return nil
 	}
 
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
+	req.Header.Set(tokens.ItemsTokenTokenName, itemsToken)
+
 	var lobbyIdHex string
-	err = DoRequest(client.httpClient, req, &lobbyIdHex)
+	_, err = DoRequest(client.httpClient, req, &lobbyIdHex)
 	if err != nil {
 		log.Error(err)
 		return nil
@@ -80,17 +79,20 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string) *primitive.Obj
 	return &lobbyId
 }
 
-func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID) {
+func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, authToken string, itemsToken string) {
 	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: fmt.Sprintf(api.JoinTradePath, tradeId.Hex())}
 	log.Infof("Connecting to: %s", u.String())
+
+	header := http.Header{}
+	header.Set(tokens.AuthTokenHeaderName, authToken)
+	header.Set(tokens.ItemsTokenTokenName, itemsToken)
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
-		Jar:              client.Jar,
 	}
 
-	c, _, err := dialer.Dial(u.String(), nil)
+	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
 		log.Fatal(err)
 	}

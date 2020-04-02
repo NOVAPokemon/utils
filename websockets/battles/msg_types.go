@@ -2,6 +2,8 @@ package battles
 
 // Battle message types
 // Message Types
+const PokemonsPerBattle = 3
+
 const (
 	ATTACK   = "ATTACK"
 	USE_ITEM = "USE_ITEM"
@@ -22,5 +24,5 @@ const (
 	ERROR = "ERROR"
 
 	// Finish
-	FINISH = "ERROR"
+	FINISH = "FINISH"
 )
