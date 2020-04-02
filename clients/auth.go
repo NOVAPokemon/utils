@@ -18,7 +18,6 @@ type AuthClient struct {
 }
 
 func (client *AuthClient) LoginWithUsernameAndPassword(username, password string) {
-
 	httpClient := &http.Client{
 		Jar: client.Jar,
 	}
