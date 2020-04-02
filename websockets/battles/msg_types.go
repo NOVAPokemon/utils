@@ -20,4 +20,7 @@ const (
 
 	// Error
 	ERROR = "ERROR"
+
+	// Finish
+	FINISH = "ERROR"
 )

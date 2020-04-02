@@ -75,8 +75,8 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, lobby *Lobby) {
 		case msg := <-inChannel:
 			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
 			if err != nil {
-				CloseLobby(lobby)
 				log.Error(err)
+				CloseLobby(lobby)
 				return
 			} else {
 				log.Infof("Wrote %s into the channel", *msg)

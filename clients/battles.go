@@ -2,7 +2,9 @@ package clients
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/api"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,6 +18,11 @@ type BattleLobbyClient struct {
 	BattlesAddr string
 	Jar         *cookiejar.Jar
 	conn        *websocket.Conn
+}
+
+type BattleChannels struct {
+	Channel       chan *string
+	FinishChannel chan struct{}
 }
 
 func (client *BattleLobbyClient) GetAvailableLobbies() []utils.Lobby {
@@ -40,9 +47,34 @@ func (client *BattleLobbyClient) GetAvailableLobbies() []utils.Lobby {
 	return availableBattles
 }
 
-func (client *BattleLobbyClient) CreateBattleLobby() {
+func (client *BattleLobbyClient) QueueForBattle() BattleChannels {
 
-	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: "/battles/join"}
+	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: api.QueueForBattlePath}
+	log.Infof("Queuing for battle: %s", u.String())
+
+	dialer := &websocket.Dialer{
+		Proxy:            http.ProxyFromEnvironment,
+		HandshakeTimeout: 45 * time.Second,
+		Jar:              client.Jar,
+	}
+
+	c, _, err := dialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	channel := make(chan *string)
+	finished := make(chan struct{})
+
+	go ReadMessages(c, finished)
+	go MainLoop(c, channel, finished)
+
+	return BattleChannels{channel, finished}
+}
+
+func (client *BattleLobbyClient) ChallengePlayerToBattle(targetPlayer string) BattleChannels {
+
+	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.ChallengeToBattlePath, targetPlayer)}
 	log.Infof("Connecting to: %s", u.String())
 
 	dialer := &websocket.Dialer{
@@ -56,25 +88,20 @@ func (client *BattleLobbyClient) CreateBattleLobby() {
 		log.Fatal(err)
 	}
 
-	defer c.Close()
-	client.conn = c
-
-	defer c.Close()
-	client.conn = c
-
-	inChannel := make(chan *string)
+	channel := make(chan *string)
 	finished := make(chan struct{})
-	go WriteMessage(inChannel)
-	go ReadMessages(c, finished)
 
-	MainLoop(c, inChannel, finished)
+	go ReadMessages(c, finished)
+	go MainLoop(c, channel, finished)
+
+	return BattleChannels{channel, finished}
 
 }
 
-func (client *BattleLobbyClient) JoinBattleLobby(battleId primitive.ObjectID) {
+func (client *BattleLobbyClient) AcceptChallenge(battleId primitive.ObjectID) BattleChannels {
 
-	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: "/battles/join/" + battleId.Hex()}
-	log.Infof("Connecting to: %s", u.String())
+	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.AcceptChallengePath, battleId.Hex())}
+	log.Infof("Accepting challenge: %s", u.String())
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
@@ -87,18 +114,12 @@ func (client *BattleLobbyClient) JoinBattleLobby(battleId primitive.ObjectID) {
 		log.Fatal(err)
 	}
 
-	defer c.Close()
-	client.conn = c
-
-	defer c.Close()
-	client.conn = c
-
-	inChannel := make(chan *string)
+	channel := make(chan *string)
 	finished := make(chan struct{})
 
-	go WriteMessage(inChannel)
 	go ReadMessages(c, finished)
+	go MainLoop(c, channel, finished)
 
-	MainLoop(c, inChannel, finished)
+	return BattleChannels{channel, finished}
 
 }

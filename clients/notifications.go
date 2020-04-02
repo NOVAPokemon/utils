@@ -16,7 +16,7 @@ type NotificationClient struct {
 	NotificationsAddr    string
 	jar                  *cookiejar.Jar
 	httpClient           *http.Client
-	notificationsChannel chan *utils.Notification
+	NotificationsChannel chan *utils.Notification
 }
 
 func NewNotificationClient(addr string, jar *cookiejar.Jar, notificationsChannel chan *utils.Notification) *NotificationClient {
@@ -24,7 +24,7 @@ func NewNotificationClient(addr string, jar *cookiejar.Jar, notificationsChannel
 		NotificationsAddr:    addr,
 		jar:                  jar,
 		httpClient:           &http.Client{},
-		notificationsChannel: notificationsChannel,
+		NotificationsChannel: notificationsChannel,
 	}
 }
 
@@ -66,7 +66,7 @@ func (client *NotificationClient) readNotifications(conn *websocket.Conn) {
 			return
 		}
 
-		client.notificationsChannel <- &notification
+		client.NotificationsChannel <- &notification
 
 		log.Debugf("Received %s from the websocket", notification.Content)
 	}

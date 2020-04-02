@@ -60,6 +60,25 @@ func AddUser(user *utils.User) (error, string) {
 	return nil, user.Username
 }
 
+func CheckIfUserExists(username string) (bool, error) {
+
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collection
+	var limit int64 = 1
+
+	filter := bson.M{"username": username}
+	opts := options.CountOptions{Limit: &limit}
+
+	count, err := collection.CountDocuments(*ctx, filter, &opts)
+
+	if err != nil {
+		log.Error(err)
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
 func GetUserByUsername(username string) (error, *utils.User) {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
