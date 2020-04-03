@@ -261,7 +261,7 @@ func (c *TrainersClient) SetTrainerStatsToken(statsToken string) error {
 	c.TrainerStatsToken = statsToken
 
 	var err error
-	c.TrainerStatsClaims, err = tokens.ExtractStatsToken(c.ItemsToken)
+	c.TrainerStatsClaims, err = tokens.ExtractStatsToken(c.TrainerStatsToken)
 	if err != nil {
 		return err
 	}
