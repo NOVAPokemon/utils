@@ -7,6 +7,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 	"time"
@@ -64,7 +65,6 @@ func ExtractAndVerifyTrainerStatsToken(headers http.Header) (*TrainerStatsToken,
 }
 
 func ExtractAndVerifyPokemonTokens(headers http.Header) ([]PokemonToken, error) {
-
 	var pokemonTkns []PokemonToken
 
 	for name, v := range headers {
@@ -85,8 +85,7 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]PokemonToken, error) 
 }
 
 func ExtractAndVerifyItemsToken(headers http.Header) (*ItemsToken, error) {
-
-	tknStr := headers.Get(StatsTokenHeaderName)
+	tknStr := headers.Get(ItemsTokenHeaderName)
 	itemsToken := ItemsToken{}
 	jwtToken, err := jwt.ParseWithClaims(tknStr, itemsToken, func(token *jwt.Token) (interface{}, error) {
 		return authJWTKey, nil
@@ -101,6 +100,39 @@ func ExtractAndVerifyItemsToken(headers http.Header) (*ItemsToken, error) {
 	}
 
 	return &itemsToken, err
+}
+
+func ExtractItemsToken(itemsToken string) (*ItemsToken, error) {
+	claims := ItemsToken{}
+	_, _, err := new(jwt.Parser).ParseUnverified(itemsToken, &claims)
+	if err != nil {
+		log.Error("error parsing items token, ", err)
+		return nil, err
+	}
+
+	return &claims, err
+}
+
+func ExtractPokemonToken(pokemonsToken string) (*PokemonToken, error) {
+	claims := PokemonToken{}
+	_, _, err := new(jwt.Parser).ParseUnverified(pokemonsToken, &claims)
+	if err != nil {
+		log.Error("error parsing pokemon token, ", err)
+		return nil, err
+	}
+
+	return &claims, err
+}
+
+func ExtractStatsToken(statsToken string) (*TrainerStatsToken, error) {
+	claims := TrainerStatsToken{}
+	_, _, err := new(jwt.Parser).ParseUnverified(statsToken, &claims)
+	if err != nil {
+		log.Error("error parsing stats token, ", err)
+		return nil, err
+	}
+
+	return &claims, err
 }
 
 func AddAuthToken(username string, headers http.Header) {

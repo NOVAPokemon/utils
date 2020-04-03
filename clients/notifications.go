@@ -80,7 +80,9 @@ func (client *NotificationClient) AddNotification(notification utils.Notificatio
 	if err != nil {
 		return err
 	}
+
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
+
 	_, err = DoRequest(client.httpClient, req, nil)
 	return err
 }

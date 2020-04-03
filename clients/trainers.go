@@ -17,6 +17,10 @@ type TrainersClient struct {
 	TrainerStatsToken string
 	ItemsToken        string
 	PokemonTokens     map[string]string
+
+	TrainerStatsClaims *tokens.TrainerStatsToken
+	ItemsClaims        *tokens.ItemsToken
+	PokemonClaims      map[string]*tokens.ItemsToken
 }
 
 // TRAINER
@@ -135,14 +139,29 @@ func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) 
 		return err
 	}
 
+	// Stats
 	c.TrainerStatsToken = resp.Header.Get(tokens.StatsTokenHeaderName)
+	c.TrainerStatsClaims, err = tokens.ExtractStatsToken(c.TrainerStatsToken)
+	if err != nil {
+		return err
+	}
+
+	// Items
 	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenHeaderName)
+	c.ItemsClaims, err = tokens.ExtractItemsToken(c.ItemsToken)
+	if err != nil {
+		return err
+	}
+
 	for name, v := range resp.Header {
 		if strings.Contains(name, tokens.PokemonsTokenHeaderName) {
 			split := strings.Split(name, "-")
 			c.PokemonTokens[split[len(split)]] = v[0]
 		}
 	}
+
+	c.PokemonClaims[split[len(split)]] =
+
 
 	return err
 }
@@ -195,11 +214,13 @@ func (c *TrainersClient) GetItemsToken(username string) error {
 
 // verifications of tokens
 
-func (c *TrainersClient) VerifyItems(username string, hash []byte) (*bool, error) {
+func (c *TrainersClient) VerifyItems(username string, hash []byte, authToken string) (*bool, error) {
 	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.VerifyItemsPath, username), hash)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var res bool
 	_, err = DoRequest(c.httpClient, req, &res)

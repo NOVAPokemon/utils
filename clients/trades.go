@@ -16,34 +16,25 @@ import (
 
 type TradeLobbyClient struct {
 	TradesAddr string
-	httpClient *http.Client
+
 	conn       *websocket.Conn
 }
 
 func NewTradesClient(addr string) *TradeLobbyClient {
 	return &TradeLobbyClient{
 		TradesAddr: addr,
-		httpClient: &http.Client{
-		},
 	}
 }
 
-func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
-	u := url.URL{Scheme: "http", Host: client.TradesAddr, Path: api.GetTradesPath}
-
-	httpClient := &http.Client{
-	}
-
-	resp, err := httpClient.Get(u.String())
-
+func (client *TradeLobbyClient) GetAvailableLobbies(authToken string) []utils.Lobby {
+	req, err := BuildRequest("GET", client.TradesAddr, api.GetTradesPath, nil)
 	if err != nil {
 		log.Error(err)
 		return nil
 	}
 
 	var battles []utils.Lobby
-	err = json.NewDecoder(resp.Body).Decode(&battles)
-
+	_, err = DoRequest(&http.Client{}, req, &battles)
 	if err != nil {
 		log.Error(err)
 		return nil
@@ -64,7 +55,7 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	req.Header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
 	var lobbyIdHex string
-	_, err = DoRequest(client.httpClient, req, &lobbyIdHex)
+	_, err = DoRequest(&http.Client{}, req, &lobbyIdHex)
 	if err != nil {
 		log.Error(err)
 		return nil
@@ -106,7 +97,18 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 	go ReadMessages(c, finished)
 	go WriteMessage(writeChannel)
 
+	items := tokens.ExtractAndVerifyItemsToken(itemsToken)
+	if err != nil {
+
+	}
+
+	go client.autoTrader(items, writeChannel, finished)
+
 	MainLoop(c, writeChannel, finished)
 
 	log.Info("Finishing...")
+}
+
+func (client *TradeLobbyClient) autoTrader(items []utils.Item, writeChannel chan *string, finished chan struct{}) {
+	items := client.
 }
