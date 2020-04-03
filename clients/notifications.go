@@ -5,22 +5,21 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"time"
 )
 
 type NotificationClient struct {
 	NotificationsAddr    string
-	jar                  *cookiejar.Jar
 	httpClient           *http.Client
 	NotificationsChannel chan *utils.Notification
 }
 
-func NewNotificationClient(addr string, jar *cookiejar.Jar, notificationsChannel chan *utils.Notification) *NotificationClient {
+func NewNotificationClient(addr string, notificationsChannel chan *utils.Notification) *NotificationClient {
 	return &NotificationClient{
 		NotificationsAddr: addr,
 		jar:               jar,
@@ -77,12 +76,13 @@ func (client *NotificationClient) readNotifications(conn *websocket.Conn) {
 	}
 }
 
-func (client *NotificationClient) AddNotification(notification utils.Notification) error {
+func (client *NotificationClient) AddNotification(notification utils.Notification, authToken string) error {
 	req, err := BuildRequest("POST", client.NotificationsAddr, api.NotificationPath, notification)
 	if err != nil {
 		return err
 	}
-	err = DoRequest(client.httpClient, req, nil)
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
+	_, err = DoRequest(client.httpClient, req, nil)
 	return err
 }
 

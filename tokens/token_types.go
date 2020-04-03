@@ -1,4 +1,4 @@
-package cookies
+package tokens
 
 import (
 	"github.com/NOVAPokemon/utils"

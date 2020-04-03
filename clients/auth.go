@@ -7,21 +7,19 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/tokens"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 )
 
 type AuthClient struct {
-	Jar *cookiejar.Jar
+	AuthToken string
 }
 
 func (client *AuthClient) LoginWithUsernameAndPassword(username, password string) error {
 
-	httpClient := &http.Client{
-		Jar: client.Jar,
-	}
+	httpClient := &http.Client{}
 
 	jsonStr, err := json.Marshal(utils.UserJSON{Username: username, Password: password})
 	if err != nil {
@@ -55,40 +53,7 @@ func (client *AuthClient) LoginWithUsernameAndPassword(username, password string
 		return errors.New(fmt.Sprintf("unexpected reponse %d", resp.StatusCode))
 	}
 
-	return nil
-}
-
-func (client *AuthClient) GetInitialTokens(username string) error {
-	httpClient := &http.Client{
-		Jar: client.Jar,
-	}
-
-	host := fmt.Sprintf("%s:%d", utils.Host, utils.TrainersPort)
-	generateTokensUrl := url.URL{
-		Scheme: "http",
-		Host:   host,
-		Path:   fmt.Sprintf(api.GenerateAllTokensPath, username),
-	}
-
-	log.Info("requesting tokens at ", generateTokensUrl.String())
-
-	req, err := http.NewRequest("GET", generateTokensUrl.String(), nil)
-
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	resp, err := httpClient.Do(req)
-
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("unexpected reponse %s", resp.Status))
-	}
+	client.AuthToken = resp.Header.Get(tokens.AuthTokenHeaderName)
 
 	return nil
 }
@@ -118,16 +83,18 @@ func (client *AuthClient) Register(username string, password string) error {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	res, err := httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("unexpected reponse %d", res.StatusCode))
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("unexpected reponse %d", resp.StatusCode))
 	}
+
+	client.AuthToken = resp.Header.Get(tokens.AuthTokenHeaderName)
 
 	return nil
 }
