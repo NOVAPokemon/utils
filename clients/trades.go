@@ -126,8 +126,6 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 
 func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, started, finished chan struct{},
 	setItemsToken chan *string) {
-	defer close(finished)
-
 	var itemsToken *string = nil
 
 	for {
@@ -146,6 +144,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			itemsToken = &msg.MsgArgs[0]
 		case trades.FINISH:
 			log.Info("Finished trade.")
+			close(finished)
 			setItemsToken <- itemsToken
 			return
 		}
