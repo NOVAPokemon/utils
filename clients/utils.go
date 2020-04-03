@@ -118,22 +118,27 @@ func BuildRequest(method, host, path string, body interface{}) (request *http.Re
 
 // For now this function assumes that a response should always have 200 code
 func DoRequest(httpClient *http.Client, request *http.Request, responseBody interface{}) (*http.Response, error) {
+	log.Infof("Requesting: %s", request.URL.String())
+
 	if httpClient == nil {
 		return nil, errors.New(fmt.Sprintf("httpclient is nil for: %s", request.URL.String()))
 	}
 
 	resp, err := httpClient.Do(request)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		log.Warnf("got status code %d", resp.StatusCode)
 		return nil, errors.New(fmt.Sprintf("got status code %d", resp.StatusCode))
 	}
 
 	if responseBody != nil {
 		err = json.NewDecoder(resp.Body).Decode(responseBody)
 		if err != nil {
+			log.Error(err)
 			return nil, err
 		}
 	}

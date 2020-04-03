@@ -139,16 +139,16 @@ func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) 
 		return err
 	}
 
-	// Stats
-	c.TrainerStatsToken = resp.Header.Get(tokens.StatsTokenHeaderName)
-	c.TrainerStatsClaims, err = tokens.ExtractStatsToken(c.TrainerStatsToken)
+	// Items
+	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenHeaderName)
+	c.ItemsClaims, err = tokens.ExtractItemsToken(c.ItemsToken)
 	if err != nil {
 		return err
 	}
 
-	// Items
-	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenHeaderName)
-	c.ItemsClaims, err = tokens.ExtractItemsToken(c.ItemsToken)
+	// Stats
+	c.TrainerStatsToken = resp.Header.Get(tokens.StatsTokenHeaderName)
+	c.TrainerStatsClaims, err = tokens.ExtractStatsToken(c.TrainerStatsToken)
 	if err != nil {
 		return err
 	}
@@ -167,8 +167,6 @@ func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) 
 			c.PokemonClaims[split[len(split)-1]] = pokemonClaims
 		}
 	}
-
-
 
 	return err
 }
@@ -234,22 +232,27 @@ func (c *TrainersClient) VerifyItems(username string, hash []byte, authToken str
 	return &res, err
 }
 
-func (c *TrainersClient) VerifyPokemons(username string, hashes map[string][]byte) (*bool, error) {
-	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.VerifyPokemonsPath, username), hashes)
+func (c *TrainersClient) VerifyPokemons(username string, hashes map[string][]byte, authToken string) (*bool, error) {
+	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.VerifyPokemonsPath, username), hashes)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var res bool
 	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
 }
 
-func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte) (*bool, error) {
-	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.VerifyTrainerStatsPath, username), hash)
+func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte, authToken string) (*bool, error) {
+	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.VerifyTrainerStatsPath, username), hash)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
+
 	var res bool
 	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
