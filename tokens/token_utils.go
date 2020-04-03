@@ -7,6 +7,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 	"time"
@@ -15,10 +16,10 @@ import (
 const (
 	JWTDuration = 30 * time.Minute
 
-	AuthTokenHeaderName     = "auth_token"
-	StatsTokenHeaderName    = "stats_token"
-	PokemonsTokenHeaderName = "pokemon_token"
-	ItemsTokenHeaderName    = "items_token"
+	AuthTokenHeaderName     = "Auth_token"
+	StatsTokenHeaderName    = "Stats_token"
+	PokemonsTokenHeaderName = "Pokemon_token"
+	ItemsTokenHeaderName    = "Items_token"
 )
 
 var (
@@ -47,7 +48,7 @@ func ExtractAndVerifyAuthToken(headers http.Header) (*AuthToken, error) {
 func ExtractAndVerifyTrainerStatsToken(headers http.Header) (*TrainerStatsToken, error) {
 
 	tknStr := headers.Get(StatsTokenHeaderName)
-	statsTkn := TrainerStatsToken{}
+	statsTkn := &TrainerStatsToken{}
 	jwtToken, err := jwt.ParseWithClaims(tknStr, statsTkn, func(token *jwt.Token) (interface{}, error) {
 		return authJWTKey, nil
 	})
@@ -60,14 +61,16 @@ func ExtractAndVerifyTrainerStatsToken(headers http.Header) (*TrainerStatsToken,
 		return nil, errors.New("Invalid Token")
 	}
 
-	return &statsTkn, err
+	return statsTkn, err
 }
 
-func ExtractAndVerifyPokemonTokens(headers http.Header) ([]PokemonToken, error) {
+func ExtractAndVerifyPokemonTokens(headers http.Header) (map[string]PokemonToken, error) {
 
-	var pokemonTkns []PokemonToken
+	var pokemonTkns = make(map[string]PokemonToken, len(headers))
 
 	for name, v := range headers {
+		logrus.Infof(fmt.Sprintf("Header value: %s", name))
+		fmt.Println(strings.Contains(name, PokemonsTokenHeaderName))
 		if strings.Contains(name, PokemonsTokenHeaderName) {
 			tknStr := strings.Join(v, "")
 			pokemonTkn := &PokemonToken{}
@@ -77,7 +80,7 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]PokemonToken, error) 
 			if err != nil {
 				return nil, err
 			}
-			pokemonTkns = append(pokemonTkns, *pokemonTkn)
+			pokemonTkns[name] = *pokemonTkn
 		}
 	}
 
@@ -86,8 +89,8 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]PokemonToken, error) 
 
 func ExtractAndVerifyItemsToken(headers http.Header) (*ItemsToken, error) {
 
-	tknStr := headers.Get(StatsTokenHeaderName)
-	itemsToken := ItemsToken{}
+	tknStr := headers.Get(ItemsTokenHeaderName)
+	itemsToken := &ItemsToken{}
 	jwtToken, err := jwt.ParseWithClaims(tknStr, itemsToken, func(token *jwt.Token) (interface{}, error) {
 		return authJWTKey, nil
 	})
@@ -100,7 +103,7 @@ func ExtractAndVerifyItemsToken(headers http.Header) (*ItemsToken, error) {
 		return nil, errors.New("Invalid Token")
 	}
 
-	return &itemsToken, err
+	return itemsToken, err
 }
 
 func AddAuthToken(username string, headers http.Header) {
@@ -120,6 +123,7 @@ func AddPokemonsTokens(pokemons map[string]utils.Pokemon, headers http.Header) {
 			PokemonHash:    generateHash(v),
 			StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 		}
+		logrus.Infof(fmt.Sprintf("Putting token: %s-%s", PokemonsTokenHeaderName, k))
 		setTokenInHeader(fmt.Sprintf("%s-%s", PokemonsTokenHeaderName, k), pokemonToken, headers)
 	}
 
