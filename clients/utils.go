@@ -98,7 +98,6 @@ func BuildRequest(method, host, path string, body interface{}) (request *http.Re
 	}
 
 	if body != nil {
-		log.Info(body)
 		jsonStr, err := json.Marshal(body)
 		if err != nil {
 			return nil, err

@@ -40,15 +40,15 @@ func (c *TrainersClient) AddTrainer(trainer utils.Trainer) (*utils.Trainer, erro
 	return &user, err
 }
 
-func (c *TrainersClient) ListTrainers() (*[]utils.Trainer, error) {
+func (c *TrainersClient) ListTrainers() ([]*utils.Trainer, error) {
 	req, err := BuildRequest("GET", c.TrainersAddr, api.GetTrainersPath, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var users []utils.Trainer
+	var users []*utils.Trainer
 	err = DoRequest(c.httpClient, req, &users)
-	return &users, err
+	return users, err
 }
 
 func (c *TrainersClient) GetTrainerByUsername(username string) (*utils.Trainer, error) {

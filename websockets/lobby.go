@@ -54,7 +54,6 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) {
 }
 
 func CloseLobby(lobby *Lobby) {
-	log.Warn("Triggering end connection on remaining go routines...")
 	endConnection(lobby)
 
 	if lobby.trainerConnections[0] != nil {
@@ -76,6 +75,7 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, lobby *Lobby) {
 			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
 			if err != nil {
 				log.Error(err)
+				log.Error("closed lobby because could not write")
 				CloseLobby(lobby)
 				return
 			} else {
@@ -100,6 +100,7 @@ func handleRecv(conn *websocket.Conn, outChannel chan *string, lobby *Lobby) {
 			_, message, err := conn.ReadMessage()
 
 			if err != nil {
+				log.Error("closed lobby because could not read")
 				CloseLobby(lobby)
 				log.Error(err)
 				return

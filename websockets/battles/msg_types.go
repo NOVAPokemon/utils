@@ -22,5 +22,5 @@ const (
 	ERROR = "ERROR"
 
 	// Finish
-	FINISH = "ERROR"
+	FINISH = "FINISH"
 )

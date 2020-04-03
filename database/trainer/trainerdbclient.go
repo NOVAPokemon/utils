@@ -77,7 +77,6 @@ func AddTrainer(trainer utils.Trainer) (string, error) {
 }
 
 func GetAllTrainers() ([]utils.Trainer, error) {
-
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
 	var results = make([]utils.Trainer, 0)
