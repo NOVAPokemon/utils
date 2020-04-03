@@ -211,22 +211,27 @@ func (c *TrainersClient) VerifyItems(username string, hash []byte, authToken str
 	return &res, err
 }
 
-func (c *TrainersClient) VerifyPokemons(username string, hashes map[string][]byte) (*bool, error) {
-	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.VerifyPokemonsPath, username), hashes)
+func (c *TrainersClient) VerifyPokemons(username string, hashes map[string][]byte, authToken string) (*bool, error) {
+	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.VerifyPokemonsPath, username), hashes)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var res bool
 	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
 }
 
-func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte) (*bool, error) {
-	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.VerifyTrainerStatsPath, username), hash)
+func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte, authToken string) (*bool, error) {
+	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.VerifyTrainerStatsPath, username), hash)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
+
 	var res bool
 	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err

@@ -51,7 +51,7 @@ func (client *BattleLobbyClient) GetAvailableLobbies() []utils.Lobby {
 	return availableBattles
 }
 
-func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens map[string]string) BattleChannels {
+func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens map[string]string) (*BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: api.QueueForBattlePath}
 	log.Infof("Queuing for battle: %s", u.String())
@@ -70,6 +70,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
 		log.Fatal(err)
+		return nil, err
 	}
 
 	channel := make(chan *string)
@@ -78,7 +79,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	go ReadMessages(c, finished)
 	go MainLoop(c, channel, finished)
 
-	return BattleChannels{channel, finished}
+	return &BattleChannels{channel, finished}, nil
 }
 
 func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens map[string]string, targetPlayer string) BattleChannels {

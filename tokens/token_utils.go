@@ -69,8 +69,6 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) (map[string]PokemonToken
 	var pokemonTkns = make(map[string]PokemonToken, len(headers))
 
 	for name, v := range headers {
-		log.Infof(fmt.Sprintf("Header value: %s", name))
-		fmt.Println(strings.Contains(name, PokemonsTokenHeaderName))
 		if strings.Contains(name, PokemonsTokenHeaderName) {
 			tknStr := strings.Join(v, "")
 			pokemonTkn := &PokemonToken{}
@@ -156,7 +154,6 @@ func AddPokemonsTokens(pokemons map[string]utils.Pokemon, headers http.Header) {
 			PokemonHash:    generateHash(v),
 			StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 		}
-		log.Infof(fmt.Sprintf("Putting token: %s-%s", PokemonsTokenHeaderName, k))
 		setTokenInHeader(fmt.Sprintf("%s-%s", PokemonsTokenHeaderName, k), pokemonToken, headers)
 	}
 
@@ -176,7 +173,7 @@ func AddTrainerStatsToken(stats utils.TrainerStats, headers http.Header) {
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerStatsToken := &TrainerStatsToken{
 		TrainerStats:   stats,
-		TrainerHash:    generateHash(&stats),
+		TrainerHash:    generateHash(stats),
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
 	setTokenInHeader(StatsTokenHeaderName, trainerStatsToken, headers)
