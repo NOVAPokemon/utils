@@ -20,7 +20,7 @@ type TrainersClient struct {
 
 	TrainerStatsClaims *tokens.TrainerStatsToken
 	ItemsClaims        *tokens.ItemsToken
-	PokemonClaims      map[string]*tokens.ItemsToken
+	PokemonClaims      map[string]*tokens.PokemonToken
 }
 
 // TRAINER
@@ -154,14 +154,20 @@ func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) 
 	}
 
 	c.PokemonTokens = make(map[string]string, len(resp.Header))
+	c.PokemonClaims = make(map[string]*tokens.PokemonToken, len(resp.Header))
 	for name, v := range resp.Header {
 		if strings.Contains(name, tokens.PokemonsTokenHeaderName) {
 			split := strings.Split(name, "-")
 			c.PokemonTokens[split[len(split)-1]] = v[0]
+			pokemonClaims, err := tokens.ExtractPokemonToken(v[0])
+			if err != nil {
+				return err
+			}
+
+			c.PokemonClaims[split[len(split)-1]] = pokemonClaims
 		}
 	}
 
-	c.PokemonClaims[split[len(split)]] =
 
 
 	return err

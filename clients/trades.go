@@ -1,7 +1,6 @@
 package clients
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -97,18 +96,23 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 	go ReadMessages(c, finished)
 	go WriteMessage(writeChannel)
 
-	items := tokens.ExtractAndVerifyItemsToken(itemsToken)
+	items, err := tokens.ExtractItemsToken(itemsToken)
 	if err != nil {
-
+		log.Error(err)
+		return
 	}
 
-	go client.autoTrader(items, writeChannel, finished)
+	for _, v := range items.Items {
+		log.Info(v)
+	}
 
-	MainLoop(c, writeChannel, finished)
-
-	log.Info("Finishing...")
+	//go client.autoTrader(items.Items, writeChannel, finished)
+	//
+	//MainLoop(c, writeChannel, finished)
+	//
+	//log.Info("Finishing...")
 }
 
-func (client *TradeLobbyClient) autoTrader(items []utils.Item, writeChannel chan *string, finished chan struct{}) {
-	items := client.
+func (client *TradeLobbyClient) autoTrader(items map[string]utils.Item, writeChannel chan *string, finished chan struct{}) {
+	//items := client.
 }

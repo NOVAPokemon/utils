@@ -69,7 +69,7 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) (map[string]PokemonToken
 	var pokemonTkns = make(map[string]PokemonToken, len(headers))
 
 	for name, v := range headers {
-		logrus.Infof(fmt.Sprintf("Header value: %s", name))
+		log.Infof(fmt.Sprintf("Header value: %s", name))
 		fmt.Println(strings.Contains(name, PokemonsTokenHeaderName))
 		if strings.Contains(name, PokemonsTokenHeaderName) {
 			tknStr := strings.Join(v, "")
