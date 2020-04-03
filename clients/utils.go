@@ -109,6 +109,8 @@ func BuildRequest(method, host, path string, body interface{}) (request *http.Re
 		return nil, err
 	}
 
+	log.Info("requesting: ", hostUrl.String())
+
 	request.Header.Set("Content-Type", "application/json")
 
 	return request, nil

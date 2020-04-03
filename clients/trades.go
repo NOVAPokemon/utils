@@ -61,7 +61,7 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
-	req.Header.Set(tokens.ItemsTokenTokenName, itemsToken)
+	req.Header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
 	var lobbyIdHex string
 	_, err = DoRequest(client.httpClient, req, &lobbyIdHex)
@@ -85,7 +85,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
-	header.Set(tokens.ItemsTokenTokenName, itemsToken)
+	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,

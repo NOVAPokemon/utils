@@ -22,24 +22,23 @@ type NotificationClient struct {
 func NewNotificationClient(addr string, notificationsChannel chan *utils.Notification) *NotificationClient {
 	return &NotificationClient{
 		NotificationsAddr: addr,
-		jar:               jar,
-		httpClient: &http.Client{
-			Jar: jar,
-		},
+		httpClient: &http.Client{},
 		NotificationsChannel: notificationsChannel,
 	}
 }
 
-func (client *NotificationClient) ListenToNotifications() {
+func (client *NotificationClient) ListenToNotifications(authToken string) {
 	u := url.URL{Scheme: "ws", Host: client.NotificationsAddr, Path: api.SubscribeNotificationPath}
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
-		Jar:              client.jar,
 	}
 
-	c, _, err := dialer.Dial(u.String(), nil)
+	header := http.Header{}
+	header.Set(tokens.AuthTokenHeaderName, authToken)
+
+	c, _, err := dialer.Dial(u.String(), header)
 	defer c.Close()
 
 	if err != nil {
@@ -86,18 +85,20 @@ func (client *NotificationClient) AddNotification(notification utils.Notificatio
 	return err
 }
 
-func (client *NotificationClient) GetOthersListening(myUsername string) ([]string, error) {
+func (client *NotificationClient) GetOthersListening(myUsername string, authToken string) ([]string, error) {
 	req, err := BuildRequest("GET", client.NotificationsAddr, fmt.Sprintf(api.GetListenersPath, myUsername), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var usernames []string
-	err = DoRequest(client.httpClient, req, &usernames)
-	return usernames, err
-}
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-func (client *NotificationClient) SetJar(jar *cookiejar.Jar) {
-	client.jar = jar
-	client.httpClient.Jar = jar
+	var usernames []string
+	_, err = DoRequest(client.httpClient, req, &usernames)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return usernames, nil
 }

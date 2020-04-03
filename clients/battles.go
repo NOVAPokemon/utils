@@ -64,7 +64,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	for pokemonId, tkn := range pokemonsTokens {
-		header.Set(fmt.Sprintf("%s-%s", tokens.PokemonsTokenTokenName, pokemonId), tkn)
+		header.Set(fmt.Sprintf("%s-%s", tokens.PokemonsTokenHeaderName, pokemonId), tkn)
 	}
 
 	c, _, err := dialer.Dial(u.String(), header)
@@ -89,7 +89,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	for pokemonId, tkn := range pokemonsTokens {
-		header.Set(fmt.Sprintf("%s-%s", tokens.PokemonsTokenTokenName, pokemonId), tkn)
+		header.Set(fmt.Sprintf("%s-%s", tokens.PokemonsTokenHeaderName, pokemonId), tkn)
 	}
 
 	dialer := &websocket.Dialer{
@@ -120,7 +120,7 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	for pokemonId, tkn := range pokemonsTokens {
-		header.Set(fmt.Sprintf("%s-%s", tokens.PokemonsTokenTokenName, pokemonId), tkn)
+		header.Set(fmt.Sprintf("%s-%s", tokens.PokemonsTokenHeaderName, pokemonId), tkn)
 	}
 
 	dialer := &websocket.Dialer{

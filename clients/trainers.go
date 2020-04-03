@@ -47,9 +47,9 @@ func (c *TrainersClient) ListTrainers() ([]*utils.Trainer, error) {
 		return nil, err
 	}
 
-	var users []utils.Trainer
+	var users []*utils.Trainer
 	_, err = DoRequest(c.httpClient, req, &users)
-	return &users, err
+	return users, err
 }
 
 func (c *TrainersClient) GetTrainerByUsername(username string) (*utils.Trainer, error) {
@@ -122,22 +122,23 @@ func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId str
 
 // TOKENS
 
-func (c *TrainersClient) GetAllTrainerTokens(username string) (err error) {
+func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) (err error) {
 	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.GenerateAllTokensPath, username), nil)
 	if err != nil {
 		return err
 	}
 
-	resp, err := DoRequest(c.httpClient, req, nil)
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
+	resp, err := DoRequest(c.httpClient, req, nil)
 	if err != nil {
 		return err
 	}
 
 	c.TrainerStatsToken = resp.Header.Get(tokens.StatsTokenHeaderName)
-	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenTokenName)
+	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenHeaderName)
 	for name, v := range resp.Header {
-		if strings.Contains(name, tokens.PokemonsTokenTokenName) {
+		if strings.Contains(name, tokens.PokemonsTokenHeaderName) {
 			split := strings.Split(name, "-")
 			c.PokemonTokens[split[len(split)]] = v[0]
 		}
@@ -170,7 +171,7 @@ func (c *TrainersClient) GetPokemonsToken(username string) error {
 	}
 
 	for name, v := range resp.Header {
-		if strings.Contains(name, tokens.PokemonsTokenTokenName) {
+		if strings.Contains(name, tokens.PokemonsTokenHeaderName) {
 			split := strings.Split(name, "-")
 			c.PokemonTokens[split[len(split)]] = v[0]
 		}
@@ -188,7 +189,7 @@ func (c *TrainersClient) GetItemsToken(username string) error {
 	if err != nil {
 		return err
 	}
-	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenTokenName)
+	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenHeaderName)
 	return err
 }
 
@@ -206,7 +207,7 @@ func (c *TrainersClient) VerifyItems(username string, hash []byte) (*bool, error
 }
 
 func (c *TrainersClient) VerifyPokemons(username string, hashes map[string][]byte) (*bool, error) {
-	req, err := BuildRequest("GET", c.TrainersAddr, api.VerifyPokemonsPath, hashes)
+	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.VerifyPokemonsPath, username), hashes)
 	if err != nil {
 		return nil, err
 	}

@@ -15,10 +15,10 @@ import (
 const (
 	JWTDuration = 30 * time.Minute
 
-	AuthTokenHeaderName    = "auth_token"
-	StatsTokenHeaderName   = "stats_token"
-	PokemonsTokenTokenName = "pokemon_token"
-	ItemsTokenTokenName    = "items_token"
+	AuthTokenHeaderName     = "auth_token"
+	StatsTokenHeaderName    = "stats_token"
+	PokemonsTokenHeaderName = "pokemon_token"
+	ItemsTokenHeaderName    = "items_token"
 )
 
 var (
@@ -28,7 +28,7 @@ var (
 func ExtractAndVerifyAuthToken(headers http.Header) (*AuthToken, error) {
 
 	tknStr := headers.Get(AuthTokenHeaderName)
-	authToken := AuthToken{}
+	authToken := &AuthToken{}
 	jwtToken, err := jwt.ParseWithClaims(tknStr, authToken, func(token *jwt.Token) (interface{}, error) {
 		return authJWTKey, nil
 	})
@@ -41,7 +41,7 @@ func ExtractAndVerifyAuthToken(headers http.Header) (*AuthToken, error) {
 		return nil, errors.New("Invalid Token")
 	}
 
-	return &authToken, err
+	return authToken, err
 }
 
 func ExtractAndVerifyTrainerStatsToken(headers http.Header) (*TrainerStatsToken, error) {
@@ -68,7 +68,7 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]PokemonToken, error) 
 	var pokemonTkns []PokemonToken
 
 	for name, v := range headers {
-		if strings.Contains(name, PokemonsTokenTokenName) {
+		if strings.Contains(name, PokemonsTokenHeaderName) {
 			tknStr := strings.Join(v, "")
 			pokemonTkn := &PokemonToken{}
 			_, err := jwt.ParseWithClaims(tknStr, pokemonTkn, func(token *jwt.Token) (interface{}, error) {
@@ -109,7 +109,7 @@ func AddAuthToken(username string, headers http.Header) {
 		Username:       username,
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
-	setTokenInHeader(ItemsTokenTokenName, authToken, headers)
+	setTokenInHeader(AuthTokenHeaderName, authToken, headers)
 }
 
 func AddPokemonsTokens(pokemons map[string]utils.Pokemon, headers http.Header) {
@@ -120,7 +120,7 @@ func AddPokemonsTokens(pokemons map[string]utils.Pokemon, headers http.Header) {
 			PokemonHash:    generateHash(v),
 			StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 		}
-		setTokenInHeader(fmt.Sprintf("%s-%s", PokemonsTokenTokenName, k), pokemonToken, headers)
+		setTokenInHeader(fmt.Sprintf("%s-%s", PokemonsTokenHeaderName, k), pokemonToken, headers)
 	}
 
 }
@@ -132,7 +132,7 @@ func AddItemsToken(items map[string]utils.Item, headers http.Header) {
 		ItemsHash:      generateHash(items),
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
-	setTokenInHeader(ItemsTokenTokenName, trainerItemsToken, headers)
+	setTokenInHeader(ItemsTokenHeaderName, trainerItemsToken, headers)
 }
 
 func AddTrainerStatsToken(stats utils.TrainerStats, headers http.Header) {
