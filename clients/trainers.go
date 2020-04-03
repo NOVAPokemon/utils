@@ -153,10 +153,11 @@ func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) 
 		return err
 	}
 
+	c.PokemonTokens = make(map[string]string, len(resp.Header))
 	for name, v := range resp.Header {
 		if strings.Contains(name, tokens.PokemonsTokenHeaderName) {
 			split := strings.Split(name, "-")
-			c.PokemonTokens[split[len(split)]] = v[0]
+			c.PokemonTokens[split[len(split)-1]] = v[0]
 		}
 	}
 
