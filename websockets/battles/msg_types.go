@@ -24,5 +24,5 @@ const (
 	ERROR = "ERROR"
 
 	// Finish
-	FINISH = "FINISH"
+	FINISH = "FINISH_BATTLE"
 )

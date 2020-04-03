@@ -3,19 +3,23 @@ package websockets
 import (
 	"errors"
 	"strings"
+	"time"
 )
 
-func ParseMessage(msg *string) (error, *Message) {
+const PongWait = 10 * time.Second
+const PingPeriod = (PongWait * 9) / 10
+
+func ParseMessage(msg *string) (*Message, error) {
 	msgParts := strings.Split(*msg, " ")
 
 	if len(msgParts) < 1 {
-		return errors.New("invalid msg format"), nil
+		return nil, errors.New("invalid msg format")
 	}
 
-	return nil, &Message{
+	return &Message{
 		MsgType: msgParts[0],
 		MsgArgs: msgParts[1:],
-	}
+	}, nil
 }
 
 func SendMessage(msg Message, channel chan *string) {

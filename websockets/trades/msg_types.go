@@ -1,18 +1,23 @@
 package trades
 
 import (
+	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/websockets"
 )
 
 // Message Types
 const (
+	START = "START"
+
 	TRADE  = "TRADE"
 	ACCEPT = "ACCEPT"
 
 	UPDATE = "UPDATE"
 
-	FINISH = "FINISH"
+	SET_TOKEN = "SET_TOKEN"
+
+	FINISH = "FINISH_TRADE"
 
 	// Error
 	ERROR = "ERROR"
@@ -36,4 +41,10 @@ type UpdateMessage struct {
 
 type ItemsMap = map[string]utils.Item
 
-const Everyone = -1
+func CreateTradeMsg(itemId string) string {
+	return fmt.Sprintf("%s %s", TRADE, itemId)
+}
+
+func CreateAcceptMsg() string {
+	return fmt.Sprintf("%s", ACCEPT)
+}

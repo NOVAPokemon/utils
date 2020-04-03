@@ -5,9 +5,11 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
+	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"time"
@@ -16,7 +18,7 @@ import (
 type TradeLobbyClient struct {
 	TradesAddr string
 
-	conn       *websocket.Conn
+	conn *websocket.Conn
 }
 
 func NewTradesClient(addr string) *TradeLobbyClient {
@@ -25,7 +27,7 @@ func NewTradesClient(addr string) *TradeLobbyClient {
 	}
 }
 
-func (client *TradeLobbyClient) GetAvailableLobbies(authToken string) []utils.Lobby {
+func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
 	req, err := BuildRequest("GET", client.TradesAddr, api.GetTradesPath, nil)
 	if err != nil {
 		log.Error(err)
@@ -69,7 +71,7 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	return &lobbyId
 }
 
-func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, authToken string, itemsToken string) {
+func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, authToken string, itemsToken string) *string{
 	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: fmt.Sprintf(api.JoinTradePath, tradeId.Hex())}
 	log.Infof("Connecting to: %s", u.String())
 
@@ -90,29 +92,90 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 	defer c.Close()
 	client.conn = c
 
-	finished := make(chan struct{})
-	writeChannel := make(chan *string)
-
-	go ReadMessages(c, finished)
-	go WriteMessage(writeChannel)
-
 	items, err := tokens.ExtractItemsToken(itemsToken)
 	if err != nil {
 		log.Error(err)
-		return
+		return nil
 	}
 
-	for _, v := range items.Items {
-		log.Info(v)
+	started := make(chan struct{})
+	finished := make(chan struct{})
+	setItemsToken := make(chan *string)
+	writeChannel := make(chan *string)
+
+	go client.HandleReceivedMessages(c, started, finished, setItemsToken)
+	go WriteMessage(writeChannel)
+
+	itemIds := make([]string, len(items.Items))
+	i := 0
+	for k, _ := range items.Items {
+		itemIds[i] = k
+		i++
 	}
 
-	//go client.autoTrader(items.Items, writeChannel, finished)
-	//
-	//MainLoop(c, writeChannel, finished)
-	//
-	//log.Info("Finishing...")
+	WaitForStart(started)
+
+	go client.autoTrader(itemIds, writeChannel, finished)
+
+	MainLoop(c, writeChannel, finished)
+
+	log.Info("Finishing trade...")
+
+	return <-setItemsToken
 }
 
-func (client *TradeLobbyClient) autoTrader(items map[string]utils.Item, writeChannel chan *string, finished chan struct{}) {
-	//items := client.
+func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, started, finished chan struct{},
+	setItemsToken chan *string) {
+	defer close(finished)
+
+	var itemsToken *string = nil
+
+	for {
+		msg, err := ReadMessagesWithoutParse(conn)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+
+		log.Infof("Message: %s", msg)
+
+		switch msg.MsgType {
+		case trades.START:
+			close(started)
+		case trades.SET_TOKEN:
+			itemsToken = &msg.MsgArgs[0]
+		case trades.FINISH:
+			log.Info("Finished trade.")
+			setItemsToken <- itemsToken
+			return
+		}
+	}
+}
+
+func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel chan *string, finished chan struct{}) {
+	log.Infof("got %d items", len(availableItems))
+
+	numItemsToAdd := rand.Intn(len(availableItems))
+	log.Infof("will trade %d items", numItemsToAdd)
+
+	for i := 0; i < numItemsToAdd; i++ {
+		randomItemIdx := rand.Intn(len(availableItems))
+		msg := trades.CreateTradeMsg(availableItems[randomItemIdx])
+		writeChannel <- &msg
+
+		log.Infof("adding %s to trade", availableItems[randomItemIdx])
+
+		availableItems[randomItemIdx] = availableItems[len(availableItems)-1]
+		availableItems = availableItems[:len(availableItems)-1]
+
+		randSleep := rand.Intn(1000) + 1000
+		time.Sleep(time.Duration(randSleep) * time.Millisecond)
+
+		log.Infof("sleeping %d milliseconds", randSleep)
+	}
+
+	msg := trades.CreateAcceptMsg()
+	writeChannel <- &msg
+
+	<-finished
 }

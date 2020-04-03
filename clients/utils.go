@@ -26,6 +26,7 @@ func Send(conn *websocket.Conn, msg *string) {
 	}
 }
 
+// Deprecated
 func ReadMessages(conn *websocket.Conn, finished chan struct{}) {
 	defer close(finished)
 
@@ -40,7 +41,7 @@ func ReadMessages(conn *websocket.Conn, finished chan struct{}) {
 		msg := string(message)
 		log.Debugf("Received %s from the websocket", msg)
 
-		err, tradeMsg := websockets.ParseMessage(&msg)
+		tradeMsg, err := websockets.ParseMessage(&msg)
 		if err != nil {
 			log.Error(err)
 			continue
@@ -48,17 +49,33 @@ func ReadMessages(conn *websocket.Conn, finished chan struct{}) {
 
 		log.Infof("Message: %s", msg)
 
-		if tradeMsg.MsgType == trades.FINISH {
+		switch tradeMsg.MsgType {
+		case trades.FINISH:
 			log.Info("Finished trade.")
 			return
-		}
-
-		if tradeMsg.MsgType == battles.FINISH {
+		case battles.FINISH:
 			log.Info("Finished trade.")
 			_ = conn.Close()
 			return
 		}
 	}
+}
+
+func ReadMessagesWithoutParse(conn *websocket.Conn) (*websockets.Message, error){
+	_, msgBytes, err := conn.ReadMessage()
+	if err != nil {
+		return nil, err
+	}
+
+	msgString := string(msgBytes)
+	log.Debugf("Received %s from the websocket", msgString)
+
+	msg, err := websockets.ParseMessage(&msgString)
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }
 
 func WriteMessage(writeChannel chan *string) {
@@ -67,6 +84,13 @@ func WriteMessage(writeChannel chan *string) {
 		fmt.Print("Enter text: ")
 		text, _ := reader.ReadString('\n')
 		writeChannel <- &text
+	}
+}
+
+func WaitForStart(started chan struct{}) {
+	select {
+	case <-started:
+		return
 	}
 }
 

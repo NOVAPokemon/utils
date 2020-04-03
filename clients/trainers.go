@@ -140,37 +140,16 @@ func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) 
 	}
 
 	// Stats
-	c.TrainerStatsToken = resp.Header.Get(tokens.StatsTokenHeaderName)
-	c.TrainerStatsClaims, err = tokens.ExtractStatsToken(c.TrainerStatsToken)
-	if err != nil {
+	if err := c.SetTrainerStatsToken(resp.Header.Get(tokens.StatsTokenHeaderName)); err != nil {
 		return err
 	}
 
 	// Items
-	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenHeaderName)
-	c.ItemsClaims, err = tokens.ExtractItemsToken(c.ItemsToken)
-	if err != nil {
+	if err := c.SetItemsToken(resp.Header.Get(tokens.ItemsTokenHeaderName)); err != nil {
 		return err
 	}
 
-	c.PokemonTokens = make(map[string]string, len(resp.Header))
-	c.PokemonClaims = make(map[string]*tokens.PokemonToken, len(resp.Header))
-	for name, v := range resp.Header {
-		if strings.Contains(name, tokens.PokemonsTokenHeaderName) {
-			split := strings.Split(name, "-")
-			c.PokemonTokens[split[len(split)-1]] = v[0]
-			pokemonClaims, err := tokens.ExtractPokemonToken(v[0])
-			if err != nil {
-				return err
-			}
-
-			c.PokemonClaims[split[len(split)-1]] = pokemonClaims
-		}
-	}
-
-
-
-	return err
+	return c.SetPokemonTokens(resp.Header)
 }
 
 func (c *TrainersClient) GetTrainerStatsToken(username string) error {
@@ -178,12 +157,13 @@ func (c *TrainersClient) GetTrainerStatsToken(username string) error {
 	if err != nil {
 		return err
 	}
+
 	resp, err := DoRequest(c.httpClient, req, nil)
 	if err != nil {
 		return err
 	}
-	c.TrainerStatsToken = resp.Header.Get(tokens.StatsTokenHeaderName)
-	return err
+
+	return c.SetTrainerStatsToken(resp.Header.Get(tokens.StatsTokenHeaderName))
 }
 
 func (c *TrainersClient) GetPokemonsToken(username string) error {
@@ -191,32 +171,29 @@ func (c *TrainersClient) GetPokemonsToken(username string) error {
 	if err != nil {
 		return err
 	}
+
 	resp, err := DoRequest(c.httpClient, req, nil)
 	if err != nil {
 		return err
 	}
 
-	for name, v := range resp.Header {
-		if strings.Contains(name, tokens.PokemonsTokenHeaderName) {
-			split := strings.Split(name, "-")
-			c.PokemonTokens[split[len(split)]] = v[0]
-		}
-	}
-
-	return nil
+	return c.SetPokemonTokens(resp.Header)
 }
 
-func (c *TrainersClient) GetItemsToken(username string) error {
+func (c *TrainersClient) GetItemsToken(username, authToken string) error {
 	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.GenerateItemsTokenPath, username), nil)
 	if err != nil {
 		return err
 	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
+
 	resp, err := DoRequest(c.httpClient, req, nil)
 	if err != nil {
 		return err
 	}
-	c.ItemsToken = resp.Header.Get(tokens.ItemsTokenHeaderName)
-	return err
+
+	return c.SetItemsToken(resp.Header.Get(tokens.ItemsTokenHeaderName))
 }
 
 // verifications of tokens
@@ -253,4 +230,48 @@ func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte) (*bool
 	var res bool
 	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
+}
+
+func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
+	c.PokemonTokens = make(map[string]string, len(header))
+	c.PokemonClaims = make(map[string]*tokens.PokemonToken, len(header))
+
+	for name, v := range header {
+		if strings.Contains(name, tokens.PokemonsTokenHeaderName) {
+			split := strings.Split(name, "-")
+			c.PokemonTokens[split[len(split)-1]] = v[0]
+			pokemonClaims, err := tokens.ExtractPokemonToken(v[0])
+			if err != nil {
+				return err
+			}
+
+			c.PokemonClaims[split[len(split)-1]] = pokemonClaims
+		}
+	}
+
+	return nil
+}
+
+func (c *TrainersClient) SetTrainerStatsToken(statsToken string) error {
+	c.TrainerStatsToken = statsToken
+
+	var err error
+	c.TrainerStatsClaims, err = tokens.ExtractStatsToken(c.ItemsToken)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *TrainersClient) SetItemsToken(itemsToken string) error {
+	c.ItemsToken = itemsToken
+
+	var err error
+	c.ItemsClaims, err = tokens.ExtractItemsToken(c.ItemsToken)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

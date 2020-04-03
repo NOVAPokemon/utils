@@ -21,8 +21,8 @@ type NotificationClient struct {
 
 func NewNotificationClient(addr string, notificationsChannel chan *utils.Notification) *NotificationClient {
 	return &NotificationClient{
-		NotificationsAddr: addr,
-		httpClient: &http.Client{},
+		NotificationsAddr:    addr,
+		httpClient:           &http.Client{},
 		NotificationsChannel: notificationsChannel,
 	}
 }
@@ -54,7 +54,6 @@ func (client *NotificationClient) ListenToNotifications(authToken string) {
 func (client *NotificationClient) readNotifications(conn *websocket.Conn) {
 	for {
 		_, jsonBytes, err := conn.ReadMessage()
-
 		if err != nil {
 			log.Error(err)
 			return
@@ -66,8 +65,6 @@ func (client *NotificationClient) readNotifications(conn *websocket.Conn) {
 			log.Error(err)
 			return
 		}
-
-		log.Info(client.NotificationsChannel)
 
 		client.NotificationsChannel <- &notification
 
