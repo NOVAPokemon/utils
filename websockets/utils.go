@@ -2,6 +2,7 @@ package websockets
 
 import (
 	"errors"
+	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 )
@@ -34,5 +35,6 @@ func SendMessage(msg Message, channel chan *string) {
 	}
 
 	toSend := builder.String()
+	logrus.Infof("Sending: %s", toSend)
 	channel <- &toSend
 }

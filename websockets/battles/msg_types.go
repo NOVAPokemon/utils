@@ -4,6 +4,19 @@ package battles
 // Message Types
 const PokemonsPerBattle = 3
 
+var (
+	ErrInvalidMessageFormat   = "ErrInvalidMessageFormat"
+	ErrInvalidMessageType     = "ErrInvalidMessageType"
+	ErrPokemonSelectionPhase  = "ErrPokemonSelectionPhase"
+	ErrNoPokemonSelected      = "ErrNoPokemonSelected"
+	ErrInvalidPokemonSelected = "ErrInvalidPokemonSelected"
+	ErrPokemonNoHP            = "ErrPokemonNoHP"
+	ErrCooldown               = "ErrCooldown"
+
+	StatusDefended            = "StatusDefended"
+	StatusOpponentedDeffended = "StatusOpponentedDeffended"
+)
+
 const (
 	ATTACK   = "ATTACK"
 	USE_ITEM = "USE_ITEM"
