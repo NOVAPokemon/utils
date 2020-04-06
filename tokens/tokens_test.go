@@ -5,6 +5,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"os"
 	"testing"
@@ -12,10 +13,14 @@ import (
 
 const username = "test_trainer"
 
+var id1 = primitive.NewObjectID()
+var id2 = primitive.NewObjectID()
+var id3 = primitive.NewObjectID()
+
 var pokemons = map[string]utils.Pokemon{
-	"pokemon1": utils.Pokemon{},
-	"pokemon2": utils.Pokemon{},
-	"pokemon3": utils.Pokemon{},
+	id1.Hex(): utils.Pokemon{Id: id1},
+	id2.Hex(): utils.Pokemon{Id: id2},
+	id3.Hex(): utils.Pokemon{Id: id3},
 }
 
 var items = map[string]utils.Item{
@@ -61,12 +66,8 @@ func TestItemsToken(t *testing.T) {
 func TestPokemonToken(t *testing.T) {
 	header := http.Header{}
 
-	fmt.Println("here")
-
 	AddPokemonsTokens(pokemons, header)
 	tokens, err := ExtractAndVerifyPokemonTokens(header)
-
-	fmt.Println("here2")
 
 	if err != nil {
 		t.Error(err)
@@ -79,9 +80,8 @@ func TestPokemonToken(t *testing.T) {
 	}
 
 	for k, token := range tokens {
-		fmt.Println("here4")
 		fmt.Println(k, token)
-		correpondingPokemon := pokemons[k]
+		correpondingPokemon := pokemons[token.Pokemon.Id.Hex()]
 		logrus.Infof("%+v-%+v", correpondingPokemon, token.Pokemon)
 		assert.Equal(t, correpondingPokemon, token.Pokemon)
 	}

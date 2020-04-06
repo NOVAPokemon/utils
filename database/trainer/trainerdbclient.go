@@ -70,7 +70,7 @@ func AddTrainer(trainer utils.Trainer) (string, error) {
 	if err != nil {
 		return "", err
 	} else {
-		log.Infof("Added new trainer: %+v", trainer)
+		log.Infof("Added new trainer: %s", trainer.Username)
 		return trainer.Username, nil
 	}
 
@@ -144,7 +144,7 @@ func UpdateTrainerStats(username string, stats utils.TrainerStats) (*utils.Train
 	}
 
 	if res.MatchedCount > 0 {
-		log.Infof("Updated Trainer %+v", username)
+		log.Infof("Updated Trainer %s", username)
 	} else {
 		return nil, ErrTrainerNotFound
 	}

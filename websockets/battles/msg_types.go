@@ -38,4 +38,6 @@ const (
 
 	// Finish
 	FINISH = "FINISH_BATTLE"
+
+	START = "START"
 )
