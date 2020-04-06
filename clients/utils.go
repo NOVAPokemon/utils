@@ -54,14 +54,14 @@ func ReadMessages(conn *websocket.Conn, finished chan struct{}) {
 			log.Info("Finished trade.")
 			return
 		case battles.FINISH:
-			log.Info("Finished trade.")
+			log.Info("Finished battle.")
 			_ = conn.Close()
 			return
 		}
 	}
 }
 
-func ReadMessagesWithoutParse(conn *websocket.Conn) (*websockets.Message, error){
+func ReadMessagesWithoutParse(conn *websocket.Conn) (*websockets.Message, error) {
 	_, msgBytes, err := conn.ReadMessage()
 	if err != nil {
 		return nil, err
@@ -87,9 +87,11 @@ func WriteMessage(writeChannel chan *string) {
 	}
 }
 
-func WaitForStart(started chan struct{}) {
+func WaitForStart(started, finish chan struct{}) {
 	select {
 	case <-started:
+		return
+	case <-finish:
 		return
 	}
 }

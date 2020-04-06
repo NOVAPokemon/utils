@@ -71,7 +71,7 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	return &lobbyId
 }
 
-func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, authToken string, itemsToken string) *string{
+func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, authToken string, itemsToken string) *string {
 	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: fmt.Sprintf(api.JoinTradePath, tradeId.Hex())}
 	log.Infof("Connecting to: %s", u.String())
 
@@ -113,7 +113,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 		i++
 	}
 
-	WaitForStart(started)
+	WaitForStart(started, finished)
 
 	go client.autoTrader(itemIds, writeChannel, finished)
 
@@ -142,6 +142,12 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			close(started)
 		case trades.SET_TOKEN:
 			itemsToken = &msg.MsgArgs[0]
+			token, err := tokens.ExtractItemsToken(*itemsToken)
+			if err != nil {
+				log.Error(err)
+			}
+
+			log.Info(token.ItemsHash)
 		case trades.FINISH:
 			log.Info("Finished trade.")
 			close(finished)
@@ -152,29 +158,34 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 }
 
 func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel chan *string, finished chan struct{}) {
-	log.Infof("got %d items", len(availableItems))
+	select {
+	case <-finished:
+		return
+	default:
+		log.Infof("got %d items", len(availableItems))
 
-	numItemsToAdd := rand.Intn(len(availableItems))
-	log.Infof("will trade %d items", numItemsToAdd)
+		numItemsToAdd := rand.Intn(len(availableItems))
+		log.Infof("will trade %d items", numItemsToAdd)
 
-	for i := 0; i < numItemsToAdd; i++ {
-		randomItemIdx := rand.Intn(len(availableItems))
-		msg := trades.CreateTradeMsg(availableItems[randomItemIdx])
+		for i := 0; i < numItemsToAdd; i++ {
+			randomItemIdx := rand.Intn(len(availableItems))
+			msg := trades.CreateTradeMsg(availableItems[randomItemIdx])
+			writeChannel <- &msg
+
+			log.Infof("adding %s to trade", availableItems[randomItemIdx])
+
+			availableItems[randomItemIdx] = availableItems[len(availableItems)-1]
+			availableItems = availableItems[:len(availableItems)-1]
+
+			randSleep := rand.Intn(1000) + 1000
+			time.Sleep(time.Duration(randSleep) * time.Millisecond)
+
+			log.Infof("sleeping %d milliseconds", randSleep)
+		}
+
+		msg := trades.CreateAcceptMsg()
 		writeChannel <- &msg
 
-		log.Infof("adding %s to trade", availableItems[randomItemIdx])
-
-		availableItems[randomItemIdx] = availableItems[len(availableItems)-1]
-		availableItems = availableItems[:len(availableItems)-1]
-
-		randSleep := rand.Intn(1000) + 1000
-		time.Sleep(time.Duration(randSleep) * time.Millisecond)
-
-		log.Infof("sleeping %d milliseconds", randSleep)
+		<-finished
 	}
-
-	msg := trades.CreateAcceptMsg()
-	writeChannel <- &msg
-
-	<-finished
 }
