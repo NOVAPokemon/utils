@@ -26,7 +26,43 @@ func Send(conn *websocket.Conn, msg *string) {
 	}
 }
 
-// Deprecated
+func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished chan struct{}) {
+	defer close(finished)
+
+	for {
+		_, message, err := conn.ReadMessage()
+
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		msg := string(message)
+		log.Debugf("Received %s from the websocket", msg)
+
+		battleMsg, err := websockets.ParseMessage(&msg)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+
+		log.Infof("Message: %s", msg)
+
+		if battleMsg.MsgType == trades.FINISH {
+			log.Info("Finished trade.")
+			return
+		}
+
+		if battleMsg.MsgType == battles.FINISH {
+			log.Info("Finished trade.")
+			_ = conn.Close()
+			return
+		}
+
+		msgChan <- &msg
+	}
+}
+
 func ReadMessages(conn *websocket.Conn, finished chan struct{}) {
 	defer close(finished)
 

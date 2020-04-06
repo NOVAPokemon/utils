@@ -21,7 +21,8 @@ type BattleLobbyClient struct {
 }
 
 type BattleChannels struct {
-	Channel       chan *string
+	OutChannel    chan *string
+	InChannel     chan *string
 	FinishChannel chan struct{}
 }
 
@@ -73,16 +74,17 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 		return nil, err
 	}
 
-	channel := make(chan *string)
+	outChannel := make(chan *string)
+	inChannel := make(chan *string)
 	finished := make(chan struct{})
 
-	go ReadMessages(c, finished)
-	go MainLoop(c, channel, finished)
+	go ReadMessagesToChan(c, inChannel, finished)
+	go MainLoop(c, outChannel, finished)
 
-	return &BattleChannels{channel, finished}, nil
+	return &BattleChannels{outChannel, inChannel, finished}, nil
 }
 
-func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens map[string]string, targetPlayer string) BattleChannels {
+func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens map[string]string, targetPlayer string) (*BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.ChallengeToBattlePath, targetPlayer)}
 	log.Infof("Connecting to: %s", u.String())
@@ -103,17 +105,18 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 		log.Fatal(err)
 	}
 
-	channel := make(chan *string)
+	outChannel := make(chan *string)
+	inChannel := make(chan *string)
 	finished := make(chan struct{})
 
-	go ReadMessages(c, finished)
-	go MainLoop(c, channel, finished)
+	go ReadMessagesToChan(c, inChannel, finished)
+	go MainLoop(c, outChannel, finished)
 
-	return BattleChannels{channel, finished}
+	return &BattleChannels{inChannel, outChannel, finished}, nil
 
 }
 
-func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens map[string]string, battleId primitive.ObjectID) BattleChannels {
+func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens map[string]string, battleId primitive.ObjectID) (*BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.AcceptChallengePath, battleId.Hex())}
 	log.Infof("Accepting challenge: %s", u.String())
@@ -132,14 +135,16 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	c, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal(err)
+		return nil, err
 	}
 
-	channel := make(chan *string)
+	outChannel := make(chan *string)
+	inChannel := make(chan *string)
 	finished := make(chan struct{})
 
-	go ReadMessages(c, finished)
-	go MainLoop(c, channel, finished)
+	go ReadMessagesToChan(c, inChannel, finished)
+	go MainLoop(c, outChannel, finished)
 
-	return BattleChannels{channel, finished}
+	return &BattleChannels{outChannel, inChannel, finished}, nil
 
 }
