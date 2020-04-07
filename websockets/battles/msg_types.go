@@ -31,13 +31,11 @@ const (
 
 	// Setup Message Types
 	SELECT_POKEMON = "SELECT_POKEMON"
-	STATUS         = "STATUS"
 
-	// Error
-	ERROR = "ERROR"
-
-	// Finish
+	STATUS = "STATUS"
+	ERROR  = "ERROR"
 	FINISH = "FINISH_BATTLE"
+	START  = "START"
 
-	START = "START"
+	SET_TOKEN = "SET_TOKEN"
 )

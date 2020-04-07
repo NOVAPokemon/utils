@@ -49,51 +49,17 @@ func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished cha
 		log.Infof("Message: %s", msg)
 
 		if battleMsg.MsgType == trades.FINISH {
-			log.Info("Finished trade.")
+			log.Info("Finished battle.")
 			return
 		}
 
 		if battleMsg.MsgType == battles.FINISH {
-			log.Info("Finished trade.")
+			log.Info("Finished battle.")
 			_ = conn.Close()
 			return
 		}
 
 		msgChan <- &msg
-	}
-}
-
-func ReadMessages(conn *websocket.Conn, finished chan struct{}) {
-	defer close(finished)
-
-	for {
-		_, message, err := conn.ReadMessage()
-
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		msg := string(message)
-		log.Debugf("Received %s from the websocket", msg)
-
-		tradeMsg, err := websockets.ParseMessage(&msg)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-
-		log.Infof("Message: %s", msg)
-
-		switch tradeMsg.MsgType {
-		case trades.FINISH:
-			log.Info("Finished trade.")
-			return
-		case battles.FINISH:
-			log.Info("Finished battle.")
-			_ = conn.Close()
-			return
-		}
 	}
 }
 
