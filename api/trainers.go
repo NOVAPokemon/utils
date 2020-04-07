@@ -44,7 +44,7 @@ var UpdateTrainerStatsRoute = fmt.Sprintf(UpdateTrainerStatsPath, UsernameRouteV
 
 // trainer pokemons
 var AddPokemonRoute = fmt.Sprintf(AddPokemonPath, UsernameRouteVar)
-var UpdatePokemonRoute = fmt.Sprintf(UpdatePokemonPath, UsernameRouteVar, PokemonIdVar)
+var UpdatePokemonRoute = fmt.Sprintf(UpdatePokemonPath, UsernameRouteVar, PokemonIdRouteVar)
 var RemovePokemonRoute = fmt.Sprintf(RemovePokemonPath, UsernameRouteVar, PokemonIdRouteVar)
 
 // trainer bag

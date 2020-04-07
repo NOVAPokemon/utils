@@ -57,11 +57,11 @@ func CloseLobby(lobby *Lobby) {
 	endConnection(lobby)
 
 	if lobby.trainerConnections[0] != nil {
-		lobby.trainerConnections[0].Close()
+		_ = lobby.trainerConnections[0].Close()
 	}
 
 	if lobby.trainerConnections[1] != nil {
-		lobby.trainerConnections[1].Close()
+		_ = lobby.trainerConnections[1].Close()
 	}
 }
 

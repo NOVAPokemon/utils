@@ -18,11 +18,11 @@ type TrainersClient struct {
 
 	TrainerStatsToken string
 	ItemsToken        string
-	PokemonTokens     []string
+	PokemonTokens     map[string]string
 
 	TrainerStatsClaims *tokens.TrainerStatsToken
 	ItemsClaims        *tokens.ItemsToken
-	PokemonClaims      []*tokens.PokemonToken
+	PokemonClaims      map[string]*tokens.PokemonToken
 }
 
 // TRAINER
@@ -192,11 +192,13 @@ func (c *TrainersClient) GetTrainerStatsToken(username string) error {
 	return c.SetTrainerStatsToken(resp.Header.Get(tokens.StatsTokenHeaderName))
 }
 
-func (c *TrainersClient) GetPokemonsToken(username string) error {
+func (c *TrainersClient) GetPokemonsToken(username string, authToken string) error {
 	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.GeneratePokemonsTokenPath, username), nil)
 	if err != nil {
 		return err
 	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	resp, err := DoRequest(c.httpClient, req, nil)
 	if err != nil {
@@ -270,8 +272,8 @@ func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
 		return errors.New("No pokemon tokens in header")
 	}
 
-	auxClaims := make([]*tokens.PokemonToken, len(tkns))
-	auxTkns := make([]string, len(tkns))
+	auxClaims := make(map[string]*tokens.PokemonToken, len(tkns))
+	auxTkns := make(map[string]string, len(tkns))
 
 	i := 0
 	added := 0
@@ -286,13 +288,14 @@ func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
 			return err
 		}
 
-		auxClaims[added] = pokemonClaims
-		auxTkns[added] = tkns[i]
+		auxClaims[pokemonClaims.Pokemon.Id.Hex()] = pokemonClaims
+		auxTkns[pokemonClaims.Pokemon.Id.Hex()] = tkns[i]
+
 		added++
 	}
 	logrus.Infof("Trainer has %d pokemmons", added)
-	c.PokemonTokens = auxTkns[:added]
-	c.PokemonClaims = auxClaims[:added]
+	c.PokemonTokens = auxTkns
+	c.PokemonClaims = auxClaims
 
 	return nil
 }
