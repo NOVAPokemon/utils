@@ -80,25 +80,38 @@ func (c *TrainersClient) UpdateTrainerStats(username string, newStats utils.Trai
 
 // BAG
 
-func (c *TrainersClient) RemoveItemFromBag(username string, itemId string) error {
-	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.RemoveItemFromBagPath, username, itemId), nil)
+func (c *TrainersClient) RemoveItemsFromBag(username string, itemIds []string, authToken string) error {
+	var itemIdsPath strings.Builder
+
+	itemIdsPath.WriteString(itemIds[0])
+	for i := 1; i < len(itemIds); i++ {
+		itemIdsPath.WriteString(",")
+		itemIdsPath.WriteString(itemIds[i])
+	}
+
+	req, err := BuildRequest("DELETE", c.TrainersAddr,
+		fmt.Sprintf(api.RemoveItemFromBagPath, username, itemIdsPath.String()), nil)
 	if err != nil {
 		return err
 	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	_, err = DoRequest(c.httpClient, req, nil)
 	return err
 }
 
-func (c *TrainersClient) AddItemToBag(username string, item utils.Item) (*utils.Item, error) {
-	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.AddItemToBagPath, username, ), item)
+func (c *TrainersClient) AddItemsToBag(username string, items []*utils.Item, authToken string) ([]*utils.Item, error) {
+	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.AddItemToBagPath, username), items)
 	if err != nil {
 		return nil, err
 	}
 
-	var res utils.Item
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
+
+	var res []*utils.Item
 	_, err = DoRequest(c.httpClient, req, &res)
-	return &res, err
+	return res, err
 }
 
 // POKEMON

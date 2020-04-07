@@ -11,4 +11,5 @@ require (
 	github.com/stretchr/testify v1.3.0
 	go.mongodb.org/mongo-driver v1.3.1
 	golang.org/x/sys v0.0.0-20200321134203-328b4cd54aae // indirect
+	robpike.io/filter v0.0.0-20150108201509-2984852a2183
 )
