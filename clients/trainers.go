@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"reflect"
 	"strings"
 )
 
@@ -69,11 +70,13 @@ func (c *TrainersClient) GetTrainerByUsername(username string) (*utils.Trainer, 
 	return &user, err
 }
 
-func (c *TrainersClient) UpdateTrainerStats(username string, newStats utils.TrainerStats) (*utils.TrainerStats, error) {
+func (c *TrainersClient) UpdateTrainerStats(username string, newStats utils.TrainerStats, authToken string) (*utils.TrainerStats, error) {
 	req, err := BuildRequest("PUT", c.TrainersAddr, fmt.Sprintf(api.UpdateTrainerStatsPath, username), newStats)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var resultStats utils.TrainerStats
 	_, err = DoRequest(c.httpClient, req, &resultStats)
@@ -319,4 +322,25 @@ func (c *TrainersClient) SetItemsToken(itemsToken string) error {
 	}
 
 	return nil
+}
+
+// helper methods
+
+func CheckItemsAdded(toAdd, added []*utils.Item) error {
+	for i, item := range toAdd {
+		item.Id = added[i].Id
+	}
+	if reflect.DeepEqual(toAdd, added) {
+		return nil
+	} else {
+		return errors.New(fmt.Sprintf("items to add were not successfully added: %+v %+v", toAdd, added))
+	}
+}
+
+func CheckUpdatedStats(original, updated *utils.TrainerStats) error {
+	if reflect.DeepEqual(original, updated) {
+		return nil
+	} else {
+		return errors.New(fmt.Sprintf("stats were not successfully updated: %+v, %+v", original, updated))
+	}
 }

@@ -56,12 +56,12 @@ func (client *AuthClient) LoginWithUsernameAndPassword(username, password string
 }
 
 func (client *AuthClient) Register(username string, password string) error {
-
 	httpClient := &http.Client{}
 
 	jsonStr, err := json.Marshal(utils.UserJSON{Username: username, Password: password})
 	if err != nil {
 		log.Error(err)
+		return err
 	}
 
 	host := fmt.Sprintf("%s:%d", utils.Host, utils.AuthenticationPort)
@@ -72,7 +72,6 @@ func (client *AuthClient) Register(username string, password string) error {
 	}
 
 	req, err := http.NewRequest("POST", loginUrl.String(), bytes.NewBuffer(jsonStr))
-
 	if err != nil {
 		log.Error(err)
 		return err
@@ -81,7 +80,6 @@ func (client *AuthClient) Register(username string, password string) error {
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := httpClient.Do(req)
-
 	if err != nil {
 		log.Error(err)
 		return err
