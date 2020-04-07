@@ -14,6 +14,7 @@ const UpdateTrainerStatsPath = "/trainers/%s"
 // trainer pokemons
 const AddPokemonPath = "/trainers/%s/pokemons/"
 const RemovePokemonPath = "/trainers/%s/pokemons/%s"
+const UpdatePokemonPath = "/trainers/%s/pokemons/%s"
 
 // trainer bag
 const AddItemToBagPath = "/trainers/%s/bag/"
@@ -43,6 +44,7 @@ var UpdateTrainerStatsRoute = fmt.Sprintf(UpdateTrainerStatsPath, UsernameRouteV
 
 // trainer pokemons
 var AddPokemonRoute = fmt.Sprintf(AddPokemonPath, UsernameRouteVar)
+var UpdatePokemonRoute = fmt.Sprintf(UpdatePokemonPath, UsernameRouteVar, PokemonIdVar)
 var RemovePokemonRoute = fmt.Sprintf(RemovePokemonPath, UsernameRouteVar, PokemonIdRouteVar)
 
 // trainer bag

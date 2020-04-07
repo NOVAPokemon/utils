@@ -338,6 +338,30 @@ func AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon
 	return &pokemon, err
 }
 
+func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon utils.Pokemon) (*utils.Pokemon, error) {
+
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
+
+	filter := bson.M{"username": username}
+	change := bson.M{"$set": bson.M{"pokemons." + pokemonId.Hex(): pokemon}}
+
+	id, err := primitive.ObjectIDFromHex(pokemonId.Hex())
+	if err != nil {
+		return nil, err
+	}
+
+	pokemon.Id = id
+
+	_, err = collection.UpdateOne(*ctx, filter, change)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pokemon, err
+}
+
 func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) error {
 
 	ctx := dbClient.Ctx

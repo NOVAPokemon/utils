@@ -115,6 +115,17 @@ func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon utils.Poke
 	return &res, err
 }
 
+func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon utils.Pokemon) (*utils.Pokemon, error) {
+	req, err := BuildRequest("PUT", c.TrainersAddr, fmt.Sprintf(api.UpdatePokemonPath, username, pokemonId), pokemon)
+	if err != nil {
+		return nil, err
+	}
+
+	var res utils.Pokemon
+	_, err = DoRequest(c.httpClient, req, &res)
+	return &res, err
+}
+
 func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId string) error {
 	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.RemovePokemonPath, username, pokemonId), nil)
 	if err != nil {
