@@ -5,8 +5,9 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"net/http"
-	"strings"
 )
 
 type TrainersClient struct {
@@ -16,11 +17,11 @@ type TrainersClient struct {
 
 	TrainerStatsToken string
 	ItemsToken        string
-	PokemonTokens     map[string]string
+	PokemonTokens     []string
 
 	TrainerStatsClaims *tokens.TrainerStatsToken
 	ItemsClaims        *tokens.ItemsToken
-	PokemonClaims      map[string]*tokens.PokemonToken
+	PokemonClaims      []*tokens.PokemonToken
 }
 
 // TRAINER
@@ -118,6 +119,17 @@ func (c *TrainersClient) AddItemsToBag(username string, items []*utils.Item, aut
 
 func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon, error) {
 	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.AddPokemonPath, username), pokemon)
+	if err != nil {
+		return nil, err
+	}
+
+	var res utils.Pokemon
+	_, err = DoRequest(c.httpClient, req, &res)
+	return &res, err
+}
+
+func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon utils.Pokemon) (*utils.Pokemon, error) {
+	req, err := BuildRequest("PUT", c.TrainersAddr, fmt.Sprintf(api.UpdatePokemonPath, username, pokemonId), pokemon)
 	if err != nil {
 		return nil, err
 	}
@@ -251,21 +263,35 @@ func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte, authTo
 }
 
 func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
-	c.PokemonTokens = make(map[string]string, len(header))
-	c.PokemonClaims = make(map[string]*tokens.PokemonToken, len(header))
+	tkns, ok := header[tokens.PokemonsTokenHeaderName]
 
-	for name, v := range header {
-		if strings.Contains(name, tokens.PokemonsTokenHeaderName) {
-			split := strings.Split(name, "-")
-			c.PokemonTokens[split[len(split)-1]] = v[0]
-			pokemonClaims, err := tokens.ExtractPokemonToken(v[0])
-			if err != nil {
-				return err
-			}
-
-			c.PokemonClaims[split[len(split)-1]] = pokemonClaims
-		}
+	if !ok {
+		return errors.New("No pokemon tokens in header")
 	}
+
+	auxClaims := make([]*tokens.PokemonToken, len(tkns))
+	auxTkns := make([]string, len(tkns))
+
+	i := 0
+	added := 0
+	for ; i < len(tkns); i++ {
+
+		if len(tkns[i]) == 0 {
+			continue
+		}
+
+		pokemonClaims, err := tokens.ExtractPokemonToken(tkns[i])
+		if err != nil {
+			return err
+		}
+
+		auxClaims[added] = pokemonClaims
+		auxTkns[added] = tkns[i]
+		added++
+	}
+	logrus.Infof("Trainer has %d pokemmons", added)
+	c.PokemonTokens = auxTkns[:added]
+	c.PokemonClaims = auxClaims[:added]
 
 	return nil
 }

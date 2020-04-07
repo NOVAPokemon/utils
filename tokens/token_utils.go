@@ -3,7 +3,6 @@ package tokens
 import (
 	"crypto/md5"
 	"encoding/json"
-	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
@@ -64,25 +63,33 @@ func ExtractAndVerifyTrainerStatsToken(headers http.Header) (*TrainerStatsToken,
 	return statsTkn, err
 }
 
-func ExtractAndVerifyPokemonTokens(headers http.Header) (map[string]PokemonToken, error) {
+func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error) {
 
-	var pokemonTkns = make(map[string]PokemonToken, len(headers))
+	tkns, ok := headers[PokemonsTokenHeaderName]
 
-	for name, v := range headers {
-		if strings.Contains(name, PokemonsTokenHeaderName) {
-			tknStr := strings.Join(v, "")
-			pokemonTkn := &PokemonToken{}
-			_, err := jwt.ParseWithClaims(tknStr, pokemonTkn, func(token *jwt.Token) (interface{}, error) {
-				return authJWTKey, nil
-			})
-			if err != nil {
-				return nil, err
-			}
-			pokemonTkns[name] = *pokemonTkn
-		}
+
+	if !ok {
+		return nil, errors.New("No pokemon tokens in header")
 	}
 
-	return pokemonTkns, nil
+	var pokemonTkns = make([]*PokemonToken, len(tkns))
+	i := 0
+	for ; i < len(tkns); i++ {
+
+		if len(tkns[i]) == 0 {
+			continue
+		}
+
+		pokemonTkn := PokemonToken{}
+		_, err := jwt.ParseWithClaims(strings.TrimSpace(tkns[i]), &pokemonTkn, func(token *jwt.Token) (interface{}, error) {
+			return authJWTKey, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		pokemonTkns[i] = &pokemonTkn
+	}
+	return pokemonTkns[:i], nil
 }
 
 func ExtractAndVerifyItemsToken(headers http.Header) (*ItemsToken, error) {
@@ -148,15 +155,14 @@ func AddAuthToken(username string, headers http.Header) {
 
 func AddPokemonsTokens(pokemons map[string]utils.Pokemon, headers http.Header) {
 	expirationTime := time.Now().Add(JWTDuration)
-	for k, v := range pokemons {
+	for _, v := range pokemons {
 		pokemonToken := &PokemonToken{
 			Pokemon:        v,
 			PokemonHash:    generateHash(v),
 			StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 		}
-		setTokenInHeader(fmt.Sprintf("%s-%s", PokemonsTokenHeaderName, k), pokemonToken, headers)
+		addTokenToHeader(PokemonsTokenHeaderName, pokemonToken, headers)
 	}
-
 }
 
 func AddItemsToken(items map[string]utils.Item, headers http.Header) {
@@ -177,6 +183,15 @@ func AddTrainerStatsToken(stats utils.TrainerStats, headers http.Header) {
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
 	setTokenInHeader(StatsTokenHeaderName, trainerStatsToken, headers)
+}
+
+func addTokenToHeader(headerName string, token interface{ jwt.Claims }, headers http.Header) {
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, token)
+	tokenString, err := jwtToken.SignedString(authJWTKey)
+	if err != nil {
+		panic(err)
+	}
+	headers.Add(headerName, tokenString)
 }
 
 func setTokenInHeader(headerName string, token interface{ jwt.Claims }, headers http.Header) {

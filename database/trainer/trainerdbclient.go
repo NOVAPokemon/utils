@@ -70,7 +70,7 @@ func AddTrainer(trainer utils.Trainer) (string, error) {
 	if err != nil {
 		return "", err
 	} else {
-		log.Infof("Added new trainer: %+v", trainer)
+		log.Infof("Added new trainer: %s", trainer.Username)
 		return trainer.Username, nil
 	}
 
@@ -144,7 +144,7 @@ func UpdateTrainerStats(username string, stats utils.TrainerStats) (*utils.Train
 	}
 
 	if res.MatchedCount > 0 {
-		log.Infof("Updated Trainer %+v", username)
+		log.Infof("Updated Trainer %s", username)
 	} else {
 		return nil, ErrTrainerNotFound
 	}
@@ -330,6 +330,30 @@ func AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon
 	change := bson.M{"$set": bson.M{"pokemons." + pokemon.Id.Hex(): pokemon}}
 
 	_, err := collection.UpdateOne(*ctx, filter, change)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &pokemon, err
+}
+
+func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon utils.Pokemon) (*utils.Pokemon, error) {
+
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
+
+	filter := bson.M{"username": username}
+	change := bson.M{"$set": bson.M{"pokemons." + pokemonId.Hex(): pokemon}}
+
+	id, err := primitive.ObjectIDFromHex(pokemonId.Hex())
+	if err != nil {
+		return nil, err
+	}
+
+	pokemon.Id = id
+
+	_, err = collection.UpdateOne(*ctx, filter, change)
 
 	if err != nil {
 		return nil, err
