@@ -3,6 +3,7 @@ package transactions
 import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -14,6 +15,14 @@ var transactionOfferMockup = utils.TransactionTemplate{
 var transactionRecordMockup = utils.TransactionRecord{
 	TemplateName: transactionOfferMockup.Name,
 	User:         "user1",
+}
+
+func TestMain(m *testing.M) {
+	_ = RemoveAllTransactions()
+	res := m.Run()
+	_ = RemoveAllTransactions()
+
+	os.Exit(res)
 }
 
 func TestAddTransaction(t *testing.T) {
