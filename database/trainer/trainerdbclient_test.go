@@ -153,7 +153,7 @@ func TestRemovePokemonFromTrainer(t *testing.T) {
 
 }
 
-func TestAppendAndRemove(t *testing.T) {
+func TestAppendAndRemoveItem(t *testing.T) {
 
 	userName, err := AddTrainer(trainerMockup)
 
@@ -237,6 +237,92 @@ func TestAppendAndRemove(t *testing.T) {
 	}
 
 	assert.True(t, len(trainer.Items) == 0)
+	_ = DeleteTrainer(userName)
+
+}
+
+func TestAppendAndRemovePokemon(t *testing.T) {
+
+	userName, err := AddTrainer(trainerMockup)
+
+	toAppend := utils.Pokemon{
+	}
+
+	toAppend2 := utils.Pokemon{
+	}
+
+	// add item, verify that it is in trainer
+	pokemon, err := AddPokemonToTrainer(userName, toAppend)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	trainer, err := GetTrainerByUsername(userName)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	assert.True(t, len(trainer.Pokemons) == 1)
+	assert.Contains(t, trainer.Pokemons, pokemon.Id.Hex())
+
+	// add another pokemon, verify that trainer has both pokemons
+	pokemon2, err := AddPokemonToTrainer(userName, toAppend2)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	trainer, err = GetTrainerByUsername(userName)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	assert.True(t, len(trainer.Pokemons) == 2)
+	assert.Contains(t, trainer.Pokemons, pokemon.Id.Hex())
+	assert.Contains(t, trainer.Pokemons, pokemon2.Id.Hex())
+
+	// delete one pokemon, verify that trainer has  the remaining Pokemon
+	err = RemovePokemonFromTrainer(userName, pokemon.Id)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	trainer, err = GetTrainerByUsername(userName)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	assert.True(t, len(trainer.Pokemons) == 1)
+	assert.NotContains(t, trainer.Pokemons, pokemon.Id.Hex())
+	assert.Contains(t, trainer.Pokemons, pokemon2.Id.Hex())
+
+	// Remove remaining pokemon, assure there are no pokemons remaining
+	err = RemovePokemonFromTrainer(userName, pokemon2.Id)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	trainer, err = GetTrainerByUsername(userName)
+
+	if err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+
+	assert.True(t, len(trainer.Pokemons) == 0)
 	_ = DeleteTrainer(userName)
 
 }
