@@ -34,14 +34,14 @@ func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
 		return nil
 	}
 
-	var battles []utils.Lobby
-	_, err = DoRequest(&http.Client{}, req, &battles)
+	var trades []utils.Lobby
+	_, err = DoRequest(&http.Client{}, req, &trades)
 	if err != nil {
 		log.Error(err)
 		return nil
 	}
 
-	return battles
+	return trades
 }
 
 func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken string, itemsToken string) *primitive.ObjectID {
