@@ -18,6 +18,18 @@ type Trainer struct {
 	Stats    TrainerStats
 }
 
+type TransactionTemplate struct {
+	Name  string
+	Coins int
+	Price int
+}
+
+type TransactionRecord struct {
+	Id           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	User     string
+	TemplateName string
+}
+
 type TrainerStats struct {
 	Level int
 	Coins int

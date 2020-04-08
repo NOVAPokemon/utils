@@ -181,11 +181,13 @@ func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) 
 	return c.SetPokemonTokens(resp.Header)
 }
 
-func (c *TrainersClient) GetTrainerStatsToken(username string) error {
+func (c *TrainersClient) GetTrainerStatsToken(username string, authToken string) error {
 	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.GenerateTrainerStatsTokenPath, username), nil)
 	if err != nil {
 		return err
 	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	resp, err := DoRequest(c.httpClient, req, nil)
 	if err != nil {
