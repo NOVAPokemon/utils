@@ -48,6 +48,64 @@ func DeleteWildPokemons() error {
 	return err
 }
 
+func GetWildPokemons() []utils.Pokemon {
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[wildPokemonCollectionName]
+	var results []utils.Pokemon
+
+	cur, err := collection.Find(*ctx, bson.M{})
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	defer cur.Close(*ctx)
+	for cur.Next(*ctx) {
+		var result utils.Pokemon
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Error(err)
+		} else {
+			results = append(results, result)
+		}
+	}
+
+	if err := cur.Err(); err != nil {
+		log.Error(err)
+	}
+
+	return results
+}
+
+func AddCatchableItem(item utils.Item) (error, primitive.ObjectID) {
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[catchableItemsCollectionName]
+	res, err := collection.InsertOne(*ctx, item)
+
+	if err != nil {
+		log.Error(err)
+		return err, [12]byte{}
+	}
+
+	log.Infof("Inserted new Catchable Item %+v", item)
+
+	return err, res.InsertedID.(primitive.ObjectID)
+}
+
+func DeleteCatchableItems() error {
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[catchableItemsCollectionName]
+	filter := bson.M{}
+
+	_, err := collection.DeleteMany(*ctx, filter)
+
+	if err != nil {
+		log.Error(err)
+	}
+
+	return err
+}
+
 func GetCatchableItems() []utils.Item {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collections[catchableItemsCollectionName]
@@ -75,35 +133,6 @@ func GetCatchableItems() []utils.Item {
 	}
 
 	return results
-}
-
-func DeleteCatchableItems() error {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[catchableItemsCollectionName]
-	filter := bson.M{}
-
-	_, err := collection.DeleteMany(*ctx, filter)
-
-	if err != nil {
-		log.Error(err)
-	}
-
-	return err
-}
-
-func AddCatchableItem(item utils.Item) (error, primitive.ObjectID) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[catchableItemsCollectionName]
-	res, err := collection.InsertOne(*ctx, item)
-
-	if err != nil {
-		log.Error(err)
-		return err, [12]byte{}
-	}
-
-	log.Infof("Inserted new Catchable Item %+v", item)
-
-	return err, res.InsertedID.(primitive.ObjectID)
 }
 
 func init() {
