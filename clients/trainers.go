@@ -6,7 +6,7 @@ import (
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"reflect"
 	"strings"
@@ -122,7 +122,7 @@ func (c *TrainersClient) AddItemsToBag(username string, items []*utils.Item, aut
 // POKEMON
 
 func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon, error) {
-	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.AddPokemonPath, username), pokemon)
+	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.AddPokemonPath, username), pokemon)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,6 @@ func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
 	i := 0
 	added := 0
 	for ; i < len(tkns); i++ {
-
 		if len(tkns[i]) == 0 {
 			continue
 		}
@@ -298,10 +297,43 @@ func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
 
 		added++
 	}
-	logrus.Infof("Trainer has %d pokemmons", added)
+	log.Infof("Trainer has %d pokemons", added)
 	c.PokemonTokens = auxTkns
 	c.PokemonClaims = auxClaims
 
+	return nil
+}
+
+func (c *TrainersClient) AppendPokemonToken(header http.Header) error {
+	tkns, ok := header[tokens.PokemonsTokenHeaderName]
+
+	if !ok {
+		return errors.New("No pokemon tokens in header")
+	}
+
+	i := 0
+	added := 0
+	for ; i < len(tkns); i++ {
+		if len(tkns[i]) == 0 {
+			continue
+		}
+
+		log.Info(tkns[i])
+
+		pokemonClaims, err := tokens.ExtractPokemonToken(tkns[i])
+		if err != nil {
+			return err
+		}
+
+		pokemonIdString := pokemonClaims.Pokemon.Id.Hex()
+
+		c.PokemonClaims[pokemonIdString] = pokemonClaims
+		c.PokemonTokens[pokemonIdString] = tkns[i]
+
+		added++
+	}
+
+	log.Infof("Added %d pokemons to trainer", added)
 	return nil
 }
 

@@ -22,7 +22,7 @@ func NewMicrotransactionsClient(addr string) *MicrotransactionsClient {
 }
 
 func (c *MicrotransactionsClient) GetOffers() ([]utils.TransactionTemplate, error) {
-	req, err := BuildRequest("GET", c.MicrotransactionsAddr, api.GetTransactionOffersRoute, nil)
+	req, err := BuildRequest("GET", c.MicrotransactionsAddr, api.GetTransactionOffersPath, nil)
 	if err != nil {
 		return nil, err
 	}
