@@ -16,6 +16,7 @@ type Trainer struct {
 	Pokemons map[string]Pokemon
 	Items    map[string]Item
 	Stats    TrainerStats
+	Location Location
 }
 
 type TransactionTemplate struct {
@@ -26,7 +27,7 @@ type TransactionTemplate struct {
 
 type TransactionRecord struct {
 	Id           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	User     string
+	User         string
 	TemplateName string
 }
 
@@ -76,4 +77,11 @@ type Notification struct {
 type StoreItem struct {
 	Name  string
 	Price int
+}
+
+type Location struct {
+	//TODO there are a bunch of possible fields,
+	RegionName string // e.g. /Europe/England/London/Greenwich
+	Latitude   float64
+	Longitude  float64
 }
