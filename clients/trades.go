@@ -105,7 +105,6 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 	writeChannel := make(chan *string)
 
 	go client.HandleReceivedMessages(c, started, finished, setItemsToken)
-	go WriteMessage(writeChannel)
 
 	itemIds := make([]string, len(items.Items))
 	i := 0
