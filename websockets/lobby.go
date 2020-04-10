@@ -54,6 +54,8 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) {
 }
 
 func CloseLobby(lobby *Lobby) {
+	lobby.Finished = true
+
 	closeConnection(lobby.trainerConnections[0], lobby.EndConnectionChannels[0])
 	closeConnection(lobby.trainerConnections[1], lobby.EndConnectionChannels[1])
 }

@@ -53,10 +53,6 @@ func PlayerToPlayerInfo(player *Player) *PlayerInfo{
 
 type ItemsMap = map[string]utils.Item
 
-func CreateTradeMsg(itemId string) string {
-	return fmt.Sprintf("%s %s", TRADE, itemId)
-}
-
 func CreateAcceptMsg() string {
 	return fmt.Sprintf("%s", ACCEPT)
 }
