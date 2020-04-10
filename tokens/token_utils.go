@@ -67,7 +67,6 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error)
 
 	tkns, ok := headers[PokemonsTokenHeaderName]
 
-
 	if !ok {
 		return nil, errors.New("No pokemon tokens in header")
 	}

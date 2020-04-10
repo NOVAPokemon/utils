@@ -37,7 +37,7 @@ type PlayerInfo struct {
 	Accepted bool
 }
 
-func PlayerToPlayerInfo(player *Player) *PlayerInfo{
+func PlayerToPlayerInfo(player *Player) *PlayerInfo {
 	items := make([]string, len(player.Items))
 
 	for i, item := range player.Items {

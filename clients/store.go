@@ -9,14 +9,14 @@ import (
 )
 
 type StoreClient struct {
-	StoreAddr string
-	httpClient   *http.Client
+	StoreAddr  string
+	httpClient *http.Client
 }
 
 func NewStoreClient(addr string) *StoreClient {
 	return &StoreClient{
-		StoreAddr: addr,
-		httpClient:   &http.Client{},
+		StoreAddr:  addr,
+		httpClient: &http.Client{},
 	}
 }
 
@@ -46,6 +46,6 @@ func (c *StoreClient) BuyItem(itemName, authToken, statsToken string) (string, e
 	if err != nil {
 		return "", nil
 	}
-	
+
 	return resp.Header.Get(tokens.ItemsTokenHeaderName), err
 }
