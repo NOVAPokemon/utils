@@ -35,14 +35,14 @@ func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
 		return nil
 	}
 
-	var trades []utils.Lobby
-	_, err = DoRequest(&http.Client{}, req, &trades)
+	var tradesArray []utils.Lobby
+	_, err = DoRequest(&http.Client{}, req, &tradesArray)
 	if err != nil {
 		log.Error(err)
 		return nil
 	}
 
-	return trades
+	return tradesArray
 }
 
 func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken string, itemsToken string) *primitive.ObjectID {
@@ -108,7 +108,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 
 	itemIds := make([]string, len(items.Items))
 	i := 0
-	for k, _ := range items.Items {
+	for k := range items.Items {
 		itemIds[i] = k
 		i++
 	}
@@ -185,8 +185,9 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 			log.Infof("sleeping %d milliseconds", randSleep)
 		}
 
-		msg := trades.CreateAcceptMsg()
-		writeChannel <- &msg
+		msg := tradeMessages.AcceptMessage{}.Serialize()
+		s := (*msg).Serialize()
+		writeChannel <- &s
 
 		<-finished
 	}

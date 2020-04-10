@@ -1,7 +1,6 @@
 package trades
 
 import (
-	"fmt"
 	"github.com/NOVAPokemon/utils"
 )
 
@@ -52,7 +51,3 @@ func PlayerToPlayerInfo(player *Player) *PlayerInfo{
 }
 
 type ItemsMap = map[string]utils.Item
-
-func CreateAcceptMsg() string {
-	return fmt.Sprintf("%s", ACCEPT)
-}
