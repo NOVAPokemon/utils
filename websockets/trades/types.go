@@ -3,7 +3,6 @@ package trades
 import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
-	"github.com/NOVAPokemon/utils/websockets"
 )
 
 // Message Types
@@ -15,7 +14,7 @@ const (
 
 	UPDATE = "UPDATE"
 
-	SET_TOKEN = "SET_TOKEN"
+	SETTOKEN = "SETTOKEN"
 
 	FINISH = "FINISH_TRADE"
 
@@ -24,19 +23,32 @@ const (
 )
 
 type TradeStatus struct {
-	Players       [2]Players
+	Players       [2]Player
 	TradeStarted  bool
 	TradeFinished bool
 }
 
-type Players struct {
+type Player struct {
 	Items    []*utils.Item
 	Accepted bool
 }
 
-type UpdateMessage struct {
-	message *websockets.Message
-	sendTo  int
+type PlayerInfo struct {
+	Items    []string
+	Accepted bool
+}
+
+func PlayerToPlayerInfo(player *Player) *PlayerInfo{
+	items := make([]string, len(player.Items))
+
+	for i, item := range player.Items {
+		items[i] = item.Id.Hex()
+	}
+
+	return &PlayerInfo{
+		Items:    items,
+		Accepted: player.Accepted,
+	}
 }
 
 type ItemsMap = map[string]utils.Item

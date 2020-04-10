@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	tradeMessages "github.com/NOVAPokemon/utils/messages/trades"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
@@ -140,16 +141,17 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 		switch msg.MsgType {
 		case trades.START:
 			close(started)
-		case trades.SET_TOKEN:
-			itemsToken = &msg.MsgArgs[0]
-			token, err := tokens.ExtractItemsToken(*itemsToken)
+		case trades.SETTOKEN:
+			tokenMessage := tradeMessages.Deserialize(msg).(*tradeMessages.SetTokenMessage)
+			token, err := tokens.ExtractItemsToken(tokenMessage.TokenString)
 			if err != nil {
 				log.Error(err)
 			}
 
 			log.Info(token.ItemsHash)
 		case trades.FINISH:
-			log.Info("Finished trade.")
+			finishMsg := tradeMessages.Deserialize(msg).(*tradeMessages.FinishMessage)
+			log.Info("Finished, Success: ", finishMsg.Success)
 			close(finished)
 			setItemsToken <- itemsToken
 			return
@@ -169,8 +171,9 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 
 		for i := 0; i < numItemsToAdd; i++ {
 			randomItemIdx := rand.Intn(len(availableItems))
-			msg := trades.CreateTradeMsg(availableItems[randomItemIdx])
-			writeChannel <- &msg
+			msg := tradeMessages.TradeMessage{Items: availableItems[randomItemIdx]}.Serialize()
+			s := (*msg).Serialize()
+			writeChannel <- &s
 
 			log.Infof("adding %s to trade", availableItems[randomItemIdx])
 
