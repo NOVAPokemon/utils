@@ -132,7 +132,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 		msg, err := ReadMessagesWithoutParse(conn)
 		if err != nil {
 			log.Error(err)
-			continue
+			return
 		}
 
 		log.Infof("Message: %s", msg)

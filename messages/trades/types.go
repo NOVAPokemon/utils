@@ -117,6 +117,15 @@ func (eMsg ErrorMessage) Serialize() *ws.Message {
 	}
 }
 
+type NoneMessage struct {}
+
+func (nMsg NoneMessage) Serialize() *ws.Message {
+	return &ws.Message{
+		MsgType: trades.NONE,
+		MsgArgs: nil,
+	}
+}
+
 func Deserialize(msg *ws.Message) interface{} {
 	switch msg.MsgType {
 	case trades.START:

@@ -19,6 +19,8 @@ const (
 
 	// Error
 	ERROR = "ERROR"
+
+	NONE = "NONE"
 )
 
 type TradeStatus struct {

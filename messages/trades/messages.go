@@ -10,4 +10,6 @@ var (
 		Info:  "error parsing message",
 		Fatal: false,
 	}.Serialize()
+
+	NoneMessageConst = NoneMessage{}.Serialize()
 )
