@@ -52,7 +52,7 @@ func (client *BattleLobbyClient) GetAvailableLobbies() []utils.Lobby {
 	return availableBattles
 }
 
-func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens []string) (*BattleChannels, error) {
+func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens []string, statsToken string) (*websocket.Conn, *BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: api.QueueForBattlePath}
 	log.Infof("Queuing for battle: %s", u.String())
@@ -64,12 +64,13 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
+	header.Set(tokens.StatsTokenHeaderName, statsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
 
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
 		log.Fatal(err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	outChannel := make(chan *string)
@@ -79,16 +80,17 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	go ReadMessagesToChan(c, inChannel, finished)
 	go MainLoop(c, outChannel, finished)
 
-	return &BattleChannels{outChannel, inChannel, finished}, nil
+	return c, &BattleChannels{outChannel, inChannel, finished}, nil
 }
 
-func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, targetPlayer string) (*BattleChannels, error) {
+func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, statsToken string, targetPlayer string) (*websocket.Conn, *BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.ChallengeToBattlePath, targetPlayer)}
 	log.Infof("Connecting to: %s", u.String())
 
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
+	header.Set(tokens.StatsTokenHeaderName, statsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
 
 	dialer := &websocket.Dialer{
@@ -99,6 +101,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
 		log.Fatal(err)
+		return nil, nil, err
 	}
 
 	outChannel := make(chan *string)
@@ -108,17 +111,18 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	go ReadMessagesToChan(c, inChannel, finished)
 	go MainLoop(c, outChannel, finished)
 
-	return &BattleChannels{outChannel, inChannel, finished}, nil
+	return c, &BattleChannels{outChannel, inChannel, finished}, nil
 
 }
 
-func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, battleId primitive.ObjectID) (*BattleChannels, error) {
+func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string, battleId primitive.ObjectID) (*websocket.Conn, *BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.AcceptChallengePath, battleId.Hex())}
 	log.Infof("Accepting challenge: %s", u.String())
 
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
+	header.Set(tokens.StatsTokenHeaderName, statsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
 
 	dialer := &websocket.Dialer{
@@ -129,7 +133,7 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
 		log.Fatal(err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	outChannel := make(chan *string)
@@ -139,6 +143,6 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	go ReadMessagesToChan(c, inChannel, finished)
 	go MainLoop(c, outChannel, finished)
 
-	return &BattleChannels{outChannel, inChannel, finished}, nil
+	return c, &BattleChannels{outChannel, inChannel, finished}, nil
 
 }

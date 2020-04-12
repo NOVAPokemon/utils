@@ -10,6 +10,11 @@ const PongWait = 10 * time.Second
 const PingPeriod = (PongWait * 9) / 10
 
 func ParseMessage(msg *string) (*Message, error) {
+
+	if msg == nil {
+		return nil, errors.New("message is null")
+	}
+
 	msgParts := strings.Split(*msg, " ")
 
 	if len(msgParts) < 1 {

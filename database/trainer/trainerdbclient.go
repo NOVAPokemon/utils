@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/NOVAPokemon/utils"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
+	"github.com/NOVAPokemon/utils/experience"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -135,7 +136,8 @@ func UpdateTrainerStats(username string, stats utils.TrainerStats) (*utils.Train
 	}
 
 	filter := bson.M{"username": username}
-	changes := bson.M{"$set": bson.M{"stats.level": stats.Level, "stats.coins": stats.Coins}}
+	stats.Level = experience.CalculateLevel(stats.XP)
+	changes := bson.M{"$set": bson.M{"stats.level": stats.Level, "stats.coins": stats.Coins, "stats.xp": stats.XP}}
 	res, err := collection.UpdateOne(*ctx, filter, changes)
 
 	if err != nil {

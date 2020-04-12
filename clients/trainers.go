@@ -413,7 +413,7 @@ func (c *TrainersClient) StartLocationUpdates(authToken string) {
 	for {
 		select {
 		case <-updateTicker.C:
-			log.Info("Updating location...")
+			//log.Info("Updating location...")
 			loc, err := c.getLocation()
 			if err != nil {
 				log.Error(err)

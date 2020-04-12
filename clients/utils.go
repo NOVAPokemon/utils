@@ -9,7 +9,6 @@ import (
 	tradeMessages "github.com/NOVAPokemon/utils/messages/trades"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
-	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -22,45 +21,38 @@ func Send(conn *websocket.Conn, msg *string) {
 
 	if err != nil {
 		return
-	} else {
-		log.Debugf("Wrote %s into the channel", *msg)
 	}
 }
 
 func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished chan struct{}) {
-	defer close(finished)
-
+	defer log.Info("Closed in channel")
+	defer close(msgChan)
 	for {
-		_, message, err := conn.ReadMessage()
-
-		if err != nil {
-			log.Error(err)
+		select {
+		case <-finished:
 			return
+		default:
+			_, message, err := conn.ReadMessage()
+
+			if err != nil {
+				close(finished)
+				return
+			}
+
+			msg := string(message)
+			battleMsg, err := websockets.ParseMessage(&msg)
+			if err != nil {
+				close(finished)
+				return
+			}
+
+			if battleMsg.MsgType == battles.FINISH {
+				log.Info("Received finish message")
+				close(finished)
+				return
+			}
+			msgChan <- &msg
 		}
-
-		msg := string(message)
-		log.Debugf("Received %s from the websocket", msg)
-
-		battleMsg, err := websockets.ParseMessage(&msg)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-
-		log.Infof("Message: %s", msg)
-
-		if battleMsg.MsgType == trades.FINISH {
-			log.Info("Finished battle.")
-			return
-		}
-
-		if battleMsg.MsgType == battles.FINISH {
-			log.Info("Finished battle.")
-			_ = conn.Close()
-			return
-		}
-
-		msgChan <- &msg
 	}
 }
 
@@ -99,15 +91,12 @@ func WaitForStart(started, finish chan struct{}) {
 	}
 }
 
-func Finish() {
-	log.Info("Finishing connection...")
-}
-
 func MainLoop(conn *websocket.Conn, writeChannel chan *string, finished chan struct{}) {
+	defer log.Info("Closed out channel")
+	defer close(writeChannel)
 	for {
 		select {
 		case <-finished:
-			Finish()
 			return
 		case msg := <-writeChannel:
 			Send(conn, msg)
@@ -145,7 +134,7 @@ func BuildRequest(method, host, path string, body interface{}) (request *http.Re
 
 // For now this function assumes that a response should always have 200 code
 func DoRequest(httpClient *http.Client, request *http.Request, responseBody interface{}) (*http.Response, error) {
-	log.Infof("Requesting: %s", request.URL.String())
+	log.Infof("Doing request: %s %s", request.Method, request.URL.String())
 
 	if httpClient == nil {
 		return nil, errors.New(fmt.Sprintf("httpclient is nil for: %s", request.URL.String()))

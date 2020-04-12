@@ -34,6 +34,7 @@ func ExtractAndVerifyAuthToken(headers http.Header) (*AuthToken, error) {
 	})
 
 	if err != nil {
+		log.Errorf("Token %s has error: %s", tknStr, err.Error())
 		return nil, err
 	}
 
@@ -53,6 +54,7 @@ func ExtractAndVerifyTrainerStatsToken(headers http.Header) (*TrainerStatsToken,
 	})
 
 	if err != nil {
+		log.Errorf("Token %s has error: %s", tknStr, err.Error())
 		return nil, err
 	}
 
@@ -84,6 +86,7 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error)
 			return authJWTKey, nil
 		})
 		if err != nil {
+			log.Error("Token %s has error: %s", strings.TrimSpace(tkns[i]), err.Error())
 			return nil, err
 		}
 		pokemonTkns[i] = &pokemonTkn
@@ -100,6 +103,7 @@ func ExtractAndVerifyItemsToken(headers http.Header) (*ItemsToken, error) {
 	})
 
 	if err != nil {
+		log.Errorf("Token %s has error: %s", tknStr, err.Error())
 		return nil, err
 	}
 
@@ -117,7 +121,6 @@ func ExtractItemsToken(itemsToken string) (*ItemsToken, error) {
 		log.Error("error parsing items token, ", err)
 		return nil, err
 	}
-
 	return &claims, err
 }
 

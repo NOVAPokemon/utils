@@ -32,6 +32,7 @@ type TransactionRecord struct {
 }
 
 type TrainerStats struct {
+	XP    float64
 	Level int
 	Coins int
 }
@@ -44,6 +45,7 @@ type Item struct {
 type Pokemon struct {
 	Id      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	Species string
+	XP      float64
 	Level   int
 	HP      int
 	Damage  int

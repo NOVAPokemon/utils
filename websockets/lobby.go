@@ -43,8 +43,8 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) {
 	trainerChanIn := make(chan *string)
 	trainerChanOut := make(chan *string)
 
-	go handleRecv(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined])
-	go handleSend(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined])
+	go handleRecv(lobby, trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined])
+	go handleSend(lobby, trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined])
 
 	lobby.TrainerUsernames[lobby.TrainersJoined] = username
 	lobby.TrainerInChannels[lobby.TrainersJoined] = &trainerChanIn
@@ -67,7 +67,7 @@ func closeConnection(conn *websocket.Conn, endConnection chan struct{}) {
 	}
 }
 
-func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}) {
+func handleSend(lobby *Lobby, conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}) {
 	defer close(inChannel)
 	defer log.Warn("Closing send routine")
 
@@ -76,11 +76,17 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 		case msg := <-inChannel:
 			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
 			if err != nil {
-				log.Error(err)
-				log.Error("closed lobby because could not write")
-				closeConnection(conn, endConnection)
-				return
-			} else {
+
+				if err != nil {
+					if lobby.Finished {
+						log.Info("lobby read routine finished properly")
+					} else {
+						log.Error(err)
+						log.Error("closed lobby because could not read")
+					}
+					closeConnection(conn, endConnection)
+					return
+				}
 				log.Infof("Wrote %s into the channel", *msg)
 			}
 		case <-endConnection:
@@ -90,10 +96,8 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 	}
 }
 
-func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{}) {
+func handleRecv(lobby *Lobby, conn *websocket.Conn, outChannel chan *string, endConnection chan struct{}) {
 	defer close(outChannel)
-	defer log.Warn("Closing recv routine")
-
 	for {
 		select {
 		case <-endConnection:
@@ -102,7 +106,11 @@ func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection cha
 			_, message, err := conn.ReadMessage()
 
 			if err != nil {
-				log.Error("closed lobby because could not read")
+				if lobby.Finished {
+					log.Info("lobby read routine finished properly")
+				} else {
+					log.Error("closed lobby because could not read")
+				}
 				closeConnection(conn, endConnection)
 				log.Error(err)
 				return
