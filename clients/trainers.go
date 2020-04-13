@@ -101,7 +101,7 @@ func (c *TrainersClient) UpdateTrainerStats(username string, newStats utils.Trai
 
 // BAG
 
-func (c *TrainersClient) RemoveItemsFromBag(username string, itemIds []string, authToken string) (map[string]utils.Item, error) {
+func (c *TrainersClient) RemoveItemsFromBag(username string, itemIds []string, authToken string) (map[string]items.Item, error) {
 	var itemIdsPath strings.Builder
 
 	itemIdsPath.WriteString(itemIds[0])
@@ -119,7 +119,7 @@ func (c *TrainersClient) RemoveItemsFromBag(username string, itemIds []string, a
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	var res map[string]utils.Item
+	var res map[string]items.Item
 	resp, err := DoRequest(c.HttpClient, req, &res)
 
 	if err != nil {
@@ -196,7 +196,7 @@ func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string,
 	return res, err
 }
 
-func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId string) (map[string]utils.Pokemon, error) {
+func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId string) (map[string]pokemons.Pokemon, error) {
 	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.RemovePokemonPath, username, pokemonId), nil)
 	if err != nil {
 		return nil, err
@@ -204,7 +204,7 @@ func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId str
 
 	_, err = DoRequest(c.HttpClient, req, nil)
 
-	var res map[string]utils.Pokemon
+	var res map[string]pokemons.Pokemon
 	resp, err := DoRequest(c.HttpClient, req, &res)
 
 	if err != nil {
