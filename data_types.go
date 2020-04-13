@@ -37,18 +37,6 @@ type TrainerStats struct {
 	Coins int
 }
 
-type Effect struct {
-	Appliable bool
-	Id        int
-	Value     int
-}
-
-type Item struct {
-	Id     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name   string
-	Effect Effect
-}
-
 type Pokemon struct {
 	Id      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	Species string
@@ -82,11 +70,6 @@ type Notification struct {
 	Username string             `json:"username" bson:"username,omitempty"`
 	Type     string
 	Content  []byte
-}
-
-type StoreItem struct {
-	Name  string
-	Price int
 }
 
 type Location struct {
