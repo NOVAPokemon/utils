@@ -83,7 +83,6 @@ type StoreItem struct {
 
 type Location struct {
 	//TODO there are a bunch of possible fields,
-	RegionName string // e.g. /Europe/England/London/Greenwich
-	Latitude   float64
-	Longitude  float64
+	Latitude  float64
+	Longitude float64
 }

@@ -86,7 +86,7 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error)
 			return authJWTKey, nil
 		})
 		if err != nil {
-			log.Error("Token %s has error: %s", strings.TrimSpace(tkns[i]), err.Error())
+			log.Errorf("Token %s has error: %s", strings.TrimSpace(tkns[i]), err.Error())
 			return nil, err
 		}
 		pokemonTkns[i] = &pokemonTkn

@@ -30,7 +30,7 @@ type TradeStatus struct {
 }
 
 type Player struct {
-	Items    []*utils.Item
+	Items    []utils.Item
 	Accepted bool
 }
 
