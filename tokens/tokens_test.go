@@ -18,15 +18,15 @@ var id2 = primitive.NewObjectID()
 var id3 = primitive.NewObjectID()
 
 var pokemons = map[string]utils.Pokemon{
-	id1.Hex(): utils.Pokemon{Id: id1},
-	id2.Hex(): utils.Pokemon{Id: id2},
-	id3.Hex(): utils.Pokemon{Id: id3},
+	id1.Hex(): {Id: id1},
+	id2.Hex(): {Id: id2},
+	id3.Hex(): {Id: id3},
 }
 
 var items = map[string]utils.Item{
-	"item1": utils.Item{},
-	"item2": utils.Item{},
-	"item3": utils.Item{},
+	"item1": {},
+	"item2": {},
+	"item3": {},
 }
 
 func TestMain(m *testing.M) {
