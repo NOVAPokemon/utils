@@ -427,11 +427,10 @@ func (c *TrainersClient) SetItemsToken(itemsToken string) error {
 }
 
 func (c *TrainersClient) StartLocationUpdates(authToken string) {
-
 	u := url.URL{Scheme: "ws", Host: c.TrainersAddr, Path: fmt.Sprintf(api.UpdateRegionPath)}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
-	wruteMut := sync.Mutex{}
+	writeMut := sync.Mutex{}
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
@@ -449,9 +448,9 @@ func (c *TrainersClient) StartLocationUpdates(authToken string) {
 	_ = conn.SetReadDeadline(time.Now().Add(location.Timeout))
 	conn.SetPingHandler(func(string) error {
 		_ = conn.SetReadDeadline(time.Now().Add(location.Timeout))
-		wruteMut.Lock()
+		writeMut.Lock()
 		_ = conn.WriteMessage(websocket.PongMessage, nil)
-		wruteMut.Unlock()
+		writeMut.Unlock()
 		return nil
 	})
 
@@ -478,9 +477,9 @@ func (c *TrainersClient) StartLocationUpdates(authToken string) {
 				log.Error(err)
 				return
 			}
-			wruteMut.Lock()
+			writeMut.Lock()
 			err = conn.WriteJSON(*loc)
-			wruteMut.Unlock()
+			writeMut.Unlock()
 			if err != nil {
 				log.Error(err)
 				return
