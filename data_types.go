@@ -37,9 +37,16 @@ type TrainerStats struct {
 	Coins int
 }
 
+type Effect struct {
+	Appliable bool
+	Id        int
+	Value     int
+}
+
 type Item struct {
-	Id   primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name string
+	Id     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Name   string
+	Effect Effect
 }
 
 type Pokemon struct {
@@ -48,6 +55,7 @@ type Pokemon struct {
 	XP      float64
 	Level   int
 	HP      int
+	MaxHP   int
 	Damage  int
 }
 
