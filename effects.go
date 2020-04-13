@@ -17,6 +17,11 @@ const (
 )
 
 var (
+	ErrNotAppliable = errors.New("item not appliable")
+	ErrInvalidId =  errors.New("invalid item id")
+)
+
+var (
 	Heal       = Effect{Appliable: true, Id: HealId, Value: NoValue}
 	Revive     = Effect{Appliable: true, Id: ReviveId, Value: NoValue}
 	PokeBall   = Effect{Appliable: false, Id: PokeBallId, Value: PokeBallValue}
@@ -25,7 +30,7 @@ var (
 
 func (item *Item) Apply(pokemon *Pokemon) error {
 	if !item.Effect.Appliable {
-		return errors.New("item not appliable")
+		return ErrNotAppliable
 	}
 
 	switch item.Effect.Id {
@@ -33,5 +38,9 @@ func (item *Item) Apply(pokemon *Pokemon) error {
 		pokemon.HP += HealFactor
 	case ReviveId:
 		pokemon.HP = pokemon.MaxHP
+	default:
+		return ErrInvalidId
 	}
+
+	return nil
 }
