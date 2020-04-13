@@ -505,21 +505,7 @@ func (c *TrainersClient) getLocation() (*utils.Location, error) {
 	}, nil // TODO
 }
 
-/*
-// helper methods
-
-func CheckItemsAdded(original, new map[string]items.Item, added []items.Item) error {
-	for i, item := range toAdd {
-		item.Id = added[i].Id
-	}
-	if reflect.DeepEqual(toAdd, added) {
-		return nil
-	} else {
-		return errors.New(fmt.Sprintf("items to add were not successfully added: %+v %+v", toAdd, added))
-	}
-}
-
-*/
+// helper method
 
 func CheckUpdatedStats(original, updated *utils.TrainerStats) error {
 	if original.XP == updated.XP && original.Coins == updated.Coins {
