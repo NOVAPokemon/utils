@@ -2,6 +2,8 @@ package tokens
 
 import (
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/items"
+	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -20,13 +22,13 @@ type TrainerStatsToken struct {
 }
 
 type ItemsToken struct {
-	Items     map[string]utils.Item
+	Items     map[string]items.Item
 	ItemsHash []byte
 	jwt.StandardClaims
 }
 
 type PokemonToken struct {
-	Pokemon     utils.Pokemon
+	Pokemon     pokemons.Pokemon
 	PokemonHash []byte
 	jwt.StandardClaims
 }

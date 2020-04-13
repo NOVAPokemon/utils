@@ -5,6 +5,8 @@ import (
 	"github.com/NOVAPokemon/utils"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
 	"github.com/NOVAPokemon/utils/experience"
+	"github.com/NOVAPokemon/utils/items"
+	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -206,7 +208,7 @@ func removeAll() error {
 
 // BAG OPERATIONS
 
-func AddItemToTrainer(username string, item utils.Item) (*utils.Item, error) {
+func AddItemToTrainer(username string, item items.Item) (*items.Item, error) {
 
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
@@ -236,13 +238,13 @@ func AddItemToTrainer(username string, item utils.Item) (*utils.Item, error) {
 	return &item, err
 }
 
-func AddItemsToTrainer(username string, items []*utils.Item) ([]*utils.Item, error) {
+func AddItemsToTrainer(username string, itemsToAdd []*items.Item) ([]*items.Item, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
-	itemsObjects := make(map[string]*utils.Item, len(items))
+	itemsObjects := make(map[string]*items.Item, len(itemsToAdd))
 
-	for _, item := range items {
+	for _, item := range itemsToAdd {
 		itemId := primitive.NewObjectID()
 		item.Id = itemId
 		itemsObjects["items."+item.Id.Hex()] = item
@@ -258,14 +260,14 @@ func AddItemsToTrainer(username string, items []*utils.Item) ([]*utils.Item, err
 	}
 
 	log.Infof("Added items to user %s:", username)
-	for _, item := range items {
+	for _, item := range itemsToAdd {
 		log.Info(item.Id)
 	}
 
-	return items, err
+	return itemsToAdd, err
 }
 
-func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*utils.Item, error) {
+func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*items.Item, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 	filter := bson.M{"username": username}
@@ -301,7 +303,7 @@ func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*utils.I
 	return &item, nil
 }
 
-func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*utils.Item, error) {
+func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*items.Item, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 	filter := bson.M{"username": username}
@@ -332,7 +334,7 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*u
 		return nil, err
 	}
 
-	returnItems := make([]*utils.Item, len(itemIds))
+	returnItems := make([]*items.Item, len(itemIds))
 	for i, item := range itemIds {
 		item := trainer.Items[item.Hex()]
 		returnItems[i] = &item
@@ -343,7 +345,7 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*u
 
 // POKEMON OPERATIONS
 
-func AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon, error) {
+func AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
 
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
@@ -363,7 +365,7 @@ func AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon
 	return &pokemon, err
 }
 
-func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon utils.Pokemon) (*utils.Pokemon, error) {
+func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
 
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection

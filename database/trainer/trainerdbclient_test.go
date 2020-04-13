@@ -2,6 +2,8 @@ package trainer
 
 import (
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/items"
+	"github.com/NOVAPokemon/utils/pokemons"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -10,8 +12,8 @@ import (
 
 var trainerMockup = utils.Trainer{
 	Username: "trainer1",
-	Pokemons: map[string]utils.Pokemon{},
-	Items:    map[string]utils.Item{},
+	Pokemons: map[string]pokemons.Pokemon{},
+	Items:    map[string]items.Item{},
 	Stats: utils.TrainerStats{
 		Level: 0,
 		Coins: 0,
@@ -154,7 +156,7 @@ func TestDelete(t *testing.T) {
 
 func TestAddPokemonToTrainer(t *testing.T) {
 
-	pokemon := utils.Pokemon{}
+	pokemon := pokemons.Pokemon{}
 	_, _ = AddTrainer(trainerMockup)
 
 	pokemonNew, _ := AddPokemonToTrainer(trainerMockup.Username, pokemon)
@@ -170,7 +172,7 @@ func TestRemovePokemonFromTrainer(t *testing.T) {
 
 	// add trainer and pokemon
 	_, _ = AddTrainer(trainerMockup)
-	pokemon, _ := AddPokemonToTrainer(trainerMockup.Username, utils.Pokemon{})
+	pokemon, _ := AddPokemonToTrainer(trainerMockup.Username, pokemons.Pokemon{})
 	trainer, _ := GetTrainerByUsername(trainerMockup.Username)
 
 	assert.Contains(t, trainer.Pokemons, pokemon.Id.Hex())
@@ -188,11 +190,11 @@ func TestAppendAndRemoveItem(t *testing.T) {
 
 	userName, err := AddTrainer(trainerMockup)
 
-	toAppend := utils.Item{
+	toAppend := items.Item{
 		Name: "Soup",
 	}
 
-	toAppend2 := utils.Item{
+	toAppend2 := items.Item{
 		Name: "Soup",
 	}
 
@@ -276,10 +278,10 @@ func TestAppendAndRemovePokemon(t *testing.T) {
 
 	userName, err := AddTrainer(trainerMockup)
 
-	toAppend := utils.Pokemon{
+	toAppend := pokemons.Pokemon{
 	}
 
-	toAppend2 := utils.Pokemon{
+	toAppend2 := pokemons.Pokemon{
 	}
 
 	// add item, verify that it is in trainer

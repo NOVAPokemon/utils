@@ -1,7 +1,7 @@
 package trades
 
 import (
-	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/items"
 )
 
 // Message Types
@@ -30,7 +30,7 @@ type TradeStatus struct {
 }
 
 type Player struct {
-	Items    []*utils.Item
+	Items    []*items.Item
 	Accepted bool
 }
 
@@ -40,16 +40,16 @@ type PlayerInfo struct {
 }
 
 func PlayerToPlayerInfo(player *Player) *PlayerInfo {
-	items := make([]string, len(player.Items))
+	playerItems := make([]string, len(player.Items))
 
 	for i, item := range player.Items {
-		items[i] = item.Id.Hex()
+		playerItems[i] = item.Id.Hex()
 	}
 
 	return &PlayerInfo{
-		Items:    items,
+		Items:    playerItems,
 		Accepted: player.Accepted,
 	}
 }
 
-type ItemsMap = map[string]utils.Item
+type ItemsMap = map[string]items.Item

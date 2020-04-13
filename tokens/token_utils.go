@@ -4,6 +4,8 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/items"
+	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -86,7 +88,7 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error)
 			return authJWTKey, nil
 		})
 		if err != nil {
-			log.Error("Token %s has error: %s", strings.TrimSpace(tkns[i]), err.Error())
+			log.Errorf("Token %s has error: %s", strings.TrimSpace(tkns[i]), err.Error())
 			return nil, err
 		}
 		pokemonTkns[i] = &pokemonTkn
@@ -155,7 +157,7 @@ func AddAuthToken(username string, headers http.Header) {
 	setTokenInHeader(AuthTokenHeaderName, authToken, headers)
 }
 
-func AddPokemonsTokens(pokemons map[string]utils.Pokemon, headers http.Header) {
+func AddPokemonsTokens(pokemons map[string]pokemons.Pokemon, headers http.Header) {
 	expirationTime := time.Now().Add(JWTDuration)
 	for _, v := range pokemons {
 		pokemonToken := &PokemonToken{
@@ -167,7 +169,7 @@ func AddPokemonsTokens(pokemons map[string]utils.Pokemon, headers http.Header) {
 	}
 }
 
-func AddItemsToken(items map[string]utils.Item, headers http.Header) {
+func AddItemsToken(items map[string]items.Item, headers http.Header) {
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerItemsToken := &ItemsToken{
 		Items:          items,

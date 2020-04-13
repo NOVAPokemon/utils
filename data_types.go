@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"github.com/NOVAPokemon/utils/items"
+	"github.com/NOVAPokemon/utils/pokemons"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -13,8 +15,8 @@ type User struct {
 type Trainer struct {
 	// game info
 	Username string `json:"username" bson:"username,omitempty"`
-	Pokemons map[string]Pokemon
-	Items    map[string]Item
+	Pokemons map[string]pokemons.Pokemon
+	Items    map[string]items.Item
 	Stats    TrainerStats
 	Location Location
 }
@@ -35,16 +37,6 @@ type TrainerStats struct {
 	XP    float64
 	Level int
 	Coins int
-}
-
-type Pokemon struct {
-	Id      primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Species string
-	XP      float64
-	Level   int
-	HP      int
-	MaxHP   int
-	Damage  int
 }
 
 type Battle struct {

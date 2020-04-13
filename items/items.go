@@ -16,3 +16,16 @@ type Item struct {
 	Name   string
 	Effect Effect
 }
+
+type StoreItem struct {
+	Name  string
+	Price int
+}
+
+func (storeItem StoreItem) ToItem() Item {
+	return Item{
+		Name:   storeItem.Name,
+		Effect: GetEffectForItem(storeItem.Name),
+	}
+}
+

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/items"
+	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets/location"
 	"github.com/gorilla/websocket"
@@ -112,39 +114,39 @@ func (c *TrainersClient) RemoveItemsFromBag(username string, itemIds []string, a
 	return err
 }
 
-func (c *TrainersClient) AddItemsToBag(username string, items []*utils.Item, authToken string) ([]*utils.Item, error) {
-	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.AddItemToBagPath, username), items)
+func (c *TrainersClient) AddItemsToBag(username string, itemsToAdd []*items.Item, authToken string) ([]*items.Item, error) {
+	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.AddItemToBagPath, username), itemsToAdd)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	var res []*utils.Item
+	var res []*items.Item
 	_, err = DoRequest(c.httpClient, req, &res)
 	return res, err
 }
 
 // POKEMON
 
-func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon utils.Pokemon) (*utils.Pokemon, error) {
+func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
 	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.AddPokemonPath, username), pokemon)
 	if err != nil {
 		return nil, err
 	}
 
-	var res utils.Pokemon
+	var res pokemons.Pokemon
 	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
 }
 
-func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon utils.Pokemon) (*utils.Pokemon, error) {
+func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
 	req, err := BuildRequest("PUT", c.TrainersAddr, fmt.Sprintf(api.UpdatePokemonPath, username, pokemonId), pokemon)
 	if err != nil {
 		return nil, err
 	}
 
-	var res utils.Pokemon
+	var res pokemons.Pokemon
 	_, err = DoRequest(c.httpClient, req, &res)
 	return &res, err
 }
@@ -449,7 +451,7 @@ func (c *TrainersClient) getLocation() (*utils.Location, error) {
 
 // helper methods
 
-func CheckItemsAdded(toAdd, added []*utils.Item) error {
+func CheckItemsAdded(toAdd, added []*items.Item) error {
 	for i, item := range toAdd {
 		item.Id = added[i].Id
 	}

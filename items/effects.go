@@ -2,7 +2,7 @@ package items
 
 import (
 	"errors"
-	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/pokemons"
 )
 
 const (
@@ -40,7 +40,7 @@ var (
 	None = Effect{Appliable: false, Id: NoId, Value: NoValue}
 )
 
-func (item *Item) Apply(pokemon *utils.Pokemon) error {
+func (item *Item) Apply(pokemon *pokemons.Pokemon) error {
 	if !item.Effect.Appliable {
 		return ErrNotAppliable
 	}

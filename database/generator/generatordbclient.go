@@ -2,8 +2,9 @@ package generator
 
 import (
 	"context"
-	"github.com/NOVAPokemon/utils"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
+	"github.com/NOVAPokemon/utils/items"
+	"github.com/NOVAPokemon/utils/pokemons"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,7 +20,7 @@ const catchableItemsCollectionName = "CatchableItems"
 
 var dbClient databaseUtils.DBClientMultipleCollections
 
-func AddWildPokemon(pokemon utils.Pokemon) (error, primitive.ObjectID) {
+func AddWildPokemon(pokemon pokemons.Pokemon) (error, primitive.ObjectID) {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collections[wildPokemonCollectionName]
 	res, err := collection.InsertOne(*ctx, pokemon)
@@ -48,10 +49,10 @@ func DeleteWildPokemons() error {
 	return err
 }
 
-func GetWildPokemons() []utils.Pokemon {
+func GetWildPokemons() []pokemons.Pokemon {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collections[wildPokemonCollectionName]
-	var results []utils.Pokemon
+	var results []pokemons.Pokemon
 
 	cur, err := collection.Find(*ctx, bson.M{})
 
@@ -61,7 +62,7 @@ func GetWildPokemons() []utils.Pokemon {
 
 	defer cur.Close(*ctx)
 	for cur.Next(*ctx) {
-		var result utils.Pokemon
+		var result pokemons.Pokemon
 		err := cur.Decode(&result)
 		if err != nil {
 			log.Error(err)
@@ -77,7 +78,7 @@ func GetWildPokemons() []utils.Pokemon {
 	return results
 }
 
-func AddCatchableItem(item utils.Item) (error, primitive.ObjectID) {
+func AddCatchableItem(item items.Item) (error, primitive.ObjectID) {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collections[catchableItemsCollectionName]
 	res, err := collection.InsertOne(*ctx, item)
@@ -106,10 +107,10 @@ func DeleteCatchableItems() error {
 	return err
 }
 
-func GetCatchableItems() []utils.Item {
+func GetCatchableItems() []items.Item {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collections[catchableItemsCollectionName]
-	var results []utils.Item
+	var results []items.Item
 
 	cur, err := collection.Find(*ctx, bson.M{})
 
@@ -119,7 +120,7 @@ func GetCatchableItems() []utils.Item {
 
 	defer cur.Close(*ctx)
 	for cur.Next(*ctx) {
-		var result utils.Item
+		var result items.Item
 		err := cur.Decode(&result)
 		if err != nil {
 			log.Error(err)

@@ -2,7 +2,8 @@ package tokens
 
 import (
 	"fmt"
-	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/items"
+	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -17,13 +18,13 @@ var id1 = primitive.NewObjectID()
 var id2 = primitive.NewObjectID()
 var id3 = primitive.NewObjectID()
 
-var pokemons = map[string]utils.Pokemon{
+var pokemonsTest = map[string]pokemons.Pokemon{
 	id1.Hex(): {Id: id1},
 	id2.Hex(): {Id: id2},
 	id3.Hex(): {Id: id3},
 }
 
-var items = map[string]utils.Item{
+var itemsToTest = map[string]items.Item{
 	"item1": {},
 	"item2": {},
 	"item3": {},
@@ -49,7 +50,7 @@ func TestAuthToken(t *testing.T) {
 
 func TestItemsToken(t *testing.T) {
 	header := http.Header{}
-	AddItemsToken(items, header)
+	AddItemsToken(itemsToTest, header)
 	token, err := ExtractAndVerifyItemsToken(header)
 
 	if err != nil {
@@ -58,7 +59,7 @@ func TestItemsToken(t *testing.T) {
 	}
 
 	for k, item := range token.Items {
-		correpondingItem := items[k]
+		correpondingItem := itemsToTest[k]
 		assert.Equal(t, correpondingItem, item)
 	}
 }
@@ -66,7 +67,7 @@ func TestItemsToken(t *testing.T) {
 func TestPokemonToken(t *testing.T) {
 	header := http.Header{}
 
-	AddPokemonsTokens(pokemons, header)
+	AddPokemonsTokens(pokemonsTest, header)
 	tokens, err := ExtractAndVerifyPokemonTokens(header)
 
 	if err != nil {
@@ -81,7 +82,7 @@ func TestPokemonToken(t *testing.T) {
 
 	for k, token := range tokens {
 		fmt.Println(k, token)
-		correpondingPokemon := pokemons[token.Pokemon.Id.Hex()]
+		correpondingPokemon := pokemonsTest[token.Pokemon.Id.Hex()]
 		logrus.Infof("%+v-%+v", correpondingPokemon, token.Pokemon)
 		assert.Equal(t, correpondingPokemon, token.Pokemon)
 	}

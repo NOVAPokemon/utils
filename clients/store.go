@@ -2,8 +2,8 @@ package clients
 
 import (
 	"fmt"
-	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/tokens"
 	"net/http"
 )
@@ -20,7 +20,7 @@ func NewStoreClient(addr string) *StoreClient {
 	}
 }
 
-func (c *StoreClient) GetItems(authToken string) ([]*utils.StoreItem, error) {
+func (c *StoreClient) GetItems(authToken string) ([]*items.StoreItem, error) {
 	req, err := BuildRequest("GET", c.StoreAddr, api.GetShopItemsPath, nil)
 	if err != nil {
 		return nil, err
@@ -28,9 +28,9 @@ func (c *StoreClient) GetItems(authToken string) ([]*utils.StoreItem, error) {
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	var items []*utils.StoreItem
-	_, err = DoRequest(c.httpClient, req, &items)
-	return items, err
+	var respItems []*items.StoreItem
+	_, err = DoRequest(c.httpClient, req, &respItems)
+	return respItems, err
 }
 
 func (c *StoreClient) BuyItem(itemName, authToken, statsToken string) (string, error) {
