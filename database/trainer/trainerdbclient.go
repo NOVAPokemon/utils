@@ -356,7 +356,7 @@ func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon
 	return trainer.Pokemons, decodeErr
 }
 
-func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) (map[string]utils.Pokemon, error) {
+func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) (map[string]pokemons.Pokemon, error) {
 
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
