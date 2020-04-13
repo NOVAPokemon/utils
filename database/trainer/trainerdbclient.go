@@ -208,7 +208,7 @@ func removeAll() error {
 
 // BAG OPERATIONS
 
-func AddItemToTrainer(username string, item items.Item) (*items.Item, error) {
+func AddItemToTrainer(username string, item items.Item) (map[string]items.Item, error) {
 
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
@@ -218,31 +218,26 @@ func AddItemToTrainer(username string, item items.Item) (*items.Item, error) {
 
 	filter := bson.M{"username": username}
 	change := bson.M{"$set": bson.M{"items." + itemId.Hex(): item}}
+	opts := &options.FindOneAndUpdateOptions{}
+	opts.SetReturnDocument(options.After)
 
-	res, err := collection.UpdateOne(*ctx, filter, change)
-
+	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
+	err := res.Err()
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	if res.MatchedCount < 0 {
-		return nil, ErrTrainerNotFound
-	}
-
-	if res.ModifiedCount < 0 {
-		return nil, ErrItemNotFound
-	}
-
-	log.Infof("Added item %s to user: %s", item.Name, username)
-	return &item, err
+	trainer := utils.Trainer{}
+	decodeErr := res.Decode(&trainer)
+	return trainer.Items, decodeErr
 }
 
-func AddItemsToTrainer(username string, itemsToAdd []*items.Item) ([]*items.Item, error) {
+func AddItemsToTrainer(username string, itemsToAdd []items.Item) (map[string]items.Item, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
-	itemsObjects := make(map[string]*items.Item, len(itemsToAdd))
+	itemsObjects := make(map[string]items.Item, len(itemsToAdd))
 
 	for _, item := range itemsToAdd {
 		itemId := primitive.NewObjectID()
@@ -252,10 +247,12 @@ func AddItemsToTrainer(username string, itemsToAdd []*items.Item) ([]*items.Item
 
 	filter := bson.M{"username": username}
 	change := bson.M{"$set": itemsObjects}
+	opts := &options.FindOneAndUpdateOptions{}
+	opts.SetReturnDocument(options.After)
 
-	_, err := collection.UpdateOne(*ctx, filter, change)
+	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 
-	if err != nil {
+	if res.Err() != nil {
 		return nil, ErrTrainerNotFound
 	}
 
@@ -264,46 +261,31 @@ func AddItemsToTrainer(username string, itemsToAdd []*items.Item) ([]*items.Item
 		log.Info(item.Id)
 	}
 
-	return itemsToAdd, err
+	trainer := utils.Trainer{}
+	decodeErr := res.Decode(&trainer)
+	return trainer.Items, decodeErr
 }
 
-func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (*items.Item, error) {
+func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (map[string]items.Item, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 	filter := bson.M{"username": username}
 	change := bson.M{"$unset": bson.M{"items." + itemId.Hex(): nil}}
+	opts := &options.FindOneAndUpdateOptions{}
+	opts.SetReturnDocument(options.After)
 
-	oldTrainer := collection.FindOne(*ctx, filter)
-	res, err := collection.UpdateOne(*ctx, filter, change)
+	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 
-	if err != nil {
-		panic(ErrTrainerNotFound)
+	if res.Err() != nil {
+		return nil, ErrTrainerNotFound
 	}
 
-	if res.ModifiedCount < 1 {
-		return nil, ErrItemNotFound
-	}
-
-	if res.ModifiedCount < 1 {
-		return nil, ErrItemNotFound
-	}
-
-	log.Infof("Removed item %s from user: %s", itemId, username)
-
-	trainer := &utils.Trainer{}
-	if err := oldTrainer.Decode(trainer); err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	log.Info(trainer)
-
-	item := trainer.Items[itemId.Hex()]
-
-	return &item, nil
+	trainer := utils.Trainer{}
+	decodeErr := res.Decode(&trainer)
+	return trainer.Items, decodeErr
 }
 
-func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*items.Item, error) {
+func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) (map[string]items.Item, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 	filter := bson.M{"username": username}
@@ -315,37 +297,22 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) ([]*i
 	}
 
 	change := bson.M{"$unset": itemsObjects}
+	opts := &options.FindOneAndUpdateOptions{}
+	opts.SetReturnDocument(options.After)
 
-	oldTrainer := collection.FindOne(*ctx, filter)
-	_, err := collection.UpdateOne(*ctx, filter, change)
-
-	if err != nil {
+	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
+	if res.Err() != nil {
 		return nil, ErrTrainerNotFound
-	} else {
-		log.Infof("Removed items from user %s: ", username)
-		for _, item := range itemIds {
-			log.Info(item)
-		}
 	}
 
-	trainer := &utils.Trainer{}
-	if err := oldTrainer.Decode(trainer); err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	returnItems := make([]*items.Item, len(itemIds))
-	for i, item := range itemIds {
-		item := trainer.Items[item.Hex()]
-		returnItems[i] = &item
-	}
-
-	return returnItems, nil
+	trainer := utils.Trainer{}
+	decodeErr := res.Decode(&trainer)
+	return trainer.Items, decodeErr
 }
 
 // POKEMON OPERATIONS
 
-func AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
+func AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (map[string]pokemons.Pokemon, error) {
 
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
@@ -355,53 +322,56 @@ func AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (*pokemons.P
 
 	filter := bson.M{"username": username}
 	change := bson.M{"$set": bson.M{"pokemons." + pokemon.Id.Hex(): pokemon}}
+	opts := &options.FindOneAndUpdateOptions{}
+	opts.SetReturnDocument(options.After)
 
-	_, err := collection.UpdateOne(*ctx, filter, change)
-
-	if err != nil {
-		return nil, err
+	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
+	if res.Err() != nil {
+		return nil, ErrTrainerNotFound
 	}
 
-	return &pokemon, err
+	trainer := utils.Trainer{}
+	decodeErr := res.Decode(&trainer)
+	return trainer.Pokemons, decodeErr
 }
 
-func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
+func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon pokemons.Pokemon) (map[string]pokemons.Pokemon, error) {
 
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
 	filter := bson.M{"username": username}
 	change := bson.M{"$set": bson.M{"pokemons." + pokemonId.Hex(): pokemon}}
+	opts := &options.FindOneAndUpdateOptions{}
+	opts.SetReturnDocument(options.After)
+	pokemon.Id = pokemonId
 
-	id, err := primitive.ObjectIDFromHex(pokemonId.Hex())
-	if err != nil {
-		return nil, err
+	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
+	if res.Err() != nil {
+		return nil, ErrTrainerNotFound
 	}
 
-	pokemon.Id = id
-
-	_, err = collection.UpdateOne(*ctx, filter, change)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &pokemon, err
+	trainer := utils.Trainer{}
+	decodeErr := res.Decode(&trainer)
+	return trainer.Pokemons, decodeErr
 }
 
-func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) error {
+func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) (map[string]utils.Pokemon, error) {
 
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
 	filter := bson.M{"username": username}
 	change := bson.M{"$unset": bson.M{"pokemons." + pokemonId.Hex(): nil}}
+	opts := &options.FindOneAndUpdateOptions{}
+	opts.SetReturnDocument(options.After)
 
-	_, err := collection.UpdateOne(*ctx, filter, change)
-
-	if err != nil {
-		log.Error(err)
+	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
+	if res.Err() != nil {
+		return nil, ErrTrainerNotFound
 	}
 
-	return err
+	trainer := utils.Trainer{}
+	decodeErr := res.Decode(&trainer)
+	return trainer.Pokemons, decodeErr
 }

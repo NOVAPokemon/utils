@@ -33,10 +33,10 @@ func (c *StoreClient) GetItems(authToken string) ([]*items.StoreItem, error) {
 	return respItems, err
 }
 
-func (c *StoreClient) BuyItem(itemName, authToken, statsToken string) (string, error) {
+func (c *StoreClient) BuyItem(itemName, authToken, statsToken string) (string, string, error) {
 	req, err := BuildRequest("POST", c.StoreAddr, fmt.Sprintf(api.BuyItemPath, itemName), nil)
 	if err != nil {
-		return "", err
+		return "","", err
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
@@ -44,8 +44,8 @@ func (c *StoreClient) BuyItem(itemName, authToken, statsToken string) (string, e
 
 	resp, err := DoRequest(c.httpClient, req, nil)
 	if err != nil {
-		return "", nil
+		return "", "", nil
 	}
 
-	return resp.Header.Get(tokens.ItemsTokenHeaderName), err
+	return resp.Header.Get(tokens.StatsTokenHeaderName), resp.Header.Get(tokens.ItemsTokenHeaderName), err
 }

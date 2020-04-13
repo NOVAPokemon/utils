@@ -14,7 +14,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +22,7 @@ import (
 type TrainersClient struct {
 	TrainersAddr string
 	UserAgent    string
-	httpClient   *http.Client
+	HttpClient   *http.Client
 
 	TrainerStatsToken string
 	ItemsToken        string
@@ -36,10 +35,10 @@ type TrainersClient struct {
 
 // TRAINER
 
-func NewTrainersClient(addr string) *TrainersClient {
+func NewTrainersClient(addr string, client *http.Client) *TrainersClient {
 	return &TrainersClient{
 		TrainersAddr: addr,
-		httpClient:   &http.Client{},
+		HttpClient:   client,
 	}
 }
 
@@ -51,7 +50,7 @@ func (c *TrainersClient) AddTrainer(trainer utils.Trainer) (*utils.Trainer, erro
 
 	var user utils.Trainer
 
-	_, err = DoRequest(c.httpClient, req, &user)
+	_, err = DoRequest(c.HttpClient, req, &user)
 
 	return &user, err
 }
@@ -63,7 +62,7 @@ func (c *TrainersClient) ListTrainers() ([]*utils.Trainer, error) {
 	}
 
 	var users []*utils.Trainer
-	_, err = DoRequest(c.httpClient, req, &users)
+	_, err = DoRequest(c.HttpClient, req, &users)
 	return users, err
 }
 
@@ -74,7 +73,7 @@ func (c *TrainersClient) GetTrainerByUsername(username string) (*utils.Trainer, 
 	}
 
 	var user utils.Trainer
-	_, err = DoRequest(c.httpClient, req, &user)
+	_, err = DoRequest(c.HttpClient, req, &user)
 	return &user, err
 }
 
@@ -87,13 +86,22 @@ func (c *TrainersClient) UpdateTrainerStats(username string, newStats utils.Trai
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var resultStats utils.TrainerStats
-	_, err = DoRequest(c.httpClient, req, &resultStats)
+	resp, err := DoRequest(c.HttpClient, req, &resultStats)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.SetTrainerStatsToken(resp.Header.Get(tokens.StatsTokenHeaderName)); err != nil {
+		return nil, err
+	}
+
 	return &resultStats, err
 }
 
 // BAG
 
-func (c *TrainersClient) RemoveItemsFromBag(username string, itemIds []string, authToken string) error {
+func (c *TrainersClient) RemoveItemsFromBag(username string, itemIds []string, authToken string) (map[string]utils.Item, error) {
 	var itemIdsPath strings.Builder
 
 	itemIdsPath.WriteString(itemIds[0])
@@ -104,17 +112,28 @@ func (c *TrainersClient) RemoveItemsFromBag(username string, itemIds []string, a
 
 	req, err := BuildRequest("DELETE", c.TrainersAddr,
 		fmt.Sprintf(api.RemoveItemFromBagPath, username, itemIdsPath.String()), nil)
+
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	_, err = DoRequest(c.httpClient, req, nil)
-	return err
+	var res map[string]utils.Item
+	resp, err := DoRequest(c.HttpClient, req, &res)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.SetItemsToken(resp.Header.Get(tokens.ItemsTokenHeaderName)); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
-func (c *TrainersClient) AddItemsToBag(username string, itemsToAdd []*items.Item, authToken string) ([]*items.Item, error) {
+func (c *TrainersClient) AddItemsToBag(username string, itemsToAdd []items.Item, authToken string) (map[string]items.Item, error) {
 	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.AddItemToBagPath, username), itemsToAdd)
 	if err != nil {
 		return nil, err
@@ -122,43 +141,81 @@ func (c *TrainersClient) AddItemsToBag(username string, itemsToAdd []*items.Item
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	var res []*items.Item
-	_, err = DoRequest(c.httpClient, req, &res)
+	var res map[string]items.Item
+	resp, err := DoRequest(c.HttpClient, req, &res)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.SetItemsToken(resp.Header.Get(tokens.ItemsTokenHeaderName)); err != nil {
+		return nil, err
+	}
+
 	return res, err
 }
 
 // POKEMON
 
-func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
+func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (map[string]pokemons.Pokemon, error) {
 	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.AddPokemonPath, username), pokemon)
 	if err != nil {
 		return nil, err
 	}
 
-	var res pokemons.Pokemon
-	_, err = DoRequest(c.httpClient, req, &res)
-	return &res, err
+	var res map[string]pokemons.Pokemon
+	resp, err := DoRequest(c.HttpClient, req, &res)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.SetPokemonTokens(resp.Header); err != nil {
+		return nil, err
+	}
+	return res, err
 }
 
-func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
+func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon pokemons.Pokemon) (map[string]pokemons.Pokemon, error) {
 	req, err := BuildRequest("PUT", c.TrainersAddr, fmt.Sprintf(api.UpdatePokemonPath, username, pokemonId), pokemon)
 	if err != nil {
 		return nil, err
 	}
 
-	var res pokemons.Pokemon
-	_, err = DoRequest(c.httpClient, req, &res)
-	return &res, err
-}
+	var res map[string]pokemons.Pokemon
+	resp, err := DoRequest(c.HttpClient, req, &res)
 
-func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId string) error {
-	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.RemovePokemonPath, username, pokemonId), nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = DoRequest(c.httpClient, req, nil)
-	return err
+	if err := c.SetPokemonTokens(resp.Header); err != nil {
+		return nil, err
+	}
+
+	return res, err
+}
+
+func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId string) (map[string]utils.Pokemon, error) {
+	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.RemovePokemonPath, username, pokemonId), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = DoRequest(c.HttpClient, req, nil)
+
+	var res map[string]utils.Pokemon
+	resp, err := DoRequest(c.HttpClient, req, &res)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.SetPokemonTokens(resp.Header); err != nil {
+		return nil, err
+	}
+
+	return res, err
 }
 
 // TOKENS
@@ -171,7 +228,7 @@ func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) 
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	resp, err := DoRequest(c.httpClient, req, nil)
+	resp, err := DoRequest(c.HttpClient, req, nil)
 	if err != nil {
 		return err
 	}
@@ -197,7 +254,7 @@ func (c *TrainersClient) GetTrainerStatsToken(username string, authToken string)
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	resp, err := DoRequest(c.httpClient, req, nil)
+	resp, err := DoRequest(c.HttpClient, req, nil)
 	if err != nil {
 		return err
 	}
@@ -213,7 +270,7 @@ func (c *TrainersClient) GetPokemonsToken(username string, authToken string) err
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	resp, err := DoRequest(c.httpClient, req, nil)
+	resp, err := DoRequest(c.HttpClient, req, nil)
 	if err != nil {
 		return err
 	}
@@ -229,7 +286,7 @@ func (c *TrainersClient) GetItemsToken(username, authToken string) error {
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	resp, err := DoRequest(c.httpClient, req, nil)
+	resp, err := DoRequest(c.HttpClient, req, nil)
 	if err != nil {
 		return err
 	}
@@ -248,7 +305,7 @@ func (c *TrainersClient) VerifyItems(username string, hash []byte, authToken str
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var res bool
-	_, err = DoRequest(c.httpClient, req, &res)
+	_, err = DoRequest(c.HttpClient, req, &res)
 	return &res, err
 }
 
@@ -261,7 +318,7 @@ func (c *TrainersClient) VerifyPokemons(username string, hashes map[string][]byt
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var res bool
-	_, err = DoRequest(c.httpClient, req, &res)
+	_, err = DoRequest(c.HttpClient, req, &res)
 	return &res, err
 }
 
@@ -274,7 +331,7 @@ func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte, authTo
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var res bool
-	_, err = DoRequest(c.httpClient, req, &res)
+	_, err = DoRequest(c.HttpClient, req, &res)
 	return &res, err
 }
 
@@ -374,7 +431,7 @@ func (c *TrainersClient) StartLocationUpdates(authToken string) {
 	u := url.URL{Scheme: "ws", Host: c.TrainersAddr, Path: fmt.Sprintf(api.UpdateRegionPath)}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
-	mu := sync.Mutex{}
+	wruteMut := sync.Mutex{}
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
@@ -389,12 +446,12 @@ func (c *TrainersClient) StartLocationUpdates(authToken string) {
 	}
 
 	defer conn.Close()
-	conn.SetReadDeadline(time.Now().Add(location.Timeout))
+	_ = conn.SetReadDeadline(time.Now().Add(location.Timeout))
 	conn.SetPingHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(location.Timeout))
-		mu.Lock()
+		_ = conn.SetReadDeadline(time.Now().Add(location.Timeout))
+		wruteMut.Lock()
 		_ = conn.WriteMessage(websocket.PongMessage, nil)
-		mu.Unlock()
+		wruteMut.Unlock()
 		return nil
 	})
 
@@ -421,9 +478,9 @@ func (c *TrainersClient) StartLocationUpdates(authToken string) {
 				log.Error(err)
 				return
 			}
-			mu.Lock()
+			wruteMut.Lock()
 			err = conn.WriteJSON(*loc)
-			mu.Unlock()
+			wruteMut.Unlock()
 			if err != nil {
 				log.Error(err)
 				return
@@ -433,7 +490,7 @@ func (c *TrainersClient) StartLocationUpdates(authToken string) {
 				log.Error(err)
 				return
 			}
-			conn.SetReadDeadline(time.Now().Add(location.Timeout))
+			_ = conn.SetReadDeadline(time.Now().Add(location.Timeout))
 		case msg := <-inChan:
 			log.Info(msg)
 		case <-finish:
@@ -445,13 +502,14 @@ func (c *TrainersClient) StartLocationUpdates(authToken string) {
 
 func (c *TrainersClient) getLocation() (*utils.Location, error) {
 	return &utils.Location{
-		RegionName: "/Europe/London/Greenwich", Latitude: rand.Float64(), Longitude: rand.Float64(),
+		Latitude: rand.Float64(), Longitude: rand.Float64(),
 	}, nil // TODO
 }
 
+/*
 // helper methods
 
-func CheckItemsAdded(toAdd, added []*items.Item) error {
+func CheckItemsAdded(original, new map[string]items.Item, added []items.Item) error {
 	for i, item := range toAdd {
 		item.Id = added[i].Id
 	}
@@ -462,8 +520,10 @@ func CheckItemsAdded(toAdd, added []*items.Item) error {
 	}
 }
 
+*/
+
 func CheckUpdatedStats(original, updated *utils.TrainerStats) error {
-	if reflect.DeepEqual(original, updated) {
+	if original.XP == updated.XP && original.Coins == updated.Coins {
 		return nil
 	} else {
 		return errors.New(fmt.Sprintf("stats were not successfully updated: %+v, %+v", original, updated))

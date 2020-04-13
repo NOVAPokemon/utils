@@ -146,7 +146,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			if err != nil {
 				log.Error(err)
 			}
-
+			itemsToken = &tokenMessage.TokenString
 			log.Info(token.ItemsHash)
 		case trades.FINISH:
 			finishMsg := tradeMessages.Deserialize(msg).(*tradeMessages.FinishMessage)
