@@ -81,8 +81,8 @@ func handleSend(lobby *Lobby, conn *websocket.Conn, inChannel chan *string, endC
 					if lobby.Finished {
 						log.Info("lobby read routine finished properly")
 					} else {
-						log.Error(err)
-						log.Error("closed lobby because could not read")
+						log.Warn(err)
+						log.Warn("closed lobby because could not read")
 					}
 					closeConnection(conn, endConnection)
 					return
@@ -109,10 +109,10 @@ func handleRecv(lobby *Lobby, conn *websocket.Conn, outChannel chan *string, end
 				if lobby.Finished {
 					log.Info("lobby read routine finished properly")
 				} else {
-					log.Error("closed lobby because could not read")
+					log.Warn(err)
+					log.Warn("closed lobby because could not read")
 				}
 				closeConnection(conn, endConnection)
-				log.Error(err)
 				return
 			} else {
 				msg := strings.TrimSpace(string(message))
