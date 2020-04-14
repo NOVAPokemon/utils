@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	HealName = "potion"
-	ReviveName = "revive"
-	PokeBallName = "poke-ball"
+	HealName       = "potion"
+	ReviveName     = "revive"
+	PokeBallName   = "poke-ball"
 	MasterBallName = "master-ball"
 )
 
@@ -29,3 +29,13 @@ func (storeItem StoreItem) ToItem() Item {
 	}
 }
 
+func (item Item) IsPokeBall() bool {
+	switch item.Name {
+	case PokeBallName:
+		fallthrough
+	case MasterBallName:
+		return true
+	default:
+		return false
+	}
+}
