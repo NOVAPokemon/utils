@@ -14,7 +14,7 @@ const (
 
 	NoValue = 0
 
-	PokeBallValue   = 60
+	PokeBallValue   = 75
 	MasterBallValue = 100
 
 	HealFactor = 100
@@ -32,10 +32,10 @@ var (
 )
 
 var (
-	Heal       = Effect{Appliable: true, Id: HealId, Value: NoValue}
-	Revive     = Effect{Appliable: true, Id: ReviveId, Value: NoValue}
-	PokeBall   = Effect{Appliable: false, Id: PokeBallId, Value: PokeBallValue}
-	MasterBall = Effect{Appliable: false, Id: MasterBallId, Value: MasterBallValue}
+	HealEffect       = Effect{Appliable: true, Id: HealId, Value: NoValue}
+	ReviveEffect     = Effect{Appliable: true, Id: ReviveId, Value: NoValue}
+	PokeBallEffect   = Effect{Appliable: false, Id: PokeBallId, Value: PokeBallValue}
+	MasterBallEffect = Effect{Appliable: false, Id: MasterBallId, Value: MasterBallValue}
 
 	None = Effect{Appliable: false, Id: NoId, Value: NoValue}
 )
@@ -60,13 +60,13 @@ func (item *Item) Apply(pokemon *pokemons.Pokemon) error {
 func GetEffectForItem(itemName string) Effect {
 	switch itemName {
 	case HealName:
-		return Heal
+		return HealEffect
 	case ReviveName:
-		return Revive
+		return ReviveEffect
 	case PokeBallName:
-		return PokeBall
+		return PokeBallEffect
 	case MasterBallName:
-		return MasterBall
+		return MasterBallEffect
 	default:
 		return None
 	}

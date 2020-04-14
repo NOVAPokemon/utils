@@ -11,6 +11,28 @@ const (
 	MasterBallName = "master-ball"
 )
 
+var (
+	HealItem = Item{
+		Name:   HealName,
+		Effect: HealEffect,
+	}
+
+	ReviveItem = Item{
+		Name:   ReviveName,
+		Effect: ReviveEffect,
+	}
+
+	PokeBallItem = Item{
+		Name:   PokeBallName,
+		Effect: PokeBallEffect,
+	}
+
+	MasterBallItem = Item{
+		Name:   MasterBallName,
+		Effect: MasterBallEffect,
+	}
+)
+
 type Item struct {
 	Id     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	Name   string
