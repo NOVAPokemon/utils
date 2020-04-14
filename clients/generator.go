@@ -1,8 +1,11 @@
 package clients
 
 import (
+	"errors"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/tokens"
+	"math/rand"
 	"net/http"
 )
 
@@ -22,8 +25,18 @@ func NewGeneratorClient(addr string) *GeneratorClient {
 	}
 }
 
-func (client *GeneratorClient) CatchWildPokemon(authToken string) (caught bool, header http.Header, err error) {
-	req, err := BuildRequest("GET", client.GeneratorAddr, api.CatchWildPokemonPath, nil)
+func (client *GeneratorClient) CatchWildPokemon(authToken, itemsTokenString string) (caught bool, header http.Header, err error) {
+	itemsToken, err := tokens.ExtractItemsToken(itemsTokenString)
+	if err != nil {
+		return false, nil, err
+	}
+
+	pokeball, err := getRandomPokeball(itemsToken.Items)
+	if err != nil {
+		return false, nil, err
+	}
+
+	req, err := BuildRequest("GET", client.GeneratorAddr, api.CatchWildPokemonPath, pokeball)
 	if err != nil {
 		return false, nil, err
 	}
@@ -41,4 +54,19 @@ func (client *GeneratorClient) CatchWildPokemon(authToken string) (caught bool, 
 	}
 
 	return true, resp.Header, nil
+}
+
+func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error) {
+	var pokeballs []*items.Item
+	for _, item := range itemsFromToken {
+		if item.IsPokeBall() {
+			pokeballs = append(pokeballs, &item)
+		}
+	}
+
+	if pokeballs == nil {
+		return nil, errors.New("no pokeballs")
+	}
+
+	return pokeballs[rand.Intn(len(pokeballs))], nil
 }
