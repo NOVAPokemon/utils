@@ -157,7 +157,6 @@ func UpdateTrainerStats(username string, stats utils.TrainerStats) (*utils.Train
 }
 
 func UpdateUserLocation(username string, loc utils.Location) (*utils.Location, error) {
-
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 

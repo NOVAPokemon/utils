@@ -3,12 +3,13 @@ package utils
 const (
 	Host = "localhost"
 
-	AuthenticationPort    = 8001
-	BattlesPort           = 8002
-	GeneratorPort         = 8003
-	NotificationsPort     = 8004
-	TradesPort            = 8005
-	TrainersPort          = 8006
-	StorePort             = 8007
-	MicrotransactionsPort = 8008
+	AuthenticationPort = 8001 + iota
+	BattlesPort
+	GeneratorPort
+	NotificationsPort
+	TradesPort
+	TrainersPort
+	StorePort
+	MicrotransactionsPort
+	LocationPort
 )

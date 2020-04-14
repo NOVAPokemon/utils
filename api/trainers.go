@@ -30,8 +30,6 @@ const GenerateTrainerStatsTokenPath = "/trainers/%s/stats/token"
 const GenerateItemsTokenPath = "/trainers/%s/items/token"
 const GeneratePokemonsTokenPath = "/trainers/%s/pokemons/token"
 
-const UpdateRegionPath = "/location"
-
 // ROUTES
 const UsernameVar = "username"
 const PokemonIdVar = "pokemonId"
@@ -63,4 +61,3 @@ var GenerateTrainerStatsTokenRoute = fmt.Sprintf(GenerateTrainerStatsTokenPath, 
 var GenerateItemsTokenRoute = fmt.Sprintf(GenerateItemsTokenPath, UsernameRouteVar)
 var GeneratePokemonsTokenRoute = fmt.Sprintf(GeneratePokemonsTokenPath, UsernameRouteVar)
 
-var UpdateRegionRoute = UpdateRegionPath
