@@ -60,7 +60,8 @@ func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error
 	var pokeballs []*items.Item
 	for _, item := range itemsFromToken {
 		if item.IsPokeBall() {
-			pokeballs = append(pokeballs, &item)
+			toAdd := item
+			pokeballs = append(pokeballs, &toAdd)
 		}
 	}
 
