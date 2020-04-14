@@ -157,13 +157,13 @@ func (c *TrainersClient) AddItemsToBag(username string, itemsToAdd []items.Item,
 
 // POKEMON
 
-func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (map[string]pokemons.Pokemon, error) {
+func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
 	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.AddPokemonPath, username), pokemon)
 	if err != nil {
 		return nil, err
 	}
 
-	var res map[string]pokemons.Pokemon
+	var res pokemons.Pokemon
 	resp, err := DoRequest(c.HttpClient, req, &res)
 
 	if err != nil {
@@ -173,16 +173,16 @@ func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon pokemons.P
 	if err := c.SetPokemonTokens(resp.Header); err != nil {
 		return nil, err
 	}
-	return res, err
+	return &res, err
 }
 
-func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon pokemons.Pokemon) (map[string]pokemons.Pokemon, error) {
+func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
 	req, err := BuildRequest("PUT", c.TrainersAddr, fmt.Sprintf(api.UpdatePokemonPath, username, pokemonId), pokemon)
 	if err != nil {
 		return nil, err
 	}
 
-	var res map[string]pokemons.Pokemon
+	var res pokemons.Pokemon
 	resp, err := DoRequest(c.HttpClient, req, &res)
 
 	if err != nil {
@@ -193,10 +193,10 @@ func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string,
 		return nil, err
 	}
 
-	return res, err
+	return &res, err
 }
 
-func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId string) (map[string]pokemons.Pokemon, error) {
+func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId string) (*pokemons.Pokemon, error) {
 	req, err := BuildRequest("GET", c.TrainersAddr, fmt.Sprintf(api.RemovePokemonPath, username, pokemonId), nil)
 	if err != nil {
 		return nil, err
@@ -204,7 +204,7 @@ func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId str
 
 	_, err = DoRequest(c.HttpClient, req, nil)
 
-	var res map[string]pokemons.Pokemon
+	var res pokemons.Pokemon
 	resp, err := DoRequest(c.HttpClient, req, &res)
 
 	if err != nil {
@@ -215,7 +215,7 @@ func (c *TrainersClient) RemovePokemonFromTrainer(username string, pokemonId str
 		return nil, err
 	}
 
-	return res, err
+	return &res, err
 }
 
 // TOKENS

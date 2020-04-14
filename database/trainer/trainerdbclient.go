@@ -240,8 +240,6 @@ func AddItemsToTrainer(username string, itemsToAdd []items.Item) (map[string]ite
 	itemsObjects := make(map[string]items.Item, len(itemsToAdd))
 
 	for _, item := range itemsToAdd {
-		itemId := primitive.NewObjectID()
-		item.Id = itemId
 		itemsObjects["items."+item.Id.Hex()] = item
 	}
 
@@ -298,7 +296,7 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) (map[
 
 	change := bson.M{"$unset": itemsObjects}
 	opts := &options.FindOneAndUpdateOptions{}
-	opts.SetReturnDocument(options.After)
+	opts.SetReturnDocument(options.Before)
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
@@ -316,9 +314,6 @@ func AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (map[string]
 
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
-
-	pokemonId := primitive.NewObjectID()
-	pokemon.Id = pokemonId
 
 	filter := bson.M{"username": username}
 	change := bson.M{"$set": bson.M{"pokemons." + pokemon.Id.Hex(): pokemon}}
@@ -364,7 +359,7 @@ func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) (ma
 	filter := bson.M{"username": username}
 	change := bson.M{"$unset": bson.M{"pokemons." + pokemonId.Hex(): nil}}
 	opts := &options.FindOneAndUpdateOptions{}
-	opts.SetReturnDocument(options.After)
+	opts.SetReturnDocument(options.Before)
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {

@@ -165,12 +165,16 @@ func TestAddPokemonToTrainer(t *testing.T) {
 
 }
 
-func TestRemovePokemonFromTrainer(t *testing.T) {
+func TestAppendRemovePokemon(t *testing.T) {
 
 	// add trainer and pokemon
 	_, _ = AddTrainer(trainerMockup)
 
-	pokemonsAdded, err := AddPokemonToTrainer(trainerMockup.Username, pokemons.Pokemon{})
+	toAdd := pokemons.Pokemon{
+		Id: primitive.NewObjectID(),
+	}
+
+	trainerPokemons, err := AddPokemonToTrainer(trainerMockup.Username, toAdd)
 
 	if err != nil {
 		t.Error(err)
@@ -178,21 +182,30 @@ func TestRemovePokemonFromTrainer(t *testing.T) {
 		return
 	}
 
-	if len(pokemonsAdded) == 0 {
+	_, ok := trainerPokemons[toAdd.Id.Hex()]
+
+	if !ok {
+		t.Error("Pokemon is not in added pokemons")
 		t.FailNow()
-		return
-	}
-	addedPokemon := pokemons.Pokemon{}
-	for _, v := range pokemonsAdded {
-		addedPokemon = v
-		break
 	}
 
 	// remove pokemon from trainer
-	pokemonsAdded, _ = RemovePokemonFromTrainer(trainerMockup.Username, addedPokemon.Id)
-	if len(pokemonsAdded) != 0 {
+	trainerPokemons, err = RemovePokemonFromTrainer(trainerMockup.Username, toAdd.Id)
+
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+		return
+	}
+
+	user, err := GetTrainerByUsername(trainerMockup.Username)
+	_, ok = user.Pokemons[toAdd.Id.Hex()]
+
+	if ok {
+		t.Error("Pokemon was not removed")
 		t.FailNow()
 	}
+
 	_ = DeleteTrainer(trainerMockup.Username)
 
 }
@@ -258,61 +271,6 @@ func TestAppendAndRemoveItem(t *testing.T) {
 	}
 
 	assert.True(t, len(itemsAdded) == 0)
-	_ = DeleteTrainer(userName)
-
-}
-
-func TestAppendAndRemovePokemon(t *testing.T) {
-
-	userName, err := AddTrainer(trainerMockup)
-
-	toAppend := pokemons.Pokemon{
-	}
-
-	toAppend2 := pokemons.Pokemon{
-	}
-
-	// add item, verify that it is in trainer
-	pokemonsAdded, err := AddPokemonToTrainer(userName, toAppend)
-
-	if err != nil {
-		t.Error(err)
-		t.FailNow()
-	}
-
-	assert.True(t, len(pokemonsAdded) == 1)
-
-	// add another pokemon, verify that trainer has both pokemonsAdded
-	pokemonsAdded, err = AddPokemonToTrainer(userName, toAppend2)
-
-	if err != nil {
-		t.Error(err)
-		t.FailNow()
-	}
-
-	toRemove := primitive.ObjectID{}
-	for _, v := range pokemonsAdded {
-		toRemove = v.Id
-	}
-
-	// delete one pokemon, verify that trainer has  the remaining Pokemon
-	pokemonsAdded, err = RemovePokemonFromTrainer(userName, toRemove)
-
-	assert.True(t, len(pokemonsAdded) == 1)
-
-	toRemove = primitive.ObjectID{}
-	for _, v := range pokemonsAdded {
-		toRemove = v.Id
-	}
-
-	pokemonsAdded, err = RemovePokemonFromTrainer(userName, toRemove)
-
-	if err != nil {
-		t.Error(err)
-		t.FailNow()
-	}
-
-	assert.True(t, len(pokemonsAdded) == 0)
 	_ = DeleteTrainer(userName)
 
 }
