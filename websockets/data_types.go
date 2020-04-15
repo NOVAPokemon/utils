@@ -20,3 +20,7 @@ func (msg Message) Serialize() string {
 
 	return builder.String()
 }
+
+type Serializable interface {
+	Serialize() *Message
+}
