@@ -75,6 +75,12 @@ type UserLocation struct {
 	Location Location
 }
 
+type LocationParameters struct {
+	StartingLocation  Location
+	MovingSpeed       float64
+	MovingProbability float64
+}
+
 type Gym struct {
 	Id       primitive.ObjectID
 	Location Location

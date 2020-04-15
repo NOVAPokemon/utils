@@ -24,3 +24,8 @@ func (msg Message) Serialize() string {
 type Serializable interface {
 	Serialize() *Message
 }
+
+type GenericMsg struct {
+	MsgType int
+	Data []byte
+}
