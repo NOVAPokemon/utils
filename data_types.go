@@ -70,7 +70,12 @@ type Location struct {
 	Longitude float64
 }
 
+type UserLocation struct {
+	Username string `json:"username" bson:"username,omitempty"`
+	Location Location
+}
+
 type Gym struct {
-	Id primitive.ObjectID
+	Id       primitive.ObjectID
 	Location Location
 }
