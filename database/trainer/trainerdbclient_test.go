@@ -21,11 +21,6 @@ var trainerMockup = utils.Trainer{
 	},
 }
 
-var mockupLocation = utils.Location{
-	Latitude:  59.6,
-	Longitude: 61.6,
-}
-
 func TestMain(m *testing.M) {
 	_ = removeAll()
 	res := m.Run()
@@ -98,30 +93,6 @@ func TestUpdate(t *testing.T) {
 	}
 
 	assert.Equal(t, toUpdate.Coins, updatedTrainer.Stats.Coins)
-	_ = DeleteTrainer(trainer)
-}
-
-func TestUpdateRegion(t *testing.T) {
-
-	trainer, _ := AddTrainer(trainerMockup)
-
-	_, err := UpdateUserLocation(trainerMockup.Username, mockupLocation)
-
-	if err != nil {
-		t.Error(err)
-		t.Fail()
-	}
-
-	updatedTrainer, err := GetTrainerByUsername(trainerMockup.Username)
-
-	if err != nil {
-		t.Error(err)
-		t.Fail()
-	}
-
-	assert.Equal(t, mockupLocation.Longitude, updatedTrainer.Location.Longitude)
-	assert.Equal(t, mockupLocation.Longitude, updatedTrainer.Location.Longitude)
-
 	_ = DeleteTrainer(trainer)
 }
 
