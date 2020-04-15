@@ -47,7 +47,10 @@ func (item *Item) Apply(pokemon *pokemons.Pokemon) error {
 
 	switch item.Effect.Id {
 	case HealId:
-		pokemon.HP += HealFactor
+		pokemon.HP += pokemon.HP + HealFactor
+		if pokemon.HP > pokemon.MaxHP {
+			pokemon.HP = pokemon.MaxHP
+		}
 	case ReviveId:
 		pokemon.HP = pokemon.MaxHP
 	default:

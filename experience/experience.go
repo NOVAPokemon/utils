@@ -10,7 +10,7 @@ const (
 	MaxBonusExperience     = 50
 )
 
-func GetPokemonTrainerGainFromBattle(winner bool) float64 {
+func GetTrainerExperienceGainFromBattle(winner bool) float64 {
 	xp := MinExperiencePerBattle
 	if winner {
 		xp += rand.Intn(MaxBonusExperience)

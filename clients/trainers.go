@@ -24,7 +24,7 @@ type TrainersClient struct {
 
 	TrainerStatsClaims *tokens.TrainerStatsToken
 	ItemsClaims        *tokens.ItemsToken
-	PokemonClaims      map[string]*tokens.PokemonToken
+	PokemonClaims      map[string]tokens.PokemonToken
 }
 
 // TRAINER
@@ -336,7 +336,7 @@ func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
 		return errors.New("No pokemon tokens in header")
 	}
 
-	auxClaims := make(map[string]*tokens.PokemonToken, len(tkns))
+	auxClaims := make(map[string]tokens.PokemonToken, len(tkns))
 	auxTkns := make(map[string]string, len(tkns))
 
 	i := 0
@@ -351,7 +351,7 @@ func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
 			return err
 		}
 
-		auxClaims[pokemonClaims.Pokemon.Id.Hex()] = pokemonClaims
+		auxClaims[pokemonClaims.Pokemon.Id.Hex()] = *pokemonClaims
 		auxTkns[pokemonClaims.Pokemon.Id.Hex()] = tkns[i]
 
 		added++
@@ -386,7 +386,7 @@ func (c *TrainersClient) AppendPokemonToken(header http.Header) error {
 
 		pokemonIdString := pokemonClaims.Pokemon.Id.Hex()
 
-		c.PokemonClaims[pokemonIdString] = pokemonClaims
+		c.PokemonClaims[pokemonIdString] = *pokemonClaims
 		c.PokemonTokens[pokemonIdString] = tkns[i]
 
 		added++
@@ -419,8 +419,6 @@ func (c *TrainersClient) SetItemsToken(itemsToken string) error {
 
 	return nil
 }
-
-
 
 // helper method
 

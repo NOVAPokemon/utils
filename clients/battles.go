@@ -52,7 +52,7 @@ func (client *BattleLobbyClient) GetAvailableLobbies() []utils.Lobby {
 	return availableBattles
 }
 
-func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens []string, statsToken string) (*websocket.Conn, *BattleChannels, error) {
+func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens []string, statsToken string, itemsToken string) (*websocket.Conn, *BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: api.QueueForBattlePath}
 	log.Infof("Queuing for battle: %s", u.String())
@@ -65,6 +65,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.StatsTokenHeaderName, statsToken)
+	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
 
 	c, _, err := dialer.Dial(u.String(), header)
@@ -83,7 +84,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	return c, &BattleChannels{outChannel, inChannel, finished}, nil
 }
 
-func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, statsToken string, targetPlayer string) (*websocket.Conn, *BattleChannels, error) {
+func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, statsToken string, itemsToken string, targetPlayer string) (*websocket.Conn, *BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.ChallengeToBattlePath, targetPlayer)}
 	log.Infof("Connecting to: %s", u.String())
@@ -92,6 +93,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.StatsTokenHeaderName, statsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
+	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
@@ -115,7 +117,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 
 }
 
-func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string, battleId primitive.ObjectID) (*websocket.Conn, *BattleChannels, error) {
+func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string, itemsToken string, battleId primitive.ObjectID) (*websocket.Conn, *BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.AcceptChallengePath, battleId.Hex())}
 	log.Infof("Accepting challenge: %s", u.String())
@@ -124,6 +126,7 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.StatsTokenHeaderName, statsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
+	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,

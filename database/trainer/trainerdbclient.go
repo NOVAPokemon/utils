@@ -21,8 +21,6 @@ const databaseName = "NOVAPokemonDB"
 const collectionName = "Trainers"
 
 var (
-	dbClient databaseUtils.DBClient
-
 	ErrTrainerNotFound = errors.New("Trainer Not Found")
 	ErrInvalidLevel    = errors.New("Invalid level")
 	ErrInvalidCoins    = errors.New("Invalid coin ammount")
@@ -30,7 +28,10 @@ var (
 	ErrPokemonNotFound = errors.New("Pokemon not found")
 )
 
+var dbClient databaseUtils.DBClient
+
 func init() {
+
 	url, exists := os.LookupEnv("MONGODB_URL")
 
 	if !exists {
@@ -71,10 +72,11 @@ func AddTrainer(trainer utils.Trainer) (string, error) {
 
 	if err != nil {
 		return "", err
+	} else {
+		log.Infof("Added new trainer: %s", trainer.Username)
+		return trainer.Username, nil
 	}
 
-	log.Infof("Added new trainer: %s", trainer.Username)
-	return trainer.Username, nil
 }
 
 func GetAllTrainers() ([]utils.Trainer, error) {

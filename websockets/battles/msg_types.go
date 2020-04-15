@@ -12,6 +12,9 @@ var (
 	ErrInvalidPokemonSelected = "ErrInvalidPokemonSelected"
 	ErrPokemonNoHP            = "ErrPokemonNoHP"
 	ErrCooldown               = "ErrCooldown"
+	ErrNoItemSelected         = "ErrNoItemSelected"
+	ErrInvalidItemSelected    = "ErrInvalidItemSelected"
+	ErrItemNotAppliable       = "ErrItemNotAppliable"
 
 	StatusDefended            = "StatusDefended"
 	StatusOpponentedDeffended = "StatusOpponentedDeffended"
@@ -25,6 +28,7 @@ const (
 	// Update Types
 	UPDATE_PLAYER_POKEMON    = "UPDATE_PLAYER_POKEMON"
 	UPDATE_ADVERSARY_POKEMON = "UPDATE_ADVERSARY_POKEMON"
+	REMOVE_ITEM              = "REMOVE_ITEM"
 
 	UPDATE_PLAYER    = "UPDATE_PLAYER"
 	UPDATE_ADVERSARY = "UPDATE_ADVERSARY"
