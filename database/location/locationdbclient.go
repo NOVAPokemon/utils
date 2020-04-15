@@ -1,4 +1,4 @@
-package generator
+package location
 
 import (
 	"context"
@@ -89,29 +89,58 @@ func GetGyms() ([]*utils.Gym, error) {
 	return gyms, nil
 }
 
-func UpdateIfAbsentAddUserLocation(username string, loc utils.Location) (*utils.Location, error) {
+func UpdateIfAbsentAddUserLocation(userLocation utils.UserLocation) (*utils.UserLocation, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collections[usersLocationCollectionName]
 
-	filter := bson.M{"username": username}
-	changes := bson.M{"$set": bson.M{"location": loc}}
+	filter := bson.M{"username": userLocation.Username}
+	changes := bson.M{"$set": bson.M{"location": userLocation.Location}}
 
 	upsert := true
-	options := options.UpdateOptions{
+	updateOptions := options.UpdateOptions{
 		Upsert: &upsert,
 	}
 
-	res, err := collection.UpdateOne(*ctx, filter, changes, &options)
+	res, err := collection.UpdateOne(*ctx, filter, changes, &updateOptions)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
 	if res.MatchedCount > 0 {
-		log.Infof("Updated Trainer %s location", username)
+		log.Infof("Updated Trainer %s location", userLocation.Username)
 	} else {
-		log.Info("Started tracking %s", username)
+		log.Info("Started tracking ", userLocation.Username)
 	}
 
-	return &loc, nil
+	return &userLocation, nil
+}
+
+func GetUserLocation(username string) (*utils.UserLocation, error) {
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[usersLocationCollectionName]
+	var result utils.UserLocation
+
+	filter := bson.M{"username": username}
+	err := collection.FindOne(*ctx, filter).Decode(&result)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func DeleteUserLocation(username string) error {
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[usersLocationCollectionName]
+	filter := bson.M{"username": username}
+
+	_, err := collection.DeleteOne(*ctx, filter)
+
+	if err != nil {
+		log.Error(err)
+	}
+
+	return err
 }
