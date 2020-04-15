@@ -61,7 +61,7 @@ func AddGym(gym utils.Gym) error {
 	return nil
 }
 
-func GetGyms() ([]*utils.Gym, error) {
+func GetGyms() ([]utils.Gym, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collections[gymsLocationCollectionName]
 
@@ -70,7 +70,7 @@ func GetGyms() ([]*utils.Gym, error) {
 		return nil, err
 	}
 
-	var gyms []*utils.Gym
+	var gyms []utils.Gym
 
 	defer cur.Close(*ctx)
 	for cur.Next(*ctx) {
@@ -79,7 +79,7 @@ func GetGyms() ([]*utils.Gym, error) {
 		if err != nil {
 			log.Error(err)
 		} else {
-			gyms = append(gyms, &gym)
+			gyms = append(gyms, gym)
 		}
 	}
 
