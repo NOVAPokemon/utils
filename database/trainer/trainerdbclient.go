@@ -21,6 +21,8 @@ const databaseName = "NOVAPokemonDB"
 const collectionName = "Trainers"
 
 var (
+	dbClient databaseUtils.DBClient
+
 	ErrTrainerNotFound = errors.New("Trainer Not Found")
 	ErrInvalidLevel    = errors.New("Invalid level")
 	ErrInvalidCoins    = errors.New("Invalid coin ammount")
@@ -28,10 +30,7 @@ var (
 	ErrPokemonNotFound = errors.New("Pokemon not found")
 )
 
-var dbClient databaseUtils.DBClient
-
 func init() {
-
 	url, exists := os.LookupEnv("MONGODB_URL")
 
 	if !exists {
@@ -72,11 +71,10 @@ func AddTrainer(trainer utils.Trainer) (string, error) {
 
 	if err != nil {
 		return "", err
-	} else {
-		log.Infof("Added new trainer: %s", trainer.Username)
-		return trainer.Username, nil
 	}
 
+	log.Infof("Added new trainer: %s", trainer.Username)
+	return trainer.Username, nil
 }
 
 func GetAllTrainers() ([]utils.Trainer, error) {
@@ -154,28 +152,6 @@ func UpdateTrainerStats(username string, stats utils.TrainerStats) (*utils.Train
 	}
 
 	return &stats, nil
-}
-
-func UpdateUserLocation(username string, loc utils.Location) (*utils.Location, error) {
-	ctx := dbClient.Ctx
-	collection := dbClient.Collection
-
-	filter := bson.M{"username": username}
-	changes := bson.M{"$set": bson.M{"location": loc}}
-	res, err := collection.UpdateOne(*ctx, filter, changes)
-
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	if res.MatchedCount > 0 {
-		log.Infof("Updated Trainer %s location", username)
-	} else {
-		return nil, ErrTrainerNotFound
-	}
-
-	return &loc, nil
 }
 
 func DeleteTrainer(username string) error {
