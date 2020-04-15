@@ -4,19 +4,25 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	locationMessages "github.com/NOVAPokemon/utils/messages/location"
 	"github.com/NOVAPokemon/utils/tokens"
+	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/location"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
+)
+
+const (
+	bufferSize = 10
 )
 
 type LocationClient struct {
 	LocationAddr string
+	Gyms         []utils.Gym
 	HttpClient   *http.Client
 }
 
@@ -27,11 +33,46 @@ func NewLocationClient(addr string) *LocationClient {
 	}
 }
 
-func (c *LocationClient) StartLocationUpdates(authToken string) {
+func (c *LocationClient) StartLocationUpdates(locationParameters utils.LocationParameters, authToken string) {
+	inChan := make(chan *websockets.Message)
+	outChan := make(chan websockets.GenericMsg, bufferSize)
+	finish := make(chan struct{})
+
+	conn, err := c.connect(outChan, authToken)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	go readMessages(conn, inChan, finish)
+	go updateLocation(locationParameters, conn, outChan)
+
+	for {
+		select {
+		case msg := <-inChan:
+			switch msg.MsgType {
+			case location.Gyms:
+				log.Info("updating gyms")
+				log.Info(locationMessages.Deserialize(msg).(locationMessages.GymsMessage).Gyms)
+			default:
+				log.Warn("got message type ", msg.MsgType)
+			}
+		case <-finish:
+			log.Warn("Trainer stopped updating location")
+			return
+		case msg := <-outChan:
+			if err := conn.WriteMessage(msg.MsgType, msg.Data); err != nil {
+				log.Error(err)
+				return
+			}
+		}
+	}
+}
+
+func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken string) (*websocket.Conn, error) {
 	u := url.URL{Scheme: "ws", Host: c.LocationAddr, Path: fmt.Sprintf(api.UserLocationPath)}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
-	writeMut := sync.Mutex{}
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
@@ -42,65 +83,69 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 	conn, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
 		log.Fatal(err)
-		return
+		return nil, err
 	}
 
-	defer conn.Close()
 	_ = conn.SetReadDeadline(time.Now().Add(location.Timeout))
 	conn.SetPingHandler(func(string) error {
-		_ = conn.SetReadDeadline(time.Now().Add(location.Timeout))
-		writeMut.Lock()
-		_ = conn.WriteMessage(websocket.PongMessage, nil)
-		writeMut.Unlock()
+		if err := conn.SetReadDeadline(time.Now().Add(location.Timeout)); err != nil {
+			return err
+		}
+		outChan <- websockets.GenericMsg{MsgType: websocket.PongMessage, Data: nil}
+
 		return nil
 	})
 
-	var updateTicker = time.NewTicker(location.UpdateCooldown)
-	var inChan = make(chan string)
-	finish := make(chan *struct{})
-	go func() {
-		_, msg, err := conn.ReadMessage()
-		if err != nil {
-			log.Error(err)
-			finish <- nil
-			return
-		} else {
-			inChan <- string(msg)
-		}
-	}()
+	return conn, err
+}
+
+func updateLocation(locationParameters utils.LocationParameters, conn *websocket.Conn, outChan chan websockets.GenericMsg) {
+	updateTicker := time.NewTicker(location.UpdateCooldown)
 
 	for {
 		select {
 		case <-updateTicker.C:
-			loc, err := c.getLocation()
-			if err != nil {
-				log.Error(err)
-				return
+			loc := utils.Location{
+				Latitude:  rand.Float64(),
+				Longitude: rand.Float64(),
 			}
 
-			writeMut.Lock()
-			err = conn.WriteJSON(*loc)
-			writeMut.Unlock()
-			if err != nil {
-				log.Error(err)
-				return
+			locationMsg := locationMessages.UpdateLocationMessage{
+				Location: loc,
+			}
+			wsMsg := locationMsg.Serialize()
+			genericMsg := websockets.GenericMsg{
+				MsgType: websocket.TextMessage,
+				Data:    []byte(wsMsg.Serialize()),
 			}
 
-			err = conn.SetReadDeadline(time.Now().Add(location.Timeout))
+			log.Info("updating location")
+
+			outChan <- genericMsg
+
+			err := conn.SetReadDeadline(time.Now().Add(location.Timeout))
 			if err != nil {
 				log.Error(err)
 				return
 			}
-		case msg := <-inChan:
-			log.Info(msg)
-		case <-finish:
-			log.Warn("Trainer stopped updating location")
 		}
 	}
 }
 
-func (c *LocationClient) getLocation() (*utils.Location, error) {
-	return &utils.Location{
-		Latitude: rand.Float64(), Longitude: rand.Float64(),
-	}, nil // TODO
+func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish chan struct{}) {
+	_, msg, err := conn.ReadMessage()
+	if err != nil {
+		log.Error(err)
+		close(finish)
+		return
+	} else {
+		stringMsg := string(msg)
+		msg, err := websockets.ParseMessage(&stringMsg)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		inChan <- msg
+	}
 }
