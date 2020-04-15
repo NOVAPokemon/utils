@@ -2,4 +2,4 @@ package api
 
 const SubscribeLocationPath = "/location"
 
-var SubscribeLocationRoute = SubscribeNotificationPath
+var SubscribeLocationRoute = SubscribeLocationPath

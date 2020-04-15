@@ -96,7 +96,6 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 		case <-finish:
 			log.Warn("Trainer stopped updating location")
 		}
-
 	}
 }
 
