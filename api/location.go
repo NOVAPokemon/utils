@@ -1,5 +1,7 @@
 package api
 
-const SubscribeLocationPath = "/location"
+const UserLocationPath = "/user_location"
+const GymLocationPath = "/gym_location"
 
-var SubscribeLocationRoute = SubscribeLocationPath
+var UserLocationRoute = UserLocationPath
+var GymLocationRoute = GymLocationPath

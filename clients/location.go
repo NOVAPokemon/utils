@@ -28,7 +28,7 @@ func NewLocationClient(addr string) *LocationClient {
 }
 
 func (c *LocationClient) StartLocationUpdates(authToken string) {
-	u := url.URL{Scheme: "ws", Host: c.LocationAddr, Path: fmt.Sprintf(api.SubscribeLocationPath)}
+	u := url.URL{Scheme: "ws", Host: c.LocationAddr, Path: fmt.Sprintf(api.UserLocationPath)}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	writeMut := sync.Mutex{}
