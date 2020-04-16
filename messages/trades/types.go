@@ -8,10 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Serializable interface {
-	SerializeToWSMessage() *ws.Message
-}
-
 // Start
 type StartMessage struct {
 	messages.MessageWithId
@@ -166,7 +162,7 @@ func (nMsg NoneMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func Deserialize(msg *ws.Message) interface{} {
+func Deserialize(msg *ws.Message) messages.Serializable {
 	switch msg.MsgType {
 	case trades.START:
 		var startMessage StartMessage
