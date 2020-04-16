@@ -70,7 +70,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 			switch msg.MsgType {
 			case location.Gyms:
 				log.Info("updating gyms")
-				log.Info(locationMessages.Deserialize(msg).(locationMessages.GymsMessage).Gyms)
+				log.Info(locationMessages.Deserialize(msg).(*locationMessages.GymsMessage).Gyms)
 			default:
 				log.Warn("got message type ", msg.MsgType)
 			}
@@ -174,20 +174,22 @@ func (c *LocationClient) move(timePassed int) utils.Location {
 }
 
 func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish chan struct{}) {
-	_, msg, err := conn.ReadMessage()
-	if err != nil {
-		log.Error(err)
-		close(finish)
-		return
-	} else {
-		stringMsg := string(msg)
-		msg, err := websockets.ParseMessage(&stringMsg)
+	for {
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			log.Error(err)
+			close(finish)
 			return
-		}
+		} else {
+			stringMsg := string(msg)
+			msg, err := websockets.ParseMessage(&stringMsg)
+			if err != nil {
+				log.Error(err)
+				return
+			}
 
-		inChan <- msg
+			inChan <- msg
+		}
 	}
 }
 
