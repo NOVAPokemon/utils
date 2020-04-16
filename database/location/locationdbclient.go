@@ -113,6 +113,8 @@ func DeleteAllGyms() error {
 	if err != nil {
 		return err
 	}
+
+	return nil
 }
 
 func UpdateIfAbsentAddUserLocation(userLocation utils.UserLocation) (*utils.UserLocation, error) {
