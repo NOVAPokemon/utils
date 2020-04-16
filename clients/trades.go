@@ -170,7 +170,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 
 		for i := 0; i < numItemsToAdd; i++ {
 			randomItemIdx := rand.Intn(len(availableItems))
-			msg := tradeMessages.TradeMessage{Items: availableItems[randomItemIdx]}.Serialize()
+			msg := tradeMessages.TradeMessage{Items: availableItems[randomItemIdx]}.SerializeToWSMessage()
 			s := (*msg).Serialize()
 			writeChannel <- &s
 
@@ -185,7 +185,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 			log.Infof("sleeping %d milliseconds", randSleep)
 		}
 
-		msg := tradeMessages.AcceptMessage{}.Serialize()
+		msg := tradeMessages.AcceptMessage{}.SerializeToWSMessage()
 		s := (*msg).Serialize()
 		writeChannel <- &s
 

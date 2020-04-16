@@ -22,7 +22,7 @@ func (msg Message) Serialize() string {
 }
 
 type Serializable interface {
-	Serialize() *Message
+	SerializeToWSMessage() *Message
 }
 
 type GenericMsg struct {

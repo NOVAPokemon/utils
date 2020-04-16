@@ -127,7 +127,7 @@ func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan webso
 			locationMsg := locationMessages.UpdateLocationMessage{
 				Location: c.CurrentLocation,
 			}
-			wsMsg := locationMsg.Serialize()
+			wsMsg := locationMsg.SerializeToWSMessage()
 			genericMsg := websockets.GenericMsg{
 				MsgType: websocket.TextMessage,
 				Data:    []byte(wsMsg.Serialize()),

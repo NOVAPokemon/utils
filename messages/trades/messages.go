@@ -4,12 +4,12 @@ var (
 	ErrorOneItemAtATime = ErrorMessage{
 		Info:  "can only add one item to trade at a time",
 		Fatal: false,
-	}.Serialize()
+	}.SerializeToWSMessage()
 
 	ErrorParsing = ErrorMessage{
 		Info:  "error parsing message",
 		Fatal: false,
-	}.Serialize()
+	}.SerializeToWSMessage()
 
-	NoneMessageConst = NoneMessage{}.Serialize()
+	NoneMessageConst = NoneMessage{}.SerializeToWSMessage()
 )

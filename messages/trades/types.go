@@ -8,13 +8,13 @@ import (
 )
 
 type Serializable interface {
-	Serialize() *ws.Message
+	SerializeToWSMessage() *ws.Message
 }
 
 // Start
 type StartMessage struct{}
 
-func (sMsg StartMessage) Serialize() *ws.Message {
+func (sMsg StartMessage) SerializeToWSMessage() *ws.Message {
 	return &ws.Message{
 		MsgType: trades.START,
 		MsgArgs: nil,
@@ -26,7 +26,7 @@ type TradeMessage struct {
 	Items string
 }
 
-func (tMsg TradeMessage) Serialize() *ws.Message {
+func (tMsg TradeMessage) SerializeToWSMessage() *ws.Message {
 	return &ws.Message{
 		MsgType: trades.TRADE,
 		MsgArgs: []string{tMsg.Items},
@@ -36,7 +36,7 @@ func (tMsg TradeMessage) Serialize() *ws.Message {
 // Accept
 type AcceptMessage struct{}
 
-func (aMsg AcceptMessage) Serialize() *ws.Message {
+func (aMsg AcceptMessage) SerializeToWSMessage() *ws.Message {
 	return &ws.Message{
 		MsgType: trades.ACCEPT,
 		MsgArgs: nil,
@@ -50,7 +50,7 @@ type UpdateMessage struct {
 	Players       [2]*trades.PlayerInfo
 }
 
-func (uMsg UpdateMessage) Serialize() *ws.Message {
+func (uMsg UpdateMessage) SerializeToWSMessage() *ws.Message {
 	msgArgs := []string{
 		strconv.FormatBool(uMsg.TradeStarted),
 		strconv.FormatBool(uMsg.TradeFinished),
@@ -85,7 +85,7 @@ type SetTokenMessage struct {
 	TokenString string
 }
 
-func (sMsg SetTokenMessage) Serialize() *ws.Message {
+func (sMsg SetTokenMessage) SerializeToWSMessage() *ws.Message {
 	return &ws.Message{
 		MsgType: trades.SETTOKEN,
 		MsgArgs: []string{sMsg.TokenString},
@@ -97,7 +97,7 @@ type FinishMessage struct {
 	Success bool
 }
 
-func (fMsg FinishMessage) Serialize() *ws.Message {
+func (fMsg FinishMessage) SerializeToWSMessage() *ws.Message {
 	return &ws.Message{
 		MsgType: trades.FINISH,
 		MsgArgs: []string{strconv.FormatBool(fMsg.Success)},
@@ -110,7 +110,7 @@ type ErrorMessage struct {
 	Fatal bool
 }
 
-func (eMsg ErrorMessage) Serialize() *ws.Message {
+func (eMsg ErrorMessage) SerializeToWSMessage() *ws.Message {
 	return &ws.Message{
 		MsgType: trades.ERROR,
 		MsgArgs: []string{eMsg.Info, strconv.FormatBool(eMsg.Fatal)},
@@ -119,7 +119,7 @@ func (eMsg ErrorMessage) Serialize() *ws.Message {
 
 type NoneMessage struct {}
 
-func (nMsg NoneMessage) Serialize() *ws.Message {
+func (nMsg NoneMessage) SerializeToWSMessage() *ws.Message {
 	return &ws.Message{
 		MsgType: trades.NONE,
 		MsgArgs: nil,

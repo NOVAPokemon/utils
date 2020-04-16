@@ -13,7 +13,7 @@ type UpdateLocationMessage struct {
 	Location utils.Location
 }
 
-func (ulMsg UpdateLocationMessage) Serialize() *ws.Message {
+func (ulMsg UpdateLocationMessage) SerializeToWSMessage() *ws.Message {
 	jsonLocation, err := json.Marshal(ulMsg.Location)
 	if err != nil {
 		log.Error(err)
@@ -30,7 +30,7 @@ type GymsMessage struct {
 	Gyms []utils.Gym
 }
 
-func (gymMsg GymsMessage) Serialize() *ws.Message {
+func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
 	jsonGyms, err := json.Marshal(gymMsg.Gyms)
 	if err != nil {
 		log.Error(err)
