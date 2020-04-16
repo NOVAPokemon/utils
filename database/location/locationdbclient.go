@@ -105,6 +105,16 @@ func GetGyms() ([]utils.Gym, error) {
 	return gyms, nil
 }
 
+func DeleteAllGyms() error {
+	ctx := dbClient.Ctx
+	collection := dbClient.Collections[gymsLocationCollectionName]
+
+	_, err := collection.DeleteMany(*ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+}
+
 func UpdateIfAbsentAddUserLocation(userLocation utils.UserLocation) (*utils.UserLocation, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collections[usersLocationCollectionName]
