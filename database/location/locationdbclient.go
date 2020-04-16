@@ -37,7 +37,20 @@ func init() {
 	}
 
 	usersLocationCollection := client.Database(databaseName).Collection(usersLocationCollectionName)
+
 	gymsLocationCollection := client.Database(databaseName).Collection(gymsLocationCollectionName)
+
+	op := options.Index()
+	op.SetUnique(true)
+	index := mongo.IndexModel{
+		Keys:    bson.M{"name": 1},
+		Options: op,
+	}
+	_, err = gymsLocationCollection.Indexes().CreateOne(ctx, index)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	collections := map[string]*mongo.Collection{
 		usersLocationCollectionName: usersLocationCollection,
