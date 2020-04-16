@@ -29,7 +29,7 @@ func GetAllUsers() []utils.User {
 		log.Error(err)
 	}
 
-	defer cur.Close(*ctx)
+	defer databaseUtils.CloseCursor(cur, ctx)
 	for cur.Next(*ctx) {
 		var result utils.User
 		err := cur.Decode(&result)
@@ -177,7 +177,7 @@ func init() {
 		Options: op,
 	}
 
-	collection.Indexes().CreateOne(ctx, index)
+	_, _ = collection.Indexes().CreateOne(ctx, index)
 
 	dbClient = databaseUtils.DBClient{Client: client, Ctx: &ctx, Collection: collection}
 }

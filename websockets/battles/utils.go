@@ -11,13 +11,13 @@ import (
 func HandleUseItem(message *websockets.Message, issuer *TrainerBattleStatus, issuerChan chan *string) error {
 
 	if len(message.MsgArgs) < 1 {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrNoItemSelected.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrNoItemSelected.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return ErrInvalidItemSelected
 	}
 
 	if issuer.Cooldown {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrCooldown.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrCooldown.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return ErrCooldown
 	}
@@ -26,13 +26,13 @@ func HandleUseItem(message *websockets.Message, issuer *TrainerBattleStatus, iss
 	item, ok := issuer.TrainerItems[selectedItem]
 
 	if !ok {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrInvalidItemSelected.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrInvalidItemSelected.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return ErrInvalidItemSelected
 	}
 
 	if !item.Effect.Appliable {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrItemNotAppliable.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrItemNotAppliable.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return ErrItemNotAppliable
 	}
@@ -40,7 +40,7 @@ func HandleUseItem(message *websockets.Message, issuer *TrainerBattleStatus, iss
 	err := item.Apply(issuer.SelectedPokemon)
 
 	if err != nil {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{err.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{err.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return err
 	}
@@ -51,7 +51,7 @@ func HandleUseItem(message *websockets.Message, issuer *TrainerBattleStatus, iss
 	issuer.UsedItems[item.Id.Hex()] = item
 	delete(issuer.TrainerItems, item.Id.Hex())
 	UpdateTrainerPokemon(*issuer.SelectedPokemon, issuerChan)
-	msg := websockets.Message{MsgType: REMOVE_ITEM, MsgArgs: []string{string(item.Id.Hex())}}
+	msg := websockets.Message{MsgType: RemoveItem, MsgArgs: []string{item.Id.Hex()}}
 	websockets.SendMessage(msg, issuerChan)
 	return nil
 }
@@ -61,19 +61,19 @@ func HandleSelectPokemon(msgStr *string, issuer *TrainerBattleStatus, issuerChan
 	message, err := websockets.ParseMessage(msgStr)
 
 	if err != nil {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrPokemonSelectionPhase.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrPokemonSelectionPhase.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return err
 	}
 
-	if message.MsgType != SELECT_POKEMON {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrPokemonSelectionPhase.Error()}}
+	if message.MsgType != SelectPokemon {
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrPokemonSelectionPhase.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return err
 	}
 
 	if len(message.MsgArgs) < 1 {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrNoPokemonSelected.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrNoPokemonSelected.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return err
 	}
@@ -82,13 +82,13 @@ func HandleSelectPokemon(msgStr *string, issuer *TrainerBattleStatus, issuerChan
 	pokemon, ok := issuer.TrainerPokemons[selectedPokemon]
 
 	if !ok {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrInvalidPokemonSelected.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrInvalidPokemonSelected.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return err
 	}
 	if pokemon.HP <= 0 {
 		// pokemon is dead
-		msg := websockets.Message{MsgType: ERROR, MsgArgs: []string{fmt.Sprintf(ErrPokemonNoHP.Error())}}
+		msg := websockets.Message{MsgType: Error, MsgArgs: []string{fmt.Sprintf(ErrPokemonNoHP.Error())}}
 		websockets.SendMessage(msg, issuerChan)
 	}
 	issuer.SelectedPokemon = pokemon
@@ -100,14 +100,14 @@ func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan *string) erro
 
 	// if the pokemon is dead, player must select a new pokemon
 	if issuer.SelectedPokemon.HP == 0 {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrPokemonNoHP.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrPokemonNoHP.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return ErrPokemonNoHP
 	}
 
 	// if player has moved recently and is in Cooldown, discard move
 	if issuer.Cooldown {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrCooldown.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrCooldown.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return ErrCooldown
 	}
@@ -116,7 +116,7 @@ func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan *string) erro
 
 	// process Defending move: update both players and setup a Cooldown
 	issuer.Defending = true
-	msg := websockets.Message{MsgType: DEFEND_SUCCESS, MsgArgs: []string{DefaultCooldown.String()}}
+	msg := websockets.Message{MsgType: DefendSuccess, MsgArgs: []string{DefaultCooldown.String()}}
 	websockets.SendMessage(msg, issuerChan)
 	return nil
 }
@@ -124,14 +124,14 @@ func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan *string) erro
 func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan chan *string, defending bool, otherPokemon *pokemons.Pokemon) (bool, error) {
 
 	if issuer.SelectedPokemon.HP == 0 {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrPokemonNoHP.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrPokemonNoHP.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return false, ErrPokemonNoHP
 	}
 
 	// if player has moved recently and is in Cooldown, discard move
 	if issuer.Cooldown {
-		errMsg := websockets.Message{MsgType: ERROR, MsgArgs: []string{ErrCooldown.Error()}}
+		errMsg := websockets.Message{MsgType: Error, MsgArgs: []string{ErrCooldown.Error()}}
 		websockets.SendMessage(errMsg, issuerChan)
 		return false, ErrPokemonNoHP
 	}
@@ -140,7 +140,7 @@ func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan chan *string, defe
 	issuer.Cooldown = true
 
 	if defending {
-		msg := websockets.Message{MsgType: STATUS, MsgArgs: []string{StatusOpponentDefended}}
+		msg := websockets.Message{MsgType: Status, MsgArgs: []string{StatusOpponentDefended}}
 		websockets.SendMessage(msg, issuerChan)
 		return false, nil
 	} else {
@@ -162,7 +162,7 @@ func UpdateTrainerPokemon(pokemon pokemons.Pokemon, ownerChan chan *string) {
 		return
 	}
 
-	msg := websockets.Message{MsgType: UPDATE_PLAYER_POKEMON, MsgArgs: []string{string(toSend)}}
+	msg := websockets.Message{MsgType: UpdatePlayerPokemon, MsgArgs: []string{string(toSend)}}
 	websockets.SendMessage(msg, ownerChan)
 }
 
@@ -175,6 +175,6 @@ func UpdateAdversaryOfPokemonChanges(pokemon pokemons.Pokemon, adversaryChan cha
 		return
 	}
 
-	msg := websockets.Message{MsgType: UPDATE_ADVERSARY_POKEMON, MsgArgs: []string{string(toSend)}}
+	msg := websockets.Message{MsgType: UpdateAdversaryPokemon, MsgArgs: []string{string(toSend)}}
 	websockets.SendMessage(msg, adversaryChan)
 }

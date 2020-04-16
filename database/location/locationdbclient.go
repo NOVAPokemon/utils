@@ -88,7 +88,7 @@ func GetGyms() ([]utils.Gym, error) {
 
 	var gyms []utils.Gym
 
-	defer cur.Close(*ctx)
+	defer databaseUtils.CloseCursor(cur, ctx)
 	for cur.Next(*ctx) {
 		var gym utils.Gym
 		err := cur.Decode(&gym)

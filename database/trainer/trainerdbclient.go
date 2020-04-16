@@ -91,7 +91,7 @@ func GetAllTrainers() ([]utils.Trainer, error) {
 		return []utils.Trainer{}, err
 	}
 
-	defer cur.Close(*ctx)
+	defer databaseUtils.CloseCursor(cur, ctx)
 	for cur.Next(*ctx) {
 		var result utils.Trainer
 		err := cur.Decode(&result)

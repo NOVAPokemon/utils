@@ -30,27 +30,27 @@ var (
 )
 
 const (
-	ATTACK   = "ATTACK"
-	USE_ITEM = "USE_ITEM"
-	DEFEND   = "DEFEND"
+	Attack  = "ATTACK"
+	UseItem = "USE_ITEM"
+	Defend  = "DEFEND"
 
 	// Update Types
-	UPDATE_PLAYER_POKEMON    = "UPDATE_PLAYER_POKEMON"
-	UPDATE_ADVERSARY_POKEMON = "UPDATE_ADVERSARY_POKEMON"
-	REMOVE_ITEM              = "REMOVE_ITEM"
+	UpdatePlayerPokemon    = "UPDATE_PLAYER_POKEMON"
+	UpdateAdversaryPokemon = "UPDATE_ADVERSARY_POKEMON"
+	RemoveItem             = "REMOVE_ITEM"
 
-	DEFEND_SUCCESS      = "DEFEND_SUCCESS"
-	ADVERSARY_DEFENDING = "ADVERSARY_DEFENDING"
+	DefendSuccess      = "DEFEND_SUCCESS"
+	AdversaryDefending = "ADVERSARY_DEFENDING"
 
 	// Setup Message Types
-	SELECT_POKEMON = "SELECT_POKEMON"
+	SelectPokemon = "SELECT_POKEMON"
 
-	STATUS = "STATUS"
-	ERROR  = "ERROR"
-	FINISH = "FINISH_BATTLE"
-	START  = "START"
+	Status = "STATUS"
+	Error  = "ERROR"
+	Finish = "FINISH_BATTLE"
+	Start  = "START"
 
-	SET_TOKEN = "SET_TOKEN"
+	SetToken = "SET_TOKEN"
 )
 
 type (

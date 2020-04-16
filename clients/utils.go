@@ -1,7 +1,6 @@
 package clients
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -13,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
-	"os"
 )
 
 func Send(conn *websocket.Conn, msg *string) {
@@ -46,7 +44,7 @@ func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished cha
 				return
 			}
 
-			if battleMsg.MsgType == battles.FINISH {
+			if battleMsg.MsgType == battles.Finish {
 				log.Info("Received finish message")
 				close(finished)
 				return
@@ -71,15 +69,6 @@ func ReadMessagesWithoutParse(conn *websocket.Conn) (*websockets.Message, error)
 	}
 
 	return msg, nil
-}
-
-func WriteMessage(writeChannel chan *string) {
-	for {
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("Enter text: ")
-		text, _ := reader.ReadString('\n')
-		writeChannel <- &text
-	}
 }
 
 func WaitForStart(started, finish chan struct{}) {

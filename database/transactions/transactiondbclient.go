@@ -55,7 +55,8 @@ func GetTransactionsFromUser(username string) ([]utils.TransactionRecord, error)
 		log.Error(err)
 		return nil, err
 	}
-	defer cursor.Close(*ctx)
+
+	defer database.CloseCursor(cursor, ctx)
 	err = cursor.All(*ctx, &result)
 
 	if err != nil {

@@ -52,7 +52,7 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 						log.Warn(err)
 						log.Warn("closed lobby because could not read")
 					}
-					closeConnection(conn, endConnection)
+					closeConnectionThroughChannel(conn, endConnection)
 					return
 				}
 				log.Infof("Wrote %s into the channel", *msg)
@@ -80,7 +80,7 @@ func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection cha
 					log.Warn(err)
 					log.Warn("closed lobby because could not read")
 				}
-				closeConnection(conn, endConnection)
+				closeConnectionThroughChannel(conn, endConnection)
 				return
 			} else {
 				msg := strings.TrimSpace(string(message))
@@ -91,10 +91,17 @@ func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection cha
 	}
 }
 
-func closeConnection(conn *websocket.Conn, endConnection chan struct{}) {
+func closeConnectionThroughChannel(conn *websocket.Conn, endConnection chan struct{}) {
 	endChannel(endConnection)
-	if conn != nil {
-		conn.Close()
+	CloseConnection(conn)
+}
+
+func CloseConnection(conn *websocket.Conn) {
+	if conn == nil {
+		return
+	}
+	if err := conn.Close(); err != nil {
+		log.Error(err)
 	}
 }
 

@@ -9,6 +9,5 @@ const SpecificNotificationPath = "/notification/%s"
 const GetListenersPath = "/listening"
 
 const IdPathVar = "id"
-const UsernamePathVar = "username"
 
 var SpecificNotificationRoute = fmt.Sprintf(SpecificNotificationPath, fmt.Sprintf("{%s}", IdPathVar))

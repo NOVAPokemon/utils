@@ -5,6 +5,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
+	"github.com/NOVAPokemon/utils/websockets"
 	tradeMessages "github.com/NOVAPokemon/utils/websockets/messages/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -84,13 +85,13 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 		HandshakeTimeout: 45 * time.Second,
 	}
 
-	c, _, err := dialer.Dial(u.String(), header)
+	conn, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer c.Close()
-	client.conn = c
+	defer websockets.CloseConnection(conn)
+	client.conn = conn
 
 	items, err := tokens.ExtractItemsToken(itemsToken)
 	if err != nil {
@@ -103,7 +104,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 	setItemsToken := make(chan *string)
 	writeChannel := make(chan *string)
 
-	go client.HandleReceivedMessages(c, started, finished, setItemsToken)
+	go client.HandleReceivedMessages(conn, started, finished, setItemsToken)
 
 	itemIds := make([]string, len(items.Items))
 	i := 0
@@ -116,7 +117,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 
 	go client.autoTrader(itemIds, writeChannel, finished)
 
-	MainLoop(c, writeChannel, finished)
+	MainLoop(conn, writeChannel, finished)
 
 	log.Info("Finishing trade...")
 

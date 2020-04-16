@@ -41,15 +41,15 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	c, _, err := dialer.Dial(u.String(), header)
-	defer c.Close()
+	conn, _, err := dialer.Dial(u.String(), header)
+	defer ws.CloseConnection(conn)
 
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
-	go client.handleRecv(c)
+	go client.handleRecv(conn)
 
 Loop:
 	for {

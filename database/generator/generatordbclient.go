@@ -60,7 +60,7 @@ func GetWildPokemons() []pokemons.Pokemon {
 		log.Println(err)
 	}
 
-	defer cur.Close(*ctx)
+	defer databaseUtils.CloseCursor(cur, ctx)
 	for cur.Next(*ctx) {
 		var result pokemons.Pokemon
 		err := cur.Decode(&result)
@@ -105,35 +105,6 @@ func DeleteCatchableItems() error {
 	}
 
 	return err
-}
-
-func GetCatchableItems() []items.Item {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[catchableItemsCollectionName]
-	var results []items.Item
-
-	cur, err := collection.Find(*ctx, bson.M{})
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	defer cur.Close(*ctx)
-	for cur.Next(*ctx) {
-		var result items.Item
-		err := cur.Decode(&result)
-		if err != nil {
-			log.Error(err)
-		} else {
-			results = append(results, result)
-		}
-	}
-
-	if err := cur.Err(); err != nil {
-		log.Error(err)
-	}
-
-	return results
 }
 
 func init() {
