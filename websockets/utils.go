@@ -2,6 +2,8 @@ package websockets
 
 import (
 	"errors"
+	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 	"strings"
 	"time"
 )
@@ -31,4 +33,76 @@ func SendMessage(msg Message, channel chan *string) {
 	toSend := msg.Serialize()
 	//logrus.Infof("Sending: %s", toSend)
 	channel <- &toSend
+}
+
+func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}, finished *bool) {
+	defer close(inChannel)
+	defer log.Warn("Closing send routine")
+
+	for {
+		select {
+		case msg := <-inChannel:
+			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
+			if err != nil {
+
+				if err != nil {
+					if *finished {
+						log.Info("lobby write routine finished properly")
+					} else {
+						log.Warn(err)
+						log.Warn("closed lobby because could not read")
+					}
+					closeConnection(conn, endConnection)
+					return
+				}
+				log.Infof("Wrote %s into the channel", *msg)
+			}
+		case <-endConnection:
+			return
+		}
+
+	}
+}
+
+func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{}, finished *bool) {
+	defer close(outChannel)
+	for {
+		select {
+		case <-endConnection:
+			return
+		default:
+			_, message, err := conn.ReadMessage()
+
+			if err != nil {
+				if *finished {
+					log.Info("lobby read routine finished properly")
+				} else {
+					log.Warn(err)
+					log.Warn("closed lobby because could not read")
+				}
+				closeConnection(conn, endConnection)
+				return
+			} else {
+				msg := strings.TrimSpace(string(message))
+				log.Infof("Message received: %s", msg)
+				outChannel <- &msg
+			}
+		}
+	}
+}
+
+func closeConnection(conn *websocket.Conn, endConnection chan struct{}) {
+	endChannel(endConnection)
+	if conn != nil {
+		conn.Close()
+	}
+}
+
+func endChannel(channel chan struct{}) {
+	select {
+	case <-channel:
+		return
+	default:
+		close(channel)
+	}
 }
