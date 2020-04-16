@@ -232,7 +232,7 @@ func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) 
 		return err
 	}
 
-	// Items
+	// ItemId
 	if err := c.SetItemsToken(resp.Header.Get(tokens.ItemsTokenHeaderName)); err != nil {
 		return err
 	}
