@@ -21,10 +21,6 @@ func (msg Message) Serialize() string {
 	return builder.String()
 }
 
-type Serializable interface {
-	SerializeToWSMessage() *Message
-}
-
 type GenericMsg struct {
 	MsgType int
 	Data []byte
