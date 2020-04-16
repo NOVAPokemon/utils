@@ -46,7 +46,7 @@ func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func Deserialize(msg *ws.Message) interface{} {
+func Deserialize(msg *ws.Message) messages.Serializable {
 	switch msg.MsgType {
 	case location.UpdateLocation:
 		var locationMsg UpdateLocationMessage
