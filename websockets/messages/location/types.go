@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"github.com/NOVAPokemon/utils"
 	ws "github.com/NOVAPokemon/utils/websockets"
-	"github.com/NOVAPokemon/utils/websockets/location"
 	"github.com/NOVAPokemon/utils/websockets/messages"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	UpdateLocation = "UPDATE_LOCATION"
+	Gyms           = "GYMS"
 )
 
 // Location
@@ -23,7 +27,7 @@ func (ulMsg UpdateLocationMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: location.UpdateLocation,
+		MsgType: UpdateLocation,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
@@ -41,14 +45,14 @@ func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: location.Gyms,
+		MsgType: Gyms,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
 
 func Deserialize(msg *ws.Message) messages.Serializable {
 	switch msg.MsgType {
-	case location.UpdateLocation:
+	case UpdateLocation:
 		var locationMsg UpdateLocationMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &locationMsg)
 		if err != nil {
@@ -57,7 +61,7 @@ func Deserialize(msg *ws.Message) messages.Serializable {
 		}
 
 		return &locationMsg
-	case location.Gyms:
+	case Gyms:
 		var gymsMsg GymsMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &gymsMsg)
 		if err != nil {
