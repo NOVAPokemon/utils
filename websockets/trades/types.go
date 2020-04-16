@@ -4,25 +4,6 @@ import (
 	"github.com/NOVAPokemon/utils/items"
 )
 
-// Message Types
-const (
-	START = "START"
-
-	TRADE  = "TRADE"
-	ACCEPT = "ACCEPT"
-
-	UPDATE = "UPDATE"
-
-	SETTOKEN = "SETTOKEN"
-
-	FINISH = "FINISH_TRADE"
-
-	// Error
-	ERROR = "ERROR"
-
-	NONE = "NONE"
-)
-
 type TradeStatus struct {
 	Players       [2]Player
 	TradeStarted  bool

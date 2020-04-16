@@ -3,9 +3,9 @@ package location
 import (
 	"encoding/json"
 	"github.com/NOVAPokemon/utils"
-	"github.com/NOVAPokemon/utils/messages"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/location"
+	"github.com/NOVAPokemon/utils/websockets/messages"
 	log "github.com/sirupsen/logrus"
 )
 

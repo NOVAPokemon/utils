@@ -3,8 +3,8 @@ package notifications
 import (
 	"encoding/json"
 	"github.com/NOVAPokemon/utils"
-	"github.com/NOVAPokemon/utils/messages"
 	ws "github.com/NOVAPokemon/utils/websockets"
+	"github.com/NOVAPokemon/utils/websockets/messages"
 	"github.com/NOVAPokemon/utils/websockets/trades"
 	log "github.com/sirupsen/logrus"
 )
