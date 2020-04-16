@@ -87,5 +87,6 @@ type LocationParameters struct {
 
 type Gym struct {
 	Id       primitive.ObjectID
+	Name     string
 	Location Location
 }
