@@ -1,15 +1,19 @@
 package clients
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/gps"
 	locationMessages "github.com/NOVAPokemon/utils/messages/location"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/location"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -17,23 +21,36 @@ import (
 )
 
 const (
-	bufferSize = 10
+	locationParamsFilename = "location_params.json"
+	bufferSize             = 10
 )
 
 type LocationClient struct {
-	LocationAddr string
-	Gyms         []utils.Gym
-	HttpClient   *http.Client
+	LocationAddr        string
+	Gyms                []utils.Gym
+	HttpClient          *http.Client
+	CurrentLocation     utils.Location
+	LocationParameters  utils.LocationParameters
+	DistanceToStartLat  float64
+	DistanceToStartLong float64
 }
 
 func NewLocationClient(addr string) *LocationClient {
+	params, err := loadLocationParameters()
+	if err != nil {
+		return nil
+	}
+
 	return &LocationClient{
-		LocationAddr: addr,
-		HttpClient:   &http.Client{},
+		LocationAddr:        addr,
+		HttpClient:          &http.Client{},
+		LocationParameters:  *params,
+		DistanceToStartLat:  0.0,
+		DistanceToStartLong: 0.0,
 	}
 }
 
-func (c *LocationClient) StartLocationUpdates(locationParameters utils.LocationParameters, authToken string) {
+func (c *LocationClient) StartLocationUpdates(authToken string) {
 	inChan := make(chan *websockets.Message)
 	outChan := make(chan websockets.GenericMsg, bufferSize)
 	finish := make(chan struct{})
@@ -45,7 +62,7 @@ func (c *LocationClient) StartLocationUpdates(locationParameters utils.LocationP
 	}
 
 	go readMessages(conn, inChan, finish)
-	go updateLocation(locationParameters, conn, outChan)
+	go c.updateLocation(conn, outChan)
 
 	for {
 		select {
@@ -99,19 +116,16 @@ func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken s
 	return conn, err
 }
 
-func updateLocation(locationParameters utils.LocationParameters, conn *websocket.Conn, outChan chan websockets.GenericMsg) {
+func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan websockets.GenericMsg) {
 	updateTicker := time.NewTicker(location.UpdateCooldown)
+
+	c.CurrentLocation = c.LocationParameters.StartingLocation
 
 	for {
 		select {
 		case <-updateTicker.C:
-			loc := utils.Location{
-				Latitude:  rand.Float64(),
-				Longitude: rand.Float64(),
-			}
-
 			locationMsg := locationMessages.UpdateLocationMessage{
-				Location: loc,
+				Location: c.CurrentLocation,
 			}
 			wsMsg := locationMsg.Serialize()
 			genericMsg := websockets.GenericMsg{
@@ -119,7 +133,7 @@ func updateLocation(locationParameters utils.LocationParameters, conn *websocket
 				Data:    []byte(wsMsg.Serialize()),
 			}
 
-			log.Info("updating location")
+			log.Info("updating location: ", c.CurrentLocation)
 
 			outChan <- genericMsg
 
@@ -128,8 +142,35 @@ func updateLocation(locationParameters utils.LocationParameters, conn *websocket
 				log.Error(err)
 				return
 			}
+
+			if rand.Float64() <= c.LocationParameters.MovingProbability {
+				log.Info("moving")
+				c.CurrentLocation = c.move(location.UpdateCooldownInSeconds)
+			}
+
+			log.Info(c.DistanceToStartLat, c.DistanceToStartLong)
 		}
 	}
+}
+
+func (c *LocationClient) move(timePassed int) utils.Location {
+	randAngle := rand.Float64() * 2 * math.Pi
+	distanceTraveled := rand.Float64() * c.LocationParameters.MaxMovingSpeed * float64(timePassed)
+
+	dLat := randAngle * math.Sin(distanceTraveled)
+	if math.Abs(c.DistanceToStartLat+dLat) > float64(c.LocationParameters.MaxDistanceFromStart) {
+		dLat *= -1
+	}
+
+	dLong := randAngle * math.Cos(distanceTraveled)
+	if math.Abs(c.DistanceToStartLong+dLong) > float64(c.LocationParameters.MaxDistanceFromStart) {
+		dLong *= -1
+	}
+
+	c.DistanceToStartLat += dLat
+	c.DistanceToStartLong += dLong
+
+	return gps.CalcLocationPlusDistanceTraveled(c.CurrentLocation, dLat, dLong)
 }
 
 func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish chan struct{}) {
@@ -148,4 +189,21 @@ func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish 
 
 		inChan <- msg
 	}
+}
+
+func loadLocationParameters() (*utils.LocationParameters, error) {
+	fileData, err := ioutil.ReadFile(locationParamsFilename)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	var locParams utils.LocationParameters
+	err = json.Unmarshal(fileData, &locParams)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return &locParams, nil
 }
