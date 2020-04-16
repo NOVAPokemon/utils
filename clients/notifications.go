@@ -1,10 +1,11 @@
 package clients
 
 import (
-	"encoding/json"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/messages/notifications"
 	"github.com/NOVAPokemon/utils/tokens"
+	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -16,7 +17,7 @@ type NotificationClient struct {
 	NotificationsAddr    string
 	httpClient           *http.Client
 	NotificationsChannel chan *utils.Notification
-	readChannel          chan []byte
+	readChannel          chan *ws.Message
 }
 
 func NewNotificationClient(addr string, notificationsChannel chan *utils.Notification) *NotificationClient {
@@ -24,7 +25,7 @@ func NewNotificationClient(addr string, notificationsChannel chan *utils.Notific
 		NotificationsAddr:    addr,
 		httpClient:           &http.Client{},
 		NotificationsChannel: notificationsChannel,
-		readChannel:          make(chan []byte),
+		readChannel:          make(chan *ws.Message),
 	}
 }
 
@@ -53,8 +54,8 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 Loop:
 	for {
 		select {
-		case jsonBytes := <-client.readChannel:
-			client.parseToNotification(jsonBytes)
+		case msg := <-client.readChannel:
+			client.parseToNotification(msg)
 		case <-receiveFinish:
 			break Loop
 		}
@@ -114,25 +115,26 @@ func (client *NotificationClient) GetOthersListening(authToken string) ([]string
 
 func (client *NotificationClient) handleRecv(conn *websocket.Conn) {
 	for {
-		_, jsonBytes, err := conn.ReadMessage()
+		_, msgBytes, err := conn.ReadMessage()
 		if err != nil {
 			log.Error(err)
 			return
 		}
 
-		client.readChannel <- jsonBytes
+		msgString := string(msgBytes)
+		msg, err := ws.ParseMessage(&msgString)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		client.readChannel <- msg
 	}
 }
 
-func (client *NotificationClient) parseToNotification(jsonBytes []byte) {
-	var notification utils.Notification
-	err := json.Unmarshal(jsonBytes, &notification)
-	if err != nil {
-		log.Error(err)
-		return
-	}
+func (client *NotificationClient) parseToNotification(msg *ws.Message) {
+	notificationMsg := notifications.Deserialize(msg).(*notifications.NotificationMessage)
+	client.NotificationsChannel <- &notificationMsg.Notification
 
-	client.NotificationsChannel <- &notification
-
-	log.Infof("Received %s from the websocket", notification.Content)
+	log.Infof("Received %s from the websocket", notificationMsg.Notification.Content)
 }
