@@ -18,3 +18,11 @@ func CalcLocationPlusDistanceTraveled(location utils.Location, dLat, dLong float
 		Longitude: newLong,
 	}
 }
+
+// Using distance in straight line not contemplating earth's curvature
+func CalcDistanceBetweenLocations(locationA, locationB utils.Location) float64 {
+	dLat := locationB.Latitude - locationA.Latitude
+	dLong := locationB.Longitude - locationA.Longitude
+
+	return (math.Sqrt(math.Pow(dLat, 2)+math.Pow(dLong, 2)) / earthRadius) * (180.0 / math.Pi)
+}
