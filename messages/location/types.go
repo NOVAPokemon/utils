@@ -3,6 +3,7 @@ package location
 import (
 	"encoding/json"
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/messages"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/location"
 	log "github.com/sirupsen/logrus"
@@ -11,10 +12,11 @@ import (
 // Location
 type UpdateLocationMessage struct {
 	Location utils.Location
+	messages.MessageWithId
 }
 
 func (ulMsg UpdateLocationMessage) SerializeToWSMessage() *ws.Message {
-	jsonLocation, err := json.Marshal(ulMsg.Location)
+	msgJson, err := json.Marshal(ulMsg)
 	if err != nil {
 		log.Error(err)
 		return nil
@@ -22,16 +24,17 @@ func (ulMsg UpdateLocationMessage) SerializeToWSMessage() *ws.Message {
 
 	return &ws.Message{
 		MsgType: location.UpdateLocation,
-		MsgArgs: []string{string(jsonLocation)},
+		MsgArgs: []string{string(msgJson)},
 	}
 }
 
 type GymsMessage struct {
 	Gyms []utils.Gym
+	messages.MessageWithId
 }
 
 func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
-	jsonGyms, err := json.Marshal(gymMsg.Gyms)
+	msgJson, err := json.Marshal(gymMsg)
 	if err != nil {
 		log.Error(err)
 		return nil
@@ -39,30 +42,30 @@ func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
 
 	return &ws.Message{
 		MsgType: location.Gyms,
-		MsgArgs: []string{string(jsonGyms)},
+		MsgArgs: []string{string(msgJson)},
 	}
 }
 
 func Deserialize(msg *ws.Message) interface{} {
 	switch msg.MsgType {
 	case location.UpdateLocation:
-		var location utils.Location
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &location)
+		var locationMsg UpdateLocationMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &locationMsg)
 		if err != nil {
 			log.Error(err)
 			return nil
 		}
 
-		return &UpdateLocationMessage{Location: location}
+		return &locationMsg
 	case location.Gyms:
-		var gyms []utils.Gym
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &gyms)
+		var gymsMsg GymsMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &gymsMsg)
 		if err != nil {
 			log.Error(err)
 			return nil
 		}
 
-		return &GymsMessage{Gyms: gyms}
+		return &gymsMsg
 	default:
 		return nil
 	}

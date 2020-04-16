@@ -1,10 +1,11 @@
 package trades
 
 import (
+	"encoding/json"
+	"github.com/NOVAPokemon/utils/messages"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/trades"
 	log "github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type Serializable interface {
@@ -12,34 +13,57 @@ type Serializable interface {
 }
 
 // Start
-type StartMessage struct{}
+type StartMessage struct {
+	messages.MessageWithId
+}
 
 func (sMsg StartMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(sMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
 	return &ws.Message{
 		MsgType: trades.START,
-		MsgArgs: nil,
+		MsgArgs: []string{string(msgJson)},
 	}
 }
 
 // Trade
 type TradeMessage struct {
-	Items string
+	ItemId string
+	messages.MessageWithId
 }
 
 func (tMsg TradeMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(tMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
 	return &ws.Message{
 		MsgType: trades.TRADE,
-		MsgArgs: []string{tMsg.Items},
+		MsgArgs: []string{string(msgJson)},
 	}
 }
 
 // Accept
-type AcceptMessage struct{}
+type AcceptMessage struct {
+	messages.MessageWithId
+}
 
 func (aMsg AcceptMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(aMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
 	return &ws.Message{
 		MsgType: trades.ACCEPT,
-		MsgArgs: nil,
+		MsgArgs: []string{string(msgJson)},
 	}
 }
 
@@ -48,24 +72,19 @@ type UpdateMessage struct {
 	TradeStarted  bool
 	TradeFinished bool
 	Players       [2]*trades.PlayerInfo
+	messages.MessageWithId
 }
 
 func (uMsg UpdateMessage) SerializeToWSMessage() *ws.Message {
-	msgArgs := []string{
-		strconv.FormatBool(uMsg.TradeStarted),
-		strconv.FormatBool(uMsg.TradeFinished),
-		strconv.FormatBool(uMsg.Players[0].Accepted),
-		strconv.Itoa(len(uMsg.Players[0].Items)),
+	msgJson, err := json.Marshal(uMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
 	}
-
-	msgArgs = append(msgArgs, uMsg.Players[0].Items...)
-
-	msgArgs = append(msgArgs, strconv.FormatBool(uMsg.Players[1].Accepted), strconv.Itoa(len(uMsg.Players[1].Items)))
-	msgArgs = append(msgArgs, uMsg.Players[1].Items...)
 
 	return &ws.Message{
 		MsgType: trades.UPDATE,
-		MsgArgs: msgArgs,
+		MsgArgs: []string{string(msgJson)},
 	}
 }
 
@@ -83,24 +102,38 @@ func UpdateMessageFromTrade(trade *trades.TradeStatus) *UpdateMessage {
 // SetToken
 type SetTokenMessage struct {
 	TokenString string
+	messages.MessageWithId
 }
 
 func (sMsg SetTokenMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(sMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
 	return &ws.Message{
 		MsgType: trades.SETTOKEN,
-		MsgArgs: []string{sMsg.TokenString},
+		MsgArgs: []string{string(msgJson)},
 	}
 }
 
 // Finish
 type FinishMessage struct {
 	Success bool
+	messages.MessageWithId
 }
 
 func (fMsg FinishMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(fMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
 	return &ws.Message{
 		MsgType: trades.FINISH,
-		MsgArgs: []string{strconv.FormatBool(fMsg.Success)},
+		MsgArgs: []string{string(msgJson)},
 	}
 }
 
@@ -108,16 +141,23 @@ func (fMsg FinishMessage) SerializeToWSMessage() *ws.Message {
 type ErrorMessage struct {
 	Info  string
 	Fatal bool
+	messages.MessageWithId
 }
 
 func (eMsg ErrorMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(eMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
 	return &ws.Message{
 		MsgType: trades.ERROR,
-		MsgArgs: []string{eMsg.Info, strconv.FormatBool(eMsg.Fatal)},
+		MsgArgs: []string{string(msgJson)},
 	}
 }
 
-type NoneMessage struct {}
+type NoneMessage struct{}
 
 func (nMsg NoneMessage) SerializeToWSMessage() *ws.Message {
 	return &ws.Message{
@@ -129,98 +169,69 @@ func (nMsg NoneMessage) SerializeToWSMessage() *ws.Message {
 func Deserialize(msg *ws.Message) interface{} {
 	switch msg.MsgType {
 	case trades.START:
-		return &StartMessage{}
+		var startMessage StartMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &startMessage)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+
+		return &startMessage
 	case trades.TRADE:
-		return &TradeMessage{Items: msg.MsgArgs[0]}
+		var tradeMsg TradeMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &tradeMsg)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+
+		return &tradeMsg
 	case trades.ACCEPT:
-		return &AcceptMessage{}
+		var acceptMsg AcceptMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &acceptMsg)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+
+		return &acceptMsg
 	case trades.UPDATE:
-		index := 0
-		started, err := strconv.ParseBool(msg.MsgArgs[index])
+		var updateMsg UpdateMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &updateMsg)
 		if err != nil {
-			handleDeserializingError(err)
-			return nil
-		}
-		index++
-
-		finished, err := strconv.ParseBool(msg.MsgArgs[index])
-		if err != nil {
-			handleDeserializingError(err)
-			return nil
-		}
-		index++
-
-		finishedAt, player1 := parsePlayer(msg.MsgArgs, index)
-		if player1 == nil {
+			log.Error(err)
 			return nil
 		}
 
-		_, player2 := parsePlayer(msg.MsgArgs, finishedAt)
-		if player2 == nil {
-			return nil
-		}
-
-		return &UpdateMessage{
-			TradeStarted:  started,
-			TradeFinished: finished,
-			Players:       [2]*trades.PlayerInfo{player1, player2},
-		}
+		return &updateMsg
 	case trades.SETTOKEN:
-		return &SetTokenMessage{TokenString: msg.MsgArgs[0]}
+		var setTokenMsg SetTokenMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &setTokenMsg)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+
+		return &setTokenMsg
 	case trades.FINISH:
-		value, err := strconv.ParseBool(msg.MsgArgs[0])
+		var finishMsg FinishMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &finishMsg)
 		if err != nil {
-			handleDeserializingError(err)
+			log.Error(err)
 			return nil
 		}
 
-		return &FinishMessage{Success: value}
+		return &finishMsg
 	case trades.ERROR:
-		info := msg.MsgArgs[0]
-
-		fatal, err := strconv.ParseBool(msg.MsgArgs[1])
+		var errorMsg ErrorMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &errorMsg)
 		if err != nil {
-			handleDeserializingError(err)
+			log.Error(err)
 			return nil
 		}
 
-		return &ErrorMessage{
-			Info:  info,
-			Fatal: fatal,
-		}
+		return &errorMsg
 	default:
 		return nil
 	}
-}
-
-func parsePlayer(strings []string, startAt int) (finishedAt int, player *trades.PlayerInfo) {
-	index := startAt
-	accepted, err := strconv.ParseBool(strings[index])
-	if err != nil {
-		handleDeserializingError(err)
-		return 0, nil
-	}
-	index++
-
-	numItems, err := strconv.Atoi(strings[index])
-	if err != nil {
-		handleDeserializingError(err)
-		return 0, nil
-	}
-	index++
-
-	items := make([]string, numItems)
-
-	for i := 0; i < numItems; i++ {
-		items[i] = strings[i+index]
-	}
-
-	return index + len(items), &trades.PlayerInfo{
-		Items:    items,
-		Accepted: accepted,
-	}
-}
-
-func handleDeserializingError(err error) {
-	log.Error("While deserializing got error: ", err)
 }
