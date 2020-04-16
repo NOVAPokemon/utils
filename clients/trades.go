@@ -6,7 +6,6 @@ import (
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
 	tradeMessages "github.com/NOVAPokemon/utils/websockets/messages/trades"
-	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -138,9 +137,9 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 		log.Infof("Message: %s", msg)
 
 		switch msg.MsgType {
-		case trades.START:
+		case tradeMessages.START:
 			close(started)
-		case trades.SETTOKEN:
+		case tradeMessages.SETTOKEN:
 			tokenMessage := tradeMessages.Deserialize(msg).(*tradeMessages.SetTokenMessage)
 			token, err := tokens.ExtractItemsToken(tokenMessage.TokenString)
 			if err != nil {
@@ -148,7 +147,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			}
 			itemsToken = &tokenMessage.TokenString
 			log.Info(token.ItemsHash)
-		case trades.FINISH:
+		case tradeMessages.FINISH:
 			finishMsg := tradeMessages.Deserialize(msg).(*tradeMessages.FinishMessage)
 			log.Info("Finished, Success: ", finishMsg.Success)
 			close(finished)

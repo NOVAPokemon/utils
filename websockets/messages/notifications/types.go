@@ -5,7 +5,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/messages"
-	"github.com/NOVAPokemon/utils/websockets/trades"
+	tradeMessages "github.com/NOVAPokemon/utils/websockets/messages/trades"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -34,7 +34,7 @@ func (nMsg NotificationMessage) SerializeToWSMessage() *ws.Message {
 
 func Deserialize(msg *ws.Message) messages.Serializable {
 	switch msg.MsgType {
-	case trades.START:
+	case tradeMessages.START:
 		var notificationMsg NotificationMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &notificationMsg)
 		if err != nil {

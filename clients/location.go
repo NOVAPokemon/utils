@@ -68,7 +68,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 		select {
 		case msg := <-inChan:
 			switch msg.MsgType {
-			case location.Gyms:
+			case locationMessages.Gyms:
 				log.Info("updating gyms")
 				log.Info(locationMessages.Deserialize(msg).(*locationMessages.GymsMessage).Gyms)
 			default:
