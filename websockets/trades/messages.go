@@ -3,9 +3,16 @@ package trades
 import (
 	"encoding/json"
 	ws "github.com/NOVAPokemon/utils/websockets"
-	"github.com/NOVAPokemon/utils/websockets/messages"
-	"github.com/NOVAPokemon/utils/websockets/trades"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	ErrorParsing = ErrorMessage{
+		Info:  "error parsing message",
+		Fatal: false,
+	}.SerializeToWSMessage()
+
+	NoneMessageConst = NoneMessage{}.SerializeToWSMessage()
 )
 
 // Message Types
@@ -29,7 +36,7 @@ const (
 
 // Start
 type StartMessage struct {
-	messages.MessageWithId
+	ws.MessageWithId
 }
 
 func (sMsg StartMessage) SerializeToWSMessage() *ws.Message {
@@ -48,7 +55,7 @@ func (sMsg StartMessage) SerializeToWSMessage() *ws.Message {
 // Trade
 type TradeMessage struct {
 	ItemId string
-	messages.MessageWithId
+	ws.MessageWithId
 }
 
 func (tMsg TradeMessage) SerializeToWSMessage() *ws.Message {
@@ -66,7 +73,7 @@ func (tMsg TradeMessage) SerializeToWSMessage() *ws.Message {
 
 // Accept
 type AcceptMessage struct {
-	messages.MessageWithId
+	ws.MessageWithId
 }
 
 func (aMsg AcceptMessage) SerializeToWSMessage() *ws.Message {
@@ -86,8 +93,8 @@ func (aMsg AcceptMessage) SerializeToWSMessage() *ws.Message {
 type UpdateMessage struct {
 	TradeStarted  bool
 	TradeFinished bool
-	Players       [2]*trades.PlayerInfo
-	messages.MessageWithId
+	Players       [2]*PlayerInfo
+	ws.MessageWithId
 }
 
 func (uMsg UpdateMessage) SerializeToWSMessage() *ws.Message {
@@ -103,10 +110,10 @@ func (uMsg UpdateMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func UpdateMessageFromTrade(trade *trades.TradeStatus) *UpdateMessage {
-	players := [2]*trades.PlayerInfo{}
-	players[0] = trades.PlayerToPlayerInfo(&trade.Players[0])
-	players[1] = trades.PlayerToPlayerInfo(&trade.Players[1])
+func UpdateMessageFromTrade(trade *TradeStatus) *UpdateMessage {
+	players := [2]*PlayerInfo{}
+	players[0] = PlayerToPlayerInfo(&trade.Players[0])
+	players[1] = PlayerToPlayerInfo(&trade.Players[1])
 	return &UpdateMessage{
 		TradeStarted:  trade.TradeStarted,
 		TradeFinished: trade.TradeFinished,
@@ -117,7 +124,7 @@ func UpdateMessageFromTrade(trade *trades.TradeStatus) *UpdateMessage {
 // SetToken
 type SetTokenMessage struct {
 	TokenString string
-	messages.MessageWithId
+	ws.MessageWithId
 }
 
 func (sMsg SetTokenMessage) SerializeToWSMessage() *ws.Message {
@@ -136,7 +143,7 @@ func (sMsg SetTokenMessage) SerializeToWSMessage() *ws.Message {
 // Finish
 type FinishMessage struct {
 	Success bool
-	messages.MessageWithId
+	ws.MessageWithId
 }
 
 func (fMsg FinishMessage) SerializeToWSMessage() *ws.Message {
@@ -156,7 +163,7 @@ func (fMsg FinishMessage) SerializeToWSMessage() *ws.Message {
 type ErrorMessage struct {
 	Info  string
 	Fatal bool
-	messages.MessageWithId
+	ws.MessageWithId
 }
 
 func (eMsg ErrorMessage) SerializeToWSMessage() *ws.Message {
@@ -181,7 +188,7 @@ func (nMsg NoneMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func Deserialize(msg *ws.Message) messages.Serializable {
+func Deserialize(msg *ws.Message) ws.Serializable {
 	switch msg.MsgType {
 	case START:
 		var startMessage StartMessage

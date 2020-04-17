@@ -6,7 +6,7 @@ import (
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
-	tradeMessages "github.com/NOVAPokemon/utils/websockets/messages/trades"
+	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -138,18 +138,18 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 		log.Infof("Message: %s", msg)
 
 		switch msg.MsgType {
-		case tradeMessages.START:
+		case trades.START:
 			close(started)
-		case tradeMessages.SETTOKEN:
-			tokenMessage := tradeMessages.Deserialize(msg).(*tradeMessages.SetTokenMessage)
+		case trades.SETTOKEN:
+			tokenMessage := trades.Deserialize(msg).(*trades.SetTokenMessage)
 			token, err := tokens.ExtractItemsToken(tokenMessage.TokenString)
 			if err != nil {
 				log.Error(err)
 			}
 			itemsToken = &tokenMessage.TokenString
 			log.Info(token.ItemsHash)
-		case tradeMessages.FINISH:
-			finishMsg := tradeMessages.Deserialize(msg).(*tradeMessages.FinishMessage)
+		case trades.FINISH:
+			finishMsg := trades.Deserialize(msg).(*trades.FinishMessage)
 			log.Info("Finished, Success: ", finishMsg.Success)
 			close(finished)
 			setItemsToken <- itemsToken
@@ -170,7 +170,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 
 		for i := 0; i < numItemsToAdd; i++ {
 			randomItemIdx := rand.Intn(len(availableItems))
-			msg := tradeMessages.TradeMessage{ItemId: availableItems[randomItemIdx]}.SerializeToWSMessage()
+			msg := trades.TradeMessage{ItemId: availableItems[randomItemIdx]}.SerializeToWSMessage()
 			s := (*msg).Serialize()
 			writeChannel <- &s
 
@@ -185,7 +185,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 			log.Infof("sleeping %d milliseconds", randSleep)
 		}
 
-		msg := tradeMessages.AcceptMessage{}.SerializeToWSMessage()
+		msg := trades.AcceptMessage{}.SerializeToWSMessage()
 		s := (*msg).Serialize()
 		writeChannel <- &s
 

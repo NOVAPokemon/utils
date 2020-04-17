@@ -1,6 +1,14 @@
 package websockets
 
-import "strings"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"strings"
+)
+
+type Serializable interface {
+	GetId() primitive.ObjectID
+	SerializeToWSMessage() *Message
+}
 
 type Message struct {
 	MsgType string
@@ -21,7 +29,15 @@ func (msg Message) Serialize() string {
 	return builder.String()
 }
 
+type MessageWithId struct {
+	Id primitive.ObjectID
+}
+
+func (msgWithId MessageWithId) GetId() primitive.ObjectID {
+	return msgWithId.Id
+}
+
 type GenericMsg struct {
 	MsgType int
-	Data []byte
+	Data    []byte
 }

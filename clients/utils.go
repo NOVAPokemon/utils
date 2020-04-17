@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
-	tradeMessages "github.com/NOVAPokemon/utils/websockets/messages/trades"
+	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -65,7 +65,7 @@ func ReadMessagesWithoutParse(conn *websocket.Conn) (*websockets.Message, error)
 
 	msg, err := websockets.ParseMessage(&msgString)
 	if err != nil {
-		return tradeMessages.NoneMessageConst, nil
+		return trades.NoneMessageConst, nil
 	}
 
 	return msg, nil

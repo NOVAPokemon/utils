@@ -9,7 +9,6 @@ import (
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/location"
-	locationMessages "github.com/NOVAPokemon/utils/websockets/messages/location"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -68,9 +67,9 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 		select {
 		case msg := <-inChan:
 			switch msg.MsgType {
-			case locationMessages.Gyms:
+			case location.Gyms:
 				log.Info("updating gyms")
-				log.Info(locationMessages.Deserialize(msg).(*locationMessages.GymsMessage).Gyms)
+				log.Info(location.Deserialize(msg).(*location.GymsMessage).Gyms)
 			default:
 				log.Warn("got message type ", msg.MsgType)
 			}
@@ -124,7 +123,7 @@ func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan webso
 	for {
 		select {
 		case <-updateTicker.C:
-			locationMsg := locationMessages.UpdateLocationMessage{
+			locationMsg := location.UpdateLocationMessage{
 				Location: c.CurrentLocation,
 			}
 			wsMsg := locationMsg.SerializeToWSMessage()

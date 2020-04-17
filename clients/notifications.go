@@ -5,7 +5,7 @@ import (
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
 	ws "github.com/NOVAPokemon/utils/websockets"
-	"github.com/NOVAPokemon/utils/websockets/messages/notifications"
+	notifications2 "github.com/NOVAPokemon/utils/websockets/notifications"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -133,7 +133,7 @@ func (client *NotificationClient) handleRecv(conn *websocket.Conn) {
 }
 
 func (client *NotificationClient) parseToNotification(msg *ws.Message) {
-	notificationMsg := notifications.Deserialize(msg).(*notifications.NotificationMessage)
+	notificationMsg := notifications2.Deserialize(msg).(*notifications2.NotificationMessage)
 	client.NotificationsChannel <- &notificationMsg.Notification
 
 	log.Infof("Received %s from the websocket", notificationMsg.Notification.Content)

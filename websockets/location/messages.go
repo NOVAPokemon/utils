@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/NOVAPokemon/utils"
 	ws "github.com/NOVAPokemon/utils/websockets"
-	"github.com/NOVAPokemon/utils/websockets/messages"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,7 +15,7 @@ const (
 // Location
 type UpdateLocationMessage struct {
 	Location utils.Location
-	messages.MessageWithId
+	ws.MessageWithId
 }
 
 func (ulMsg UpdateLocationMessage) SerializeToWSMessage() *ws.Message {
@@ -34,7 +33,7 @@ func (ulMsg UpdateLocationMessage) SerializeToWSMessage() *ws.Message {
 
 type GymsMessage struct {
 	Gyms []utils.Gym
-	messages.MessageWithId
+	ws.MessageWithId
 }
 
 func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
@@ -50,7 +49,7 @@ func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func Deserialize(msg *ws.Message) messages.Serializable {
+func Deserialize(msg *ws.Message) ws.Serializable {
 	switch msg.MsgType {
 	case UpdateLocation:
 		var locationMsg UpdateLocationMessage

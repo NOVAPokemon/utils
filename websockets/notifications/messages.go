@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"github.com/NOVAPokemon/utils"
 	ws "github.com/NOVAPokemon/utils/websockets"
-	"github.com/NOVAPokemon/utils/websockets/messages"
-	tradeMessages "github.com/NOVAPokemon/utils/websockets/messages/trades"
+	"github.com/NOVAPokemon/utils/websockets/trades"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,7 +15,7 @@ const (
 // Notification
 type NotificationMessage struct {
 	Notification utils.Notification
-	messages.MessageWithId
+	ws.MessageWithId
 }
 
 func (nMsg NotificationMessage) SerializeToWSMessage() *ws.Message {
@@ -32,9 +31,9 @@ func (nMsg NotificationMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func Deserialize(msg *ws.Message) messages.Serializable {
+func Deserialize(msg *ws.Message) ws.Serializable {
 	switch msg.MsgType {
-	case tradeMessages.START:
+	case trades.START:
 		var notificationMsg NotificationMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &notificationMsg)
 		if err != nil {
