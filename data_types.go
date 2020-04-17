@@ -58,10 +58,11 @@ type UserJSON struct {
 }
 
 type Notification struct {
-	Id       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Username string             `json:"username" bson:"username,omitempty"`
-	Type     string
-	Content  []byte
+	Id               primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Username         string             `json:"username" bson:"username,omitempty"`
+	Type             string
+	Content          []byte
+	TimestampEmitted int64
 }
 
 type Location struct {

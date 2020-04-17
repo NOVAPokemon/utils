@@ -68,8 +68,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 		case msg := <-inChan:
 			switch msg.MsgType {
 			case location.Gyms:
-				log.Info("updating gyms")
-				log.Info(location.Deserialize(msg).(*location.GymsMessage).Gyms)
+				c.Gyms = location.Deserialize(msg).(*location.GymsMessage).Gyms
 			default:
 				log.Warn("got message type ", msg.MsgType)
 			}
@@ -132,8 +131,6 @@ func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan webso
 				Data:    []byte(wsMsg.Serialize()),
 			}
 
-			log.Info("updating location: ", c.CurrentLocation)
-
 			outChan <- genericMsg
 
 			err := conn.SetReadDeadline(time.Now().Add(location.Timeout))
@@ -143,11 +140,8 @@ func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan webso
 			}
 
 			if rand.Float64() <= c.LocationParameters.MovingProbability {
-				log.Info("moving")
 				c.CurrentLocation = c.move(location.UpdateCooldownInSeconds)
 			}
-
-			log.Info(c.DistanceToStartLat, c.DistanceToStartLong)
 		}
 	}
 }

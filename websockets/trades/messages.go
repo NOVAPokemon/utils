@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -17,21 +18,17 @@ var (
 
 // Message Types
 const (
-	START = "START"
+	Start = "START"
 
-	TRADE  = "TRADE"
-	ACCEPT = "ACCEPT"
+	Trade  = "TRADE"
+	Accept = "ACCEPT"
+	Update = "UPDATE"
 
-	UPDATE = "UPDATE"
+	SetToken = "SETTOKEN"
+	Finish   = "FINISH_TRADE"
 
-	SETTOKEN = "SETTOKEN"
-
-	FINISH = "FINISH_TRADE"
-
-	// Error
-	ERROR = "ERROR"
-
-	NONE = "NONE"
+	Error = "ERROR"
+	None  = "NONE"
 )
 
 // Start
@@ -47,7 +44,7 @@ func (sMsg StartMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: START,
+		MsgType: Start,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
@@ -55,7 +52,14 @@ func (sMsg StartMessage) SerializeToWSMessage() *ws.Message {
 // Trade
 type TradeMessage struct {
 	ItemId string
-	ws.MessageWithId
+	ws.TrackedMessage
+}
+
+func NewTradeMessage(itemId string) TradeMessage {
+	return TradeMessage{
+		ItemId:         itemId,
+		TrackedMessage: ws.NewTrackedMessage(primitive.NewObjectID()),
+	}
 }
 
 func (tMsg TradeMessage) SerializeToWSMessage() *ws.Message {
@@ -66,14 +70,20 @@ func (tMsg TradeMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: TRADE,
+		MsgType: Trade,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
 
 // Accept
 type AcceptMessage struct {
-	ws.MessageWithId
+	ws.TrackedMessage
+}
+
+func NewAcceptMessage() AcceptMessage {
+	return AcceptMessage{
+		TrackedMessage: ws.NewTrackedMessage(primitive.NewObjectID()),
+	}
 }
 
 func (aMsg AcceptMessage) SerializeToWSMessage() *ws.Message {
@@ -84,7 +94,7 @@ func (aMsg AcceptMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: ACCEPT,
+		MsgType: Accept,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
@@ -94,7 +104,7 @@ type UpdateMessage struct {
 	TradeStarted  bool
 	TradeFinished bool
 	Players       [2]*PlayerInfo
-	ws.MessageWithId
+	ws.TrackedMessage
 }
 
 func (uMsg UpdateMessage) SerializeToWSMessage() *ws.Message {
@@ -105,19 +115,20 @@ func (uMsg UpdateMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: UPDATE,
+		MsgType: Update,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
 
-func UpdateMessageFromTrade(trade *TradeStatus) *UpdateMessage {
+func UpdateMessageFromTrade(trade *TradeStatus, trackedMsg ws.TrackedMessage) *UpdateMessage {
 	players := [2]*PlayerInfo{}
 	players[0] = PlayerToPlayerInfo(&trade.Players[0])
 	players[1] = PlayerToPlayerInfo(&trade.Players[1])
 	return &UpdateMessage{
-		TradeStarted:  trade.TradeStarted,
-		TradeFinished: trade.TradeFinished,
-		Players:       players,
+		TradeStarted:   trade.TradeStarted,
+		TradeFinished:  trade.TradeFinished,
+		Players:        players,
+		TrackedMessage: trackedMsg,
 	}
 }
 
@@ -135,7 +146,7 @@ func (sMsg SetTokenMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: SETTOKEN,
+		MsgType: SetToken,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
@@ -154,7 +165,7 @@ func (fMsg FinishMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: FINISH,
+		MsgType: Finish,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
@@ -174,7 +185,7 @@ func (eMsg ErrorMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: ERROR,
+		MsgType: Error,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
@@ -183,14 +194,14 @@ type NoneMessage struct{}
 
 func (nMsg NoneMessage) SerializeToWSMessage() *ws.Message {
 	return &ws.Message{
-		MsgType: NONE,
+		MsgType: None,
 		MsgArgs: nil,
 	}
 }
 
 func Deserialize(msg *ws.Message) ws.Serializable {
 	switch msg.MsgType {
-	case START:
+	case Start:
 		var startMessage StartMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &startMessage)
 		if err != nil {
@@ -199,7 +210,7 @@ func Deserialize(msg *ws.Message) ws.Serializable {
 		}
 
 		return &startMessage
-	case TRADE:
+	case Trade:
 		var tradeMsg TradeMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &tradeMsg)
 		if err != nil {
@@ -208,7 +219,7 @@ func Deserialize(msg *ws.Message) ws.Serializable {
 		}
 
 		return &tradeMsg
-	case ACCEPT:
+	case Accept:
 		var acceptMsg AcceptMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &acceptMsg)
 		if err != nil {
@@ -217,7 +228,7 @@ func Deserialize(msg *ws.Message) ws.Serializable {
 		}
 
 		return &acceptMsg
-	case UPDATE:
+	case Update:
 		var updateMsg UpdateMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &updateMsg)
 		if err != nil {
@@ -226,7 +237,7 @@ func Deserialize(msg *ws.Message) ws.Serializable {
 		}
 
 		return &updateMsg
-	case SETTOKEN:
+	case SetToken:
 		var setTokenMsg SetTokenMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &setTokenMsg)
 		if err != nil {
@@ -235,7 +246,7 @@ func Deserialize(msg *ws.Message) ws.Serializable {
 		}
 
 		return &setTokenMsg
-	case FINISH:
+	case Finish:
 		var finishMsg FinishMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &finishMsg)
 		if err != nil {
@@ -244,7 +255,7 @@ func Deserialize(msg *ws.Message) ws.Serializable {
 		}
 
 		return &finishMsg
-	case ERROR:
+	case Error:
 		var errorMsg ErrorMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &errorMsg)
 		if err != nil {
@@ -254,6 +265,7 @@ func Deserialize(msg *ws.Message) ws.Serializable {
 
 		return &errorMsg
 	default:
+		log.Error("invalid msg type")
 		return nil
 	}
 }

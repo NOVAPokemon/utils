@@ -135,12 +135,14 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			return
 		}
 
-		log.Infof("Message: %s", msg)
-
 		switch msg.MsgType {
-		case trades.START:
+		case trades.Start:
 			close(started)
-		case trades.SETTOKEN:
+		case trades.Update:
+			updateMsg := trades.Deserialize(msg).(*trades.UpdateMessage)
+			updateMsg.Receive(websockets.MakeTimestamp())
+			updateMsg.LogReceive(trades.Update)
+		case trades.SetToken:
 			tokenMessage := trades.Deserialize(msg).(*trades.SetTokenMessage)
 			token, err := tokens.ExtractItemsToken(tokenMessage.TokenString)
 			if err != nil {
@@ -148,7 +150,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			}
 			itemsToken = &tokenMessage.TokenString
 			log.Info(token.ItemsHash)
-		case trades.FINISH:
+		case trades.Finish:
 			finishMsg := trades.Deserialize(msg).(*trades.FinishMessage)
 			log.Info("Finished, Success: ", finishMsg.Success)
 			close(finished)
@@ -170,7 +172,10 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 
 		for i := 0; i < numItemsToAdd; i++ {
 			randomItemIdx := rand.Intn(len(availableItems))
-			msg := trades.TradeMessage{ItemId: availableItems[randomItemIdx]}.SerializeToWSMessage()
+			tradeMsg := trades.NewTradeMessage(availableItems[randomItemIdx])
+			//TODO Is it too soon to emit the log?
+			tradeMsg.LogEmit(trades.Trade)
+			msg := tradeMsg.SerializeToWSMessage()
 			s := (*msg).Serialize()
 			writeChannel <- &s
 
@@ -185,7 +190,10 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 			log.Infof("sleeping %d milliseconds", randSleep)
 		}
 
-		msg := trades.AcceptMessage{}.SerializeToWSMessage()
+		acceptMsg := trades.NewAcceptMessage()
+		//TODO Is it too soon to emit the log?
+		acceptMsg.LogEmit(trades.Accept)
+		msg := acceptMsg.SerializeToWSMessage()
 		s := (*msg).Serialize()
 		writeChannel <- &s
 

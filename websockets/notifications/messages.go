@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"github.com/NOVAPokemon/utils"
 	ws "github.com/NOVAPokemon/utils/websockets"
-	"github.com/NOVAPokemon/utils/websockets/trades"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	NOTIFICATION = "NOTIFICATION"
+	Notification = "NOTIFICATION"
 )
 
 // Notification
@@ -26,14 +25,14 @@ func (nMsg NotificationMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: NOTIFICATION,
+		MsgType: Notification,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
 
 func Deserialize(msg *ws.Message) ws.Serializable {
 	switch msg.MsgType {
-	case trades.START:
+	case Notification:
 		var notificationMsg NotificationMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &notificationMsg)
 		if err != nil {
@@ -43,6 +42,7 @@ func Deserialize(msg *ws.Message) ws.Serializable {
 
 		return &notificationMsg
 	default:
+		log.Info("invalid msg type")
 		return nil
 	}
 }

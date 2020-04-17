@@ -70,6 +70,7 @@ func Deserialize(msg *ws.Message) ws.Serializable {
 
 		return &gymsMsg
 	default:
+		log.Info("invalid msg type")
 		return nil
 	}
 }
