@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/items"
+	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/NOVAPokemon/utils/tokens"
 	"math/rand"
 	"net/http"
@@ -54,6 +55,17 @@ func (client *GeneratorClient) CatchWildPokemon(authToken, itemsTokenString stri
 	}
 
 	return true, resp.Header, nil
+}
+
+func (client *GeneratorClient) GetRaidBoss() (*pokemons.Pokemon, error) {
+	req, err := BuildRequest("GET", client.GeneratorAddr, api.GenerateRaidBossPath, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	raidBoss := &pokemons.Pokemon{}
+	_, err = DoRequest(client.httpClient, req, raidBoss)
+	return raidBoss, err
 }
 
 func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error) {
