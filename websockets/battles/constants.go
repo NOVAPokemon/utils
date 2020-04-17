@@ -11,6 +11,7 @@ import (
 const PokemonsPerBattle = 3
 const PokemonsPerRaid = 3
 const DefaultCooldown = time.Millisecond * 500
+const TimeToStartRaid = time.Second * 20
 const DefaultRaidCapacity = 10
 
 var (
@@ -53,6 +54,12 @@ const (
 	SetToken = "SET_TOKEN"
 )
 
+type BattleChannels struct {
+	OutChannel    chan *string
+	InChannel     chan *string
+	FinishChannel chan struct{}
+}
+
 type (
 	TrainerBattleStatus struct {
 		Username        string
@@ -60,6 +67,7 @@ type (
 		TrainerPokemons map[string]*pokemons.Pokemon
 		TrainerItems    map[string]items.Item
 		SelectedPokemon *pokemons.Pokemon
+		AllPokemonsDead bool
 		Defending       bool
 		Cooldown        bool
 		CdTimer         *time.Timer

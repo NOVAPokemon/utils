@@ -6,6 +6,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
+	"github.com/NOVAPokemon/utils/websockets/battles"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,18 +17,7 @@ import (
 
 type BattleLobbyClient struct {
 	BattlesAddr string
-	conn        *websocket.Conn
 	httpClient  http.Client
-}
-
-type BattleChannels struct {
-	OutChannel    chan *string
-	InChannel     chan *string
-	FinishChannel chan struct{}
-}
-
-func init() {
-
 }
 
 func (client *BattleLobbyClient) GetAvailableLobbies() []utils.Lobby {
@@ -52,7 +42,7 @@ func (client *BattleLobbyClient) GetAvailableLobbies() []utils.Lobby {
 	return availableBattles
 }
 
-func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens []string, statsToken string, itemsToken string) (*websocket.Conn, *BattleChannels, error) {
+func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens []string, statsToken string, itemsToken string) (*websocket.Conn, *battles.BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: api.QueueForBattlePath}
 	log.Infof("Queuing for battle: %s", u.String())
@@ -81,10 +71,10 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	go ReadMessagesToChan(c, inChannel, finished)
 	go MainLoop(c, outChannel, finished)
 
-	return c, &BattleChannels{outChannel, inChannel, finished}, nil
+	return c, &battles.BattleChannels{OutChannel: outChannel, InChannel: inChannel, FinishChannel: finished}, nil
 }
 
-func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, statsToken string, itemsToken string, targetPlayer string) (*websocket.Conn, *BattleChannels, error) {
+func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, statsToken string, itemsToken string, targetPlayer string) (*websocket.Conn, *battles.BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.ChallengeToBattlePath, targetPlayer)}
 	log.Infof("Connecting to: %s", u.String())
@@ -113,11 +103,11 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	go ReadMessagesToChan(c, inChannel, finished)
 	go MainLoop(c, outChannel, finished)
 
-	return c, &BattleChannels{outChannel, inChannel, finished}, nil
+	return c, &battles.BattleChannels{OutChannel: outChannel, InChannel: inChannel, FinishChannel: finished}, nil
 
 }
 
-func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string, itemsToken string, battleId primitive.ObjectID) (*websocket.Conn, *BattleChannels, error) {
+func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string, itemsToken string, battleId primitive.ObjectID) (*websocket.Conn, *battles.BattleChannels, error) {
 
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.AcceptChallengePath, battleId.Hex())}
 	log.Infof("Accepting challenge: %s", u.String())
@@ -146,6 +136,6 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	go ReadMessagesToChan(c, inChannel, finished)
 	go MainLoop(c, outChannel, finished)
 
-	return c, &BattleChannels{outChannel, inChannel, finished}, nil
+	return c, &battles.BattleChannels{OutChannel: outChannel, InChannel: inChannel, FinishChannel: finished}, nil
 
 }

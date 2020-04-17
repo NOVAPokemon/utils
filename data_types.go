@@ -66,7 +66,6 @@ type Notification struct {
 }
 
 type Location struct {
-	//TODO there are a bunch of possible fields,
 	Latitude  float64
 	Longitude float64
 }
@@ -87,7 +86,8 @@ type LocationParameters struct {
 }
 
 type Gym struct {
-	Id       primitive.ObjectID
-	Name     string
-	Location Location
+	Name        string
+	Location    Location
+	RaidForming bool
+	RaidBoss    *pokemons.Pokemon
 }

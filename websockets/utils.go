@@ -80,6 +80,7 @@ func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection cha
 					log.Warn(err)
 					log.Warn("closed lobby because could not read")
 				}
+				log.Warn("Closing finish channel and connection")
 				closeConnectionThroughChannel(conn, endConnection)
 				return
 			} else {

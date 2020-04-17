@@ -12,4 +12,5 @@ const (
 	StorePort
 	MicrotransactionsPort
 	LocationPort
+	GymPort
 )

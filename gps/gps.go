@@ -24,5 +24,5 @@ func CalcDistanceBetweenLocations(locationA, locationB utils.Location) float64 {
 	dLat := locationB.Latitude - locationA.Latitude
 	dLong := locationB.Longitude - locationA.Longitude
 
-	return math.Sqrt(math.Pow(dLat, 2)+math.Pow(dLong, 2)) * (math.Pi/180.0) * earthRadius
+	return math.Sqrt(math.Pow(dLat, 2)+math.Pow(dLong, 2)) * (math.Pi / 180.0) * earthRadius
 }

@@ -6,7 +6,6 @@ import (
 	databaseUtils "github.com/NOVAPokemon/utils/database"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
@@ -64,15 +63,14 @@ func AddGym(gym utils.Gym) error {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collections[gymsLocationCollectionName]
 
-	gym.Id = primitive.NewObjectID()
-
 	_, err := collection.InsertOne(*ctx, gym)
+
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	log.Infof("Added gym %s at %f %f", gym.Id, gym.Location.Latitude, gym.Location.Longitude)
+	log.Infof("Added gym %s at %f %f", gym.Name, gym.Location.Latitude, gym.Location.Longitude)
 
 	return nil
 }

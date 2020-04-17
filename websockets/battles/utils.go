@@ -92,6 +92,7 @@ func HandleSelectPokemon(msgStr *string, issuer *TrainerBattleStatus, issuerChan
 		websockets.SendMessage(msg, issuerChan)
 	}
 	issuer.SelectedPokemon = pokemon
+	log.Info("Changed selected pokemon")
 	UpdateTrainerPokemon(*issuer.SelectedPokemon, issuerChan)
 	return nil
 }
@@ -138,19 +139,34 @@ func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan chan *string, defe
 
 	issuer.CdTimer.Reset(DefaultCooldown)
 	issuer.Cooldown = true
+	hpChanged := ApplyAttackMove(issuer.SelectedPokemon, otherPokemon, defending)
 
+	if issuer.SelectedPokemon.HP == 0 {
+		allDead := true
+		for _, pokemon := range issuer.TrainerPokemons {
+			if pokemon.HP > 0 {
+				allDead = false
+				break
+			}
+		}
+		if allDead {
+			issuer.AllPokemonsDead = true
+		}
+	}
+
+	return hpChanged, nil
+}
+
+func ApplyAttackMove(issuerPokemon *pokemons.Pokemon, otherPokemon *pokemons.Pokemon, defending bool) bool {
 	if defending {
-		msg := websockets.Message{MsgType: Status, MsgArgs: []string{StatusOpponentDefended}}
-		websockets.SendMessage(msg, issuerChan)
-		return false, nil
+		return false
 	} else {
-		otherPokemon.HP -= issuer.SelectedPokemon.Damage
+		otherPokemon.HP -= issuerPokemon.Damage
 		if otherPokemon.HP < 0 {
 			otherPokemon.HP = 0
 		}
-		return true, nil
+		return true
 	}
-
 }
 
 func UpdateTrainerPokemon(pokemon pokemons.Pokemon, ownerChan chan *string) {

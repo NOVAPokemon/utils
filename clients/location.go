@@ -34,6 +34,17 @@ type LocationClient struct {
 	DistanceToStartLong float64
 }
 
+func NewLocationClientWithLocParams(addr string, params utils.LocationParameters) *LocationClient {
+	return &LocationClient{
+		Gyms:                []utils.Gym{},
+		LocationAddr:        addr,
+		HttpClient:          &http.Client{},
+		LocationParameters:  params,
+		DistanceToStartLat:  0.0,
+		DistanceToStartLong: 0.0,
+	}
+}
+
 func NewLocationClient(addr string) *LocationClient {
 	params, err := loadLocationParameters()
 	if err != nil {
@@ -41,6 +52,7 @@ func NewLocationClient(addr string) *LocationClient {
 	}
 
 	return &LocationClient{
+		Gyms:                make([]utils.Gym, 0),
 		LocationAddr:        addr,
 		HttpClient:          &http.Client{},
 		LocationParameters:  *params,
@@ -131,6 +143,8 @@ func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan webso
 				Data:    []byte(wsMsg.Serialize()),
 			}
 
+			//log.Info("updating location: ", c.CurrentLocation)
+
 			outChan <- genericMsg
 
 			err := conn.SetReadDeadline(time.Now().Add(location.Timeout))
@@ -142,6 +156,8 @@ func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan webso
 			if rand.Float64() <= c.LocationParameters.MovingProbability {
 				c.CurrentLocation = c.move(location.UpdateCooldownInSeconds)
 			}
+
+			// log.Info(c.DistanceToStartLat, c.DistanceToStartLong)
 		}
 	}
 }
@@ -166,6 +182,16 @@ func (c *LocationClient) move(timePassed int) utils.Location {
 	return gps.CalcLocationPlusDistanceTraveled(c.CurrentLocation, dLat, dLong)
 }
 
+func (c *LocationClient) AddGymLocation(gym utils.Gym) error {
+	req, err := BuildRequest("POST", c.LocationAddr, api.GymLocationRoute, gym)
+	if err != nil {
+		return err
+	}
+
+	_, err = DoRequest(c.HttpClient, req, nil)
+	return err
+}
+
 func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish chan struct{}) {
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -180,7 +206,6 @@ func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish 
 				log.Error(err)
 				return
 			}
-
 			inChan <- msg
 		}
 	}
