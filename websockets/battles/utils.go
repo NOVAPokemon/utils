@@ -162,8 +162,8 @@ func ApplyAttackMove(issuerPokemon *pokemons.Pokemon, otherPokemon *pokemons.Pok
 func UpdateTrainerPokemon(trackedMsg websockets.TrackedMessage, pokemon pokemons.Pokemon, channel chan *string, owner bool) {
 	websockets.SendMessage(
 		*UpdatePokemonMessage{
-			Owner:   owner,
-			Pokemon: pokemon,
+			Owner:          owner,
+			Pokemon:        pokemon,
 			TrackedMessage: trackedMsg,
 		}.SerializeToWSMessage(), channel)
 }
