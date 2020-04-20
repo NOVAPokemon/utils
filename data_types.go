@@ -75,16 +75,6 @@ type UserLocation struct {
 	Location Location
 }
 
-// Location parameters describe how the user will move. The moving probability indicates
-// how likely is the user to move between location updates
-// MaxMovingSpeed should be in meters per second
-type LocationParameters struct {
-	StartingLocation     Location
-	MaxMovingSpeed       float64
-	MovingProbability    float64
-	MaxDistanceFromStart int
-}
-
 type Gym struct {
 	Name        string
 	Location    Location

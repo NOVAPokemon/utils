@@ -1,7 +1,6 @@
 package clients
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -11,7 +10,6 @@ import (
 	"github.com/NOVAPokemon/utils/websockets/location"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	"math"
 	"math/rand"
 	"net/http"
@@ -20,12 +18,17 @@ import (
 )
 
 const (
-	locationParamsFilename = "location_params.json"
-	bufferSize             = 10
+	bufferSize = 10
+)
+
+var (
+	timeoutInDuration time.Duration
 )
 
 type LocationClient struct {
-	LocationAddr        string
+	LocationAddr string
+	config       utils.LocationClientConfig
+
 	Gyms                []utils.Gym
 	HttpClient          *http.Client
 	CurrentLocation     utils.Location
@@ -34,28 +37,16 @@ type LocationClient struct {
 	DistanceToStartLong float64
 }
 
-func NewLocationClientWithLocParams(addr string, params utils.LocationParameters) *LocationClient {
+func NewLocationClient(addr string, config utils.LocationClientConfig) *LocationClient {
+	timeoutInDuration = time.Duration(config.Timeout) * time.Second
 	return &LocationClient{
+		LocationAddr: addr,
+		config:       config,
+
 		Gyms:                []utils.Gym{},
-		LocationAddr:        addr,
 		HttpClient:          &http.Client{},
-		LocationParameters:  params,
-		DistanceToStartLat:  0.0,
-		DistanceToStartLong: 0.0,
-	}
-}
-
-func NewLocationClient(addr string) *LocationClient {
-	params, err := loadLocationParameters()
-	if err != nil {
-		return nil
-	}
-
-	return &LocationClient{
-		Gyms:                make([]utils.Gym, 0),
-		LocationAddr:        addr,
-		HttpClient:          &http.Client{},
-		LocationParameters:  *params,
+		CurrentLocation:     config.Parameters.StartingLocation,
+		LocationParameters:  config.Parameters,
 		DistanceToStartLat:  0.0,
 		DistanceToStartLong: 0.0,
 	}
@@ -71,6 +62,8 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 		log.Error(err)
 		return
 	}
+
+	log.Info("timeout: ", c.config.Timeout)
 
 	go readMessages(conn, inChan, finish)
 	go c.updateLocation(conn, outChan)
@@ -113,9 +106,9 @@ func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken s
 		return nil, err
 	}
 
-	_ = conn.SetReadDeadline(time.Now().Add(location.Timeout))
+	_ = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 	conn.SetPingHandler(func(string) error {
-		if err := conn.SetReadDeadline(time.Now().Add(location.Timeout)); err != nil {
+		if err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration)); err != nil {
 			return err
 		}
 		outChan <- websockets.GenericMsg{MsgType: websocket.PongMessage, Data: nil}
@@ -127,9 +120,7 @@ func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken s
 }
 
 func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan websockets.GenericMsg) {
-	updateTicker := time.NewTicker(location.UpdateCooldown)
-
-	c.CurrentLocation = c.LocationParameters.StartingLocation
+	updateTicker := time.NewTicker(time.Duration(c.config.UpdateInterval) * time.Second)
 
 	for {
 		select {
@@ -147,14 +138,14 @@ func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan webso
 
 			outChan <- genericMsg
 
-			err := conn.SetReadDeadline(time.Now().Add(location.Timeout))
+			err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 			if err != nil {
 				log.Error(err)
 				return
 			}
 
 			if rand.Float64() <= c.LocationParameters.MovingProbability {
-				c.CurrentLocation = c.move(location.UpdateCooldownInSeconds)
+				c.CurrentLocation = c.move(c.config.UpdateInterval)
 			}
 
 			// log.Info(c.DistanceToStartLat, c.DistanceToStartLong)
@@ -209,21 +200,4 @@ func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish 
 			inChan <- msg
 		}
 	}
-}
-
-func loadLocationParameters() (*utils.LocationParameters, error) {
-	fileData, err := ioutil.ReadFile(locationParamsFilename)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	var locParams utils.LocationParameters
-	err = json.Unmarshal(fileData, &locParams)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	return &locParams, nil
 }

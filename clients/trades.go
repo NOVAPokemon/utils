@@ -18,13 +18,14 @@ import (
 
 type TradeLobbyClient struct {
 	TradesAddr string
-
+	config utils.TradesClientConfig
 	conn *websocket.Conn
 }
 
-func NewTradesClient(addr string) *TradeLobbyClient {
+func NewTradesClient(addr string, config utils.TradesClientConfig) *TradeLobbyClient {
 	return &TradeLobbyClient{
 		TradesAddr: addr,
+		config: config,
 	}
 }
 
@@ -165,13 +166,20 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 	case <-finished:
 		return
 	default:
-		log.Infof("got %d items", len(availableItems))
+		numItems := len(availableItems)
 
-		numItemsToAdd := rand.Intn(len(availableItems))
+		var maxItemsToTrade int
+		if client.config.MaxItemsToTrade < 0 || client.config.MaxItemsToTrade > numItems{
+			 maxItemsToTrade = numItems
+		} else if client.config.MaxItemsToTrade <= numItems {
+			maxItemsToTrade = client.config.MaxItemsToTrade
+		}
+
+		numItemsToAdd := rand.Intn(maxItemsToTrade)
 		log.Infof("will trade %d items", numItemsToAdd)
 
 		for i := 0; i < numItemsToAdd; i++ {
-			randomItemIdx := rand.Intn(len(availableItems))
+			randomItemIdx := rand.Intn(numItems)
 			tradeMsg := trades.NewTradeMessage(availableItems[randomItemIdx])
 			//TODO Is it too soon to emit the log?
 			tradeMsg.LogEmit(trades.Trade)
@@ -184,10 +192,12 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 			availableItems[randomItemIdx] = availableItems[len(availableItems)-1]
 			availableItems = availableItems[:len(availableItems)-1]
 
-			randSleep := rand.Intn(1000) + 1000
-			time.Sleep(time.Duration(randSleep) * time.Millisecond)
+			if client.config.MaxSleepTime > 0 {
+				randSleep := rand.Intn(client.config.MaxSleepTime)
+				time.Sleep(time.Duration(randSleep) * time.Millisecond)
+				log.Infof("sleeping %d milliseconds", randSleep)
+			}
 
-			log.Infof("sleeping %d milliseconds", randSleep)
 		}
 
 		acceptMsg := trades.NewAcceptMessage()
