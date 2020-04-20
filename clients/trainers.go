@@ -106,7 +106,6 @@ func (c *TrainersClient) RemoveItemsFromBag(username string, itemIds []string, a
 
 	req, err := BuildRequest("DELETE", c.TrainersAddr,
 		fmt.Sprintf(api.RemoveItemFromBagPath, username, itemIdsPath.String()), nil)
-
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +169,7 @@ func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon pokemons.P
 	return &res, err
 }
 
-func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon pokemons.Pokemon, authtoken string) (*pokemons.Pokemon, error) {
+func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon pokemons.Pokemon, authToken string) (*pokemons.Pokemon, error) {
 	req, err := BuildRequest("PUT", c.TrainersAddr, fmt.Sprintf(api.UpdatePokemonPath, username, pokemonId), pokemon)
 	if err != nil {
 		return nil, err
