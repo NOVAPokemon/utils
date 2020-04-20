@@ -31,7 +31,6 @@ func ParseMessage(msg *string) (*Message, error) {
 
 func SendMessage(msg Message, channel chan *string) {
 	toSend := msg.Serialize()
-	//logrus.Infof("Sending: %s", toSend)
 	channel <- &toSend
 }
 

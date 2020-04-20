@@ -26,32 +26,8 @@ var (
 	ErrInvalidItemSelected    = errors.New("ErrInvalidItemSelected")
 	ErrItemNotAppliable       = errors.New("ErrItemNotAppliable")
 
-	StatusDefended         = "StatusDefended"
-	StatusOpponentDefended = "StatusOpponentDefended"
-)
-
-const (
-	Attack  = "ATTACK"
-	UseItem = "USE_ITEM"
-	Defend  = "DEFEND"
-
-	// Update Types
-	UpdatePlayerPokemon    = "UPDATE_PLAYER_POKEMON"
-	UpdateAdversaryPokemon = "UPDATE_ADVERSARY_POKEMON"
-	RemoveItem             = "REMOVE_ITEM"
-
-	DefendSuccess      = "DEFEND_SUCCESS"
-	AdversaryDefending = "ADVERSARY_DEFENDING"
-
-	// Setup Message Types
-	SelectPokemon = "SELECT_POKEMON"
-
-	Status = "STATUS"
-	Error  = "ERROR"
-	Finish = "FINISH_BATTLE"
-	Start  = "START"
-
-	SetToken = "SET_TOKEN"
+	StatusDefended         = "You defended an attack"
+	StatusOpponentDefended = "Opponent defended the attack"
 )
 
 type BattleChannels struct {
@@ -73,4 +49,10 @@ type (
 		CdTimer         *time.Timer
 		UsedItems       map[string]items.Item
 	}
+)
+
+// status messages
+const (
+	DefendSuccess      = "DEFEND_SUCCESS"
+	AdversaryDefending = "ADVERSARY_DEFENDING"
 )
