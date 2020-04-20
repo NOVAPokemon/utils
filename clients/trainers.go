@@ -170,13 +170,14 @@ func (c *TrainersClient) AddPokemonToTrainer(username string, pokemon pokemons.P
 	return &res, err
 }
 
-func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon pokemons.Pokemon) (*pokemons.Pokemon, error) {
+func (c *TrainersClient) UpdateTrainerPokemon(username string, pokemonId string, pokemon pokemons.Pokemon, authtoken string) (*pokemons.Pokemon, error) {
 	req, err := BuildRequest("PUT", c.TrainersAddr, fmt.Sprintf(api.UpdatePokemonPath, username, pokemonId), pokemon)
 	if err != nil {
 		return nil, err
 	}
 
 	var res pokemons.Pokemon
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 	resp, err := DoRequest(c.HttpClient, req, &res)
 
 	if err != nil {
