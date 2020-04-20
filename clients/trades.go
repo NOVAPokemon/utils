@@ -139,11 +139,11 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 		case trades.Start:
 			close(started)
 		case trades.Update:
-			updateMsg := trades.Deserialize(msg).(*trades.UpdateMessage)
+			updateMsg := trades.DeserializeTradeMessage(msg).(*trades.UpdateMessage)
 			updateMsg.Receive(websockets.MakeTimestamp())
 			updateMsg.LogReceive(trades.Update)
 		case trades.SetToken:
-			tokenMessage := trades.Deserialize(msg).(*trades.SetTokenMessage)
+			tokenMessage := trades.DeserializeTradeMessage(msg).(*trades.SetTokenMessage)
 			token, err := tokens.ExtractItemsToken(tokenMessage.TokenString)
 			if err != nil {
 				log.Error(err)
@@ -151,7 +151,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			itemsToken = &tokenMessage.TokenString
 			log.Info(token.ItemsHash)
 		case trades.Finish:
-			finishMsg := trades.Deserialize(msg).(*trades.FinishMessage)
+			finishMsg := trades.DeserializeTradeMessage(msg).(*trades.FinishMessage)
 			log.Info("Finished, Success: ", finishMsg.Success)
 			close(finished)
 			setItemsToken <- itemsToken

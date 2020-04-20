@@ -30,7 +30,7 @@ func (nMsg NotificationMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func Deserialize(msg *ws.Message) ws.Serializable {
+func DeserializeNotificationMessage(msg *ws.Message) ws.Serializable {
 	switch msg.MsgType {
 	case Notification:
 		var notificationMsg NotificationMessage

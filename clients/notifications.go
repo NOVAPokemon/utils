@@ -133,7 +133,7 @@ func (client *NotificationClient) handleRecv(conn *websocket.Conn) {
 }
 
 func (client *NotificationClient) parseToNotification(msg *ws.Message) {
-	notificationMsg := notificationMessages.Deserialize(msg).(*notificationMessages.NotificationMessage)
+	notificationMsg := notificationMessages.DeserializeNotificationMessage(msg).(*notificationMessages.NotificationMessage)
 	client.NotificationsChannel <- &notificationMsg.Notification
 
 	log.Infof("Received %s from the websocket", notificationMsg.Notification.Content)

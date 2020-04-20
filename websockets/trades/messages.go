@@ -199,7 +199,7 @@ func (nMsg NoneMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func Deserialize(msg *ws.Message) ws.Serializable {
+func DeserializeTradeMessage(msg *ws.Message) ws.Serializable {
 	switch msg.MsgType {
 	case Start:
 		var startMessage StartMessage
