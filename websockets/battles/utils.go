@@ -7,10 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func HandleUseItem(message *websockets.Message, issuer *TrainerBattleStatus, issuerChan chan *string) bool {
-
-	UseItemMessage := DeserializeBattleMsg(message).(*UseItemMessage)
-
+func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, issuerChan chan *string) bool {
 	if issuer.Cooldown {
 		websockets.SendMessage(
 			*ErrorMessage{
@@ -20,7 +17,7 @@ func HandleUseItem(message *websockets.Message, issuer *TrainerBattleStatus, iss
 		return false
 	}
 
-	itemId := UseItemMessage.ItemId
+	itemId := useItemMessage.ItemId
 	item, ok := issuer.TrainerItems[itemId]
 	if !ok {
 		websockets.SendMessage(
@@ -54,7 +51,7 @@ func HandleUseItem(message *websockets.Message, issuer *TrainerBattleStatus, iss
 
 	issuer.UsedItems[item.Id.Hex()] = item
 	delete(issuer.TrainerItems, item.Id.Hex())
-	UpdateTrainerPokemon(*issuer.SelectedPokemon, issuerChan, true)
+	UpdateTrainerPokemon(useItemMessage.TrackedMessage, *issuer.SelectedPokemon, issuerChan, true)
 	websockets.SendMessage(
 		*RemoveItemMessage{
 			ItemId: itemId,
@@ -63,10 +60,10 @@ func HandleUseItem(message *websockets.Message, issuer *TrainerBattleStatus, iss
 	return true
 }
 
-func HandleSelectPokemon(message *websockets.Message, issuer *TrainerBattleStatus, issuerChan chan *string) bool {
+func HandleSelectPokemon(selectedPokemonMsg *SelectPokemonMessage, issuer *TrainerBattleStatus, issuerChan chan *string) bool {
 
-	selectedPokemon := DeserializeBattleMsg(message).(*SelectPokemonMessage).PokemonId
-	pokemon, ok := issuer.TrainerPokemons[selectedPokemon]
+	selectedPokemonId := selectedPokemonMsg.PokemonId
+	pokemon, ok := issuer.TrainerPokemons[selectedPokemonId]
 
 	if !ok {
 		websockets.SendMessage(
@@ -86,7 +83,7 @@ func HandleSelectPokemon(message *websockets.Message, issuer *TrainerBattleStatu
 	}
 	issuer.SelectedPokemon = pokemon
 	log.Info("Changed selected pokemon")
-	UpdateTrainerPokemon(*issuer.SelectedPokemon, issuerChan, true)
+	UpdateTrainerPokemon(selectedPokemonMsg.TrackedMessage, *issuer.SelectedPokemon, issuerChan, true)
 	return true
 }
 
@@ -124,7 +121,6 @@ func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan *string) {
 }
 
 func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan chan *string, defending bool, otherPokemon *pokemons.Pokemon) bool {
-
 	if issuer.SelectedPokemon.HP == 0 {
 		websockets.SendMessage(
 			*ErrorMessage{
@@ -163,10 +159,11 @@ func ApplyAttackMove(issuerPokemon *pokemons.Pokemon, otherPokemon *pokemons.Pok
 	}
 }
 
-func UpdateTrainerPokemon(pokemon pokemons.Pokemon, channel chan *string, owner bool) {
+func UpdateTrainerPokemon(trackedMsg websockets.TrackedMessage, pokemon pokemons.Pokemon, channel chan *string, owner bool) {
 	websockets.SendMessage(
 		*UpdatePokemonMessage{
 			Owner:   owner,
 			Pokemon: pokemon,
+			TrackedMessage: trackedMsg,
 		}.SerializeToWSMessage(), channel)
 }

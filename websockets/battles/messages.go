@@ -5,6 +5,7 @@ import (
 	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Message types
@@ -35,7 +36,13 @@ func (aMsg DefendMessage) SerializeToWSMessage() *websockets.Message {
 }
 
 type AttackMessage struct {
-	websockets.MessageWithId
+	websockets.TrackedMessage
+}
+
+func NewAttackMessage() AttackMessage {
+	return AttackMessage{
+		TrackedMessage: websockets.NewTrackedMessage(primitive.NewObjectID()),
+	}
 }
 
 func (aMsg AttackMessage) SerializeToWSMessage() *websockets.Message {
@@ -48,7 +55,7 @@ func (aMsg AttackMessage) SerializeToWSMessage() *websockets.Message {
 type UpdatePokemonMessage struct {
 	Owner   bool
 	Pokemon pokemons.Pokemon
-	websockets.MessageWithId
+	websockets.TrackedMessage
 }
 
 func (upMsg UpdatePokemonMessage) SerializeToWSMessage() *websockets.Message {
@@ -84,7 +91,14 @@ func (riMsg RemoveItemMessage) SerializeToWSMessage() *websockets.Message {
 
 type UseItemMessage struct {
 	ItemId string
-	websockets.MessageWithId
+	websockets.TrackedMessage
+}
+
+func NewUseItemMessage(itemId string) UseItemMessage {
+	return UseItemMessage{
+		ItemId: itemId,
+		TrackedMessage: websockets.NewTrackedMessage(primitive.NewObjectID()),
+	}
 }
 
 func (uiMsg UseItemMessage) SerializeToWSMessage() *websockets.Message {
@@ -120,7 +134,14 @@ func (statusMsg StatusMessage) SerializeToWSMessage() *websockets.Message {
 
 type SelectPokemonMessage struct {
 	PokemonId string
-	websockets.MessageWithId
+	websockets.TrackedMessage
+}
+
+func NewSelectPokemonMessage(pokemonId string) SelectPokemonMessage {
+	return SelectPokemonMessage{
+		PokemonId: pokemonId,
+		TrackedMessage: websockets.NewTrackedMessage(primitive.NewObjectID()),
+	}
 }
 
 func (spMsg SelectPokemonMessage) SerializeToWSMessage() *websockets.Message {
