@@ -7,6 +7,7 @@ import (
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/gps"
 	"github.com/NOVAPokemon/utils/items"
+	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/location"
@@ -34,9 +35,11 @@ var (
 type LocationClient struct {
 	LocationAddr string
 	config       utils.LocationClientConfig
+	HttpClient   *http.Client
 
-	Gyms                []utils.Gym
-	HttpClient          *http.Client
+	Gyms     []utils.Gym
+	Pokemons []pokemons.Pokemon
+
 	CurrentLocation     utils.Location
 	LocationParameters  utils.LocationParameters
 	DistanceToStartLat  float64
@@ -69,10 +72,8 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 		return
 	}
 
-	log.Info("timeout: ", c.config.Timeout)
-
 	go readMessages(conn, inChan, finish)
-	go c.updateLocation(conn, outChan)
+	go c.updateLocationLoop(conn, outChan)
 
 	for {
 		select {
@@ -80,6 +81,8 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 			switch msg.MsgType {
 			case location.Gyms:
 				c.Gyms = location.Deserialize(msg).(*location.GymsMessage).Gyms
+			case location.Pokemon:
+				c.Pokemons = location.Deserialize(msg).(*location.PokemonMessage).Pokemon
 			default:
 				log.Warn("got message type ", msg.MsgType)
 			}
@@ -125,38 +128,44 @@ func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken s
 	return conn, err
 }
 
-func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan websockets.GenericMsg) {
+func (c *LocationClient) updateLocationLoop(conn *websocket.Conn, outChan chan websockets.GenericMsg) {
+	c.updateLocation(conn, outChan)
+
 	updateTicker := time.NewTicker(time.Duration(c.config.UpdateInterval) * time.Second)
 
 	for {
 		select {
 		case <-updateTicker.C:
-			locationMsg := location.UpdateLocationMessage{
-				Location: c.CurrentLocation,
-			}
-			wsMsg := locationMsg.SerializeToWSMessage()
-			genericMsg := websockets.GenericMsg{
-				MsgType: websocket.TextMessage,
-				Data:    []byte(wsMsg.Serialize()),
-			}
-
-			//log.Info("updating location: ", c.CurrentLocation)
-
-			outChan <- genericMsg
-
-			err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
-			if err != nil {
-				log.Error(err)
-				return
-			}
-
-			if rand.Float64() <= c.LocationParameters.MovingProbability {
-				c.CurrentLocation = c.move(c.config.UpdateInterval)
-			}
-
-			// log.Info(c.DistanceToStartLat, c.DistanceToStartLong)
+			c.updateLocation(conn, outChan)
 		}
 	}
+}
+
+func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan websockets.GenericMsg) {
+	locationMsg := location.UpdateLocationMessage{
+		Location: c.CurrentLocation,
+	}
+	wsMsg := locationMsg.SerializeToWSMessage()
+	genericMsg := websockets.GenericMsg{
+		MsgType: websocket.TextMessage,
+		Data:    []byte(wsMsg.Serialize()),
+	}
+
+	//log.Info("updating location: ", c.CurrentLocation)
+
+	outChan <- genericMsg
+
+	err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	if rand.Float64() <= c.LocationParameters.MovingProbability {
+		c.CurrentLocation = c.move(c.config.UpdateInterval)
+	}
+
+	// log.Info(c.DistanceToStartLat, c.DistanceToStartLong)
 }
 
 func (c *LocationClient) move(timePassed int) utils.Location {
@@ -189,7 +198,8 @@ func (c *LocationClient) AddGymLocation(gym utils.Gym) error {
 	return err
 }
 
-func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (caught bool, header http.Header, err error) {
+func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (caught bool,
+	header http.Header, err error) {
 	itemsToken, err := tokens.ExtractItemsToken(itemsTokenString)
 	if err != nil {
 		return false, nil, err
@@ -200,7 +210,20 @@ func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (c
 		return false, nil, err
 	}
 
-	req, err := BuildRequest("GET", c.LocationAddr, api.CatchWildPokemonPath, pokeball)
+	if len(c.Pokemons) <= 0 {
+		return false, nil, errors.New("no pokemons in vicinity")
+	}
+
+	catchingPokemon := c.Pokemons[rand.Intn(len(c.Pokemons))]
+
+	log.Info("will try to catch ", catchingPokemon.Species)
+
+	requestBody := api.CatchWildPokemonRequest{
+		Pokeball: *pokeball,
+		Pokemon:  catchingPokemon,
+	}
+
+	req, err := BuildRequest("GET", c.LocationAddr, api.CatchWildPokemonPath, requestBody)
 	if err != nil {
 		return false, nil, err
 	}
@@ -235,7 +258,6 @@ func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error
 
 	return pokeballs[rand.Intn(len(pokeballs))], nil
 }
-
 
 func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish chan struct{}) {
 	for {
