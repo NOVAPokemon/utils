@@ -46,9 +46,16 @@ func NewAttackMessage() AttackMessage {
 }
 
 func (aMsg AttackMessage) SerializeToWSMessage() *websockets.Message {
+
+	msgJson, err := json.Marshal(aMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
 	return &websockets.Message{
 		MsgType: Attack,
-		MsgArgs: []string{},
+		MsgArgs: []string{string(msgJson)},
 	}
 }
 
@@ -96,7 +103,7 @@ type UseItemMessage struct {
 
 func NewUseItemMessage(itemId string) UseItemMessage {
 	return UseItemMessage{
-		ItemId: itemId,
+		ItemId:         itemId,
 		TrackedMessage: websockets.NewTrackedMessage(primitive.NewObjectID()),
 	}
 }
@@ -139,7 +146,7 @@ type SelectPokemonMessage struct {
 
 func NewSelectPokemonMessage(pokemonId string) SelectPokemonMessage {
 	return SelectPokemonMessage{
-		PokemonId: pokemonId,
+		PokemonId:      pokemonId,
 		TrackedMessage: websockets.NewTrackedMessage(primitive.NewObjectID()),
 	}
 }

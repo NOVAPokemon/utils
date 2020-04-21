@@ -8,26 +8,17 @@ import (
 	"time"
 )
 
-const PokemonsPerBattle = 3
-const PokemonsPerRaid = 3
-const DefaultCooldown = time.Millisecond * 500
-const TimeToStartRaid = time.Second * 20
-const DefaultRaidCapacity = 10
-
 var (
 	ErrInvalidMessageFormat   = errors.New("ErrInvalidMessageFormat")
 	ErrInvalidMessageType     = errors.New("ErrInvalidMessageType")
 	ErrPokemonSelectionPhase  = errors.New("ErrPokemonSelectionPhase")
-	ErrNoPokemonSelected      = errors.New("ErrNoPokemonSelected")
 	ErrInvalidPokemonSelected = errors.New("ErrInvalidPokemonSelected")
 	ErrPokemonNoHP            = errors.New("ErrPokemonNoHP")
 	ErrCooldown               = errors.New("ErrCooldown")
-	ErrNoItemSelected         = errors.New("ErrNoItemSelected")
 	ErrInvalidItemSelected    = errors.New("ErrInvalidItemSelected")
 	ErrItemNotAppliable       = errors.New("ErrItemNotAppliable")
 
-	StatusDefended         = "You defended an attack"
-	StatusOpponentDefended = "Opponent defended the attack"
+	StatusDefended = "You defended an attack"
 )
 
 type BattleChannels struct {
@@ -49,10 +40,4 @@ type (
 		CdTimer         *time.Timer
 		UsedItems       map[string]items.Item
 	}
-)
-
-// status messages
-const (
-	DefendSuccess      = "DEFEND_SUCCESS"
-	AdversaryDefending = "ADVERSARY_DEFENDING"
 )
