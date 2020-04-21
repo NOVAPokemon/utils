@@ -36,5 +36,13 @@ func GetPokemonExperienceGainFromRaid(winner bool) float64 {
 }
 
 func CalculateLevel(xp float64) int {
-	return int(math.Floor(25+math.Sqrt(625+100*xp)) / 50)
+	return int(math.Sqrt(xp))
+}
+
+// int(math.Floor(25+math.Sqrt(625+100*xp)) / 50)
+func GetMinXpForLevel(level float64) float64 {
+	if level == 0 {
+		return 0
+	}
+	return level * level
 }

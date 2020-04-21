@@ -5,9 +5,10 @@ import (
 	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
-func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, issuerChan chan *string) bool {
+func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, issuerChan chan *string, cooldownDuration time.Duration) bool {
 	if issuer.Cooldown {
 		websockets.SendMessage(
 			*ErrorMessage{
@@ -46,7 +47,7 @@ func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, 
 			}.SerializeToWSMessage(), issuerChan)
 	}
 
-	issuer.CdTimer.Reset(DefaultCooldown)
+	issuer.CdTimer.Reset(cooldownDuration)
 	issuer.Cooldown = true
 
 	issuer.UsedItems[item.Id.Hex()] = item
@@ -87,7 +88,7 @@ func HandleSelectPokemon(selectedPokemonMsg *SelectPokemonMessage, issuer *Train
 	return true
 }
 
-func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan *string) {
+func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan *string, cooldownDuration time.Duration) {
 
 	// if the pokemon is dead, player must select a new pokemon
 	if issuer.SelectedPokemon.HP == 0 {
@@ -108,7 +109,7 @@ func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan *string) {
 			}.SerializeToWSMessage(), issuerChan)
 		return
 	}
-	issuer.CdTimer.Reset(DefaultCooldown)
+	issuer.CdTimer.Reset(cooldownDuration)
 	issuer.Cooldown = true
 
 	// process Defending move: update both players and setup a Cooldown
@@ -120,7 +121,7 @@ func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan *string) {
 	return
 }
 
-func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan chan *string, defending bool, otherPokemon *pokemons.Pokemon) bool {
+func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan chan *string, defending bool, otherPokemon *pokemons.Pokemon, cooldownDuration time.Duration) bool {
 	if issuer.SelectedPokemon.HP == 0 {
 		websockets.SendMessage(
 			*ErrorMessage{
@@ -140,7 +141,7 @@ func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan chan *string, defe
 		return false
 	}
 
-	issuer.CdTimer.Reset(DefaultCooldown)
+	issuer.CdTimer.Reset(cooldownDuration)
 	issuer.Cooldown = true
 	hpChanged := ApplyAttackMove(issuer.SelectedPokemon, otherPokemon, defending)
 

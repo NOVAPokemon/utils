@@ -3,6 +3,8 @@ package utils
 type ClientConfig struct {
 	TradeConfig    TradesClientConfig   `json:"trades"`
 	LocationConfig LocationClientConfig `json:"location"`
+	BattleConfig   BattleClientConfig   `json:"battles"`
+	RaidConfig     RaidConfig           `json:"raids"`
 }
 
 type TradesClientConfig struct {
@@ -14,6 +16,14 @@ type LocationClientConfig struct {
 	UpdateInterval int                `json:"update_interval"` // in seconds
 	Timeout        int                `json:"timeout"`
 	Parameters     LocationParameters `json:"params"`
+}
+
+type BattleClientConfig struct {
+	PokemonsPerBattle int `json:"pokemons_per_battle"`
+}
+
+type RaidConfig struct {
+	PokemonsPerRaid int `json:"pokemons_per_raid"`
 }
 
 // Location parameters describe how the user will move. The moving probability indicates

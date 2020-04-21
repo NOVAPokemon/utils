@@ -18,14 +18,14 @@ import (
 
 type TradeLobbyClient struct {
 	TradesAddr string
-	config utils.TradesClientConfig
-	conn *websocket.Conn
+	config     utils.TradesClientConfig
+	conn       *websocket.Conn
 }
 
 func NewTradesClient(addr string, config utils.TradesClientConfig) *TradeLobbyClient {
 	return &TradeLobbyClient{
 		TradesAddr: addr,
-		config: config,
+		config:     config,
 	}
 }
 
@@ -169,8 +169,8 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 		numItems := len(availableItems)
 
 		var maxItemsToTrade int
-		if client.config.MaxItemsToTrade < 0 || client.config.MaxItemsToTrade > numItems{
-			 maxItemsToTrade = numItems
+		if client.config.MaxItemsToTrade < 0 || client.config.MaxItemsToTrade > numItems {
+			maxItemsToTrade = numItems
 		} else if client.config.MaxItemsToTrade <= numItems {
 			maxItemsToTrade = client.config.MaxItemsToTrade
 		}
