@@ -83,8 +83,9 @@ func (client *NotificationClient) StopListening(authToken string) error {
 	return err
 }
 
-func (client *NotificationClient) AddNotification(notification utils.Notification, authToken string) error {
-	req, err := BuildRequest("POST", client.NotificationsAddr, api.NotificationPath, notification)
+func (client *NotificationClient) AddNotification(notificationMsg *notificationMessages.NotificationMessage,
+	authToken string) error {
+	req, err := BuildRequest("POST", client.NotificationsAddr, api.NotificationPath, notificationMsg)
 	if err != nil {
 		return err
 	}
@@ -134,6 +135,8 @@ func (client *NotificationClient) handleRecv(conn *websocket.Conn) {
 
 func (client *NotificationClient) parseToNotification(msg *ws.Message) {
 	notificationMsg := notificationMessages.DeserializeNotificationMessage(msg).(*notificationMessages.NotificationMessage)
+	notificationMsg.Receive(ws.MakeTimestamp())
+	notificationMsg.LogReceive(notificationMessages.Notification)
 	client.NotificationsChannel <- &notificationMsg.Notification
 
 	log.Infof("Received %s from the websocket", notificationMsg.Notification.Content)

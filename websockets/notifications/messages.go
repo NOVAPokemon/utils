@@ -5,6 +5,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
@@ -14,7 +15,14 @@ const (
 // Notification
 type NotificationMessage struct {
 	Notification utils.Notification
-	ws.MessageWithId
+	ws.TrackedMessage
+}
+
+func NewNotificationMessage(notification utils.Notification) NotificationMessage {
+	return NotificationMessage{
+		Notification:   notification,
+		TrackedMessage: ws.NewTrackedMessage(primitive.NewObjectID()),
+	}
 }
 
 func (nMsg NotificationMessage) SerializeToWSMessage() *ws.Message {

@@ -62,7 +62,6 @@ type Notification struct {
 	Username         string             `json:"username" bson:"username,omitempty"`
 	Type             string
 	Content          []byte
-	TimestampEmitted int64
 }
 
 type Location struct {
