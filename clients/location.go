@@ -1,10 +1,12 @@
 package clients
 
 import (
+	"errors"
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/gps"
+	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/location"
@@ -16,6 +18,10 @@ import (
 	"net/url"
 	"time"
 )
+
+type CaughtPokemonMessage struct {
+	Caught bool
+}
 
 const (
 	bufferSize = 10
@@ -182,6 +188,54 @@ func (c *LocationClient) AddGymLocation(gym utils.Gym) error {
 	_, err = DoRequest(c.HttpClient, req, nil)
 	return err
 }
+
+func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (caught bool, header http.Header, err error) {
+	itemsToken, err := tokens.ExtractItemsToken(itemsTokenString)
+	if err != nil {
+		return false, nil, err
+	}
+
+	pokeball, err := getRandomPokeball(itemsToken.Items)
+	if err != nil {
+		return false, nil, err
+	}
+
+	req, err := BuildRequest("GET", c.LocationAddr, api.CatchWildPokemonPath, pokeball)
+	if err != nil {
+		return false, nil, err
+	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
+
+	var msg CaughtPokemonMessage
+	resp, err := DoRequest(c.HttpClient, req, &msg)
+	if err != nil {
+		return false, nil, err
+	}
+
+	if !msg.Caught {
+		return false, nil, nil
+	}
+
+	return true, resp.Header, nil
+}
+
+func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error) {
+	var pokeballs []*items.Item
+	for _, item := range itemsFromToken {
+		if item.IsPokeBall() {
+			toAdd := item
+			pokeballs = append(pokeballs, &toAdd)
+		}
+	}
+
+	if pokeballs == nil {
+		return nil, errors.New("no pokeballs")
+	}
+
+	return pokeballs[rand.Intn(len(pokeballs))], nil
+}
+
 
 func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish chan struct{}) {
 	for {
