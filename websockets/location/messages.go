@@ -3,6 +3,7 @@ package location
 import (
 	"encoding/json"
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/pokemons"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"
 )
@@ -10,6 +11,7 @@ import (
 const (
 	UpdateLocation = "UPDATE_LOCATION"
 	Gyms           = "GYMS"
+	Pokemon        = "POKEMON"
 )
 
 // Location
@@ -49,6 +51,24 @@ func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
+type PokemonMessage struct {
+	Pokemon []pokemons.Pokemon
+	ws.MessageWithId
+}
+
+func (pokemonMsg PokemonMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(pokemonMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
+	return &ws.Message{
+		MsgType: Pokemon,
+		MsgArgs: []string{string(msgJson)},
+	}
+}
+
 func Deserialize(msg *ws.Message) ws.Serializable {
 	switch msg.MsgType {
 	case UpdateLocation:
@@ -69,6 +89,16 @@ func Deserialize(msg *ws.Message) ws.Serializable {
 		}
 
 		return &gymsMsg
+
+	case Pokemon:
+		var pokemonMsg PokemonMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &pokemonMsg)
+		if err != nil {
+			log.Error(err)
+			return nil
+		}
+
+		return &pokemonMsg
 	default:
 		log.Info("invalid msg type")
 		return nil
