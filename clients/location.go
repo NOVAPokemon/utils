@@ -17,20 +17,13 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
 type CaughtPokemonMessage struct {
 	Caught bool
 }
-
-const (
-	bufferSize = 10
-)
-
-var (
-	timeoutInDuration time.Duration
-)
 
 type LocationClient struct {
 	LocationAddr string
@@ -46,10 +39,27 @@ type LocationClient struct {
 	DistanceToStartLong float64
 }
 
-func NewLocationClient(addr string, config utils.LocationClientConfig) *LocationClient {
+const (
+	bufferSize = 10
+)
+
+var (
+	timeoutInDuration time.Duration
+
+	defaultLocationURL = fmt.Sprintf("%s:%d", utils.Host, utils.LocationPort)
+)
+
+func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
+	locationURL, exists := os.LookupEnv(utils.LocationEnvVar)
+
+	if !exists {
+		log.Warn("missing ", utils.LocationEnvVar)
+		locationURL = defaultLocationURL
+	}
+
 	timeoutInDuration = time.Duration(config.Timeout) * time.Second
 	return &LocationClient{
-		LocationAddr: addr,
+		LocationAddr: locationURL,
 		config:       config,
 
 		Gyms:                []utils.Gym{},

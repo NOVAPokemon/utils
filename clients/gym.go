@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -18,9 +19,18 @@ type GymClient struct {
 	HttpClient *http.Client
 }
 
-func NewGymClient(addr string, httpClient *http.Client) *GymClient {
+var defaultGymURL = fmt.Sprintf("%s:%d", utils.Host, utils.GymPort)
+
+func NewGymClient(httpClient *http.Client) *GymClient {
+	gymURL, exists := os.LookupEnv(utils.GymEnvVar)
+
+	if !exists {
+		log.Warn("missing ", utils.GymEnvVar)
+		gymURL = defaultGymURL
+	}
+
 	return &GymClient{
-		GymAddr:    addr,
+		GymAddr:    gymURL,
 		HttpClient: httpClient,
 	}
 }

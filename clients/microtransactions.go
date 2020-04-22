@@ -5,8 +5,10 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
+	"os"
 )
 
 type MicrotransactionsClient struct {
@@ -14,9 +16,18 @@ type MicrotransactionsClient struct {
 	httpClient            *http.Client
 }
 
-func NewMicrotransactionsClient(addr string) *MicrotransactionsClient {
+var defaultMicrotransactionsURL = fmt.Sprintf("%s:%d", utils.Host, utils.MicrotransactionsPort)
+
+func NewMicrotransactionsClient() *MicrotransactionsClient {
+	microtransactionsURL, exists := os.LookupEnv(utils.MicrotransactionsEnvVar)
+
+	if !exists {
+		log.Warn("missing ", utils.MicrotransactionsEnvVar)
+		microtransactionsURL = defaultMicrotransactionsURL
+	}
+
 	return &MicrotransactionsClient{
-		MicrotransactionsAddr: addr,
+		MicrotransactionsAddr: microtransactionsURL,
 		httpClient:            &http.Client{},
 	}
 }

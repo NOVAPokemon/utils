@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -20,8 +21,23 @@ type BattleLobbyClient struct {
 	httpClient  http.Client
 }
 
-func (client *BattleLobbyClient) GetAvailableLobbies() []utils.Lobby {
+var defaultBattleURL = fmt.Sprintf("%s:%d", utils.Host, utils.BattlesPort)
 
+func NewBattlesClient() *BattleLobbyClient {
+	battlesURL, exists := os.LookupEnv(utils.BattlesEnvVar)
+
+	if !exists {
+		log.Warn("missing ", utils.BattlesEnvVar)
+		battlesURL = defaultBattleURL
+	}
+
+	return &BattleLobbyClient{
+		BattlesAddr: battlesURL,
+		httpClient:  http.Client{},
+	}
+}
+
+func (client *BattleLobbyClient) GetAvailableLobbies() []utils.Lobby {
 	u := url.URL{Scheme: "http", Host: client.BattlesAddr, Path: "/battles"}
 
 	resp, err := http.Get(u.String())

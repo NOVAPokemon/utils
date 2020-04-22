@@ -2,10 +2,13 @@ package clients
 
 import (
 	"fmt"
+	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/tokens"
+	log "github.com/sirupsen/logrus"
 	"net/http"
+	"os"
 )
 
 type StoreClient struct {
@@ -13,9 +16,18 @@ type StoreClient struct {
 	httpClient *http.Client
 }
 
-func NewStoreClient(addr string) *StoreClient {
+var defaultStoreURL = fmt.Sprintf("%s:%d", utils.Host, utils.StorePort)
+
+func NewStoreClient() *StoreClient {
+	storeURL, exists := os.LookupEnv(utils.StoreEnvVar)
+
+	if !exists {
+		log.Warn("missing ", utils.StoreEnvVar)
+		storeURL = defaultStoreURL
+	}
+
 	return &StoreClient{
-		StoreAddr:  addr,
+		StoreAddr:  storeURL,
 		httpClient: &http.Client{},
 	}
 }

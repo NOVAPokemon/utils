@@ -1,10 +1,13 @@
 package clients
 
 import (
+	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
+	log "github.com/sirupsen/logrus"
 	"net/http"
+	"os"
 )
 
 type AuthClient struct {
@@ -13,9 +16,18 @@ type AuthClient struct {
 	httpClient *http.Client
 }
 
-func NewAuthClient(addr string) *AuthClient {
+var defaultAuthURL = fmt.Sprintf("%s:%d", utils.Host, utils.AuthenticationPort)
+
+func NewAuthClient() *AuthClient {
+	authURL, exists := os.LookupEnv(utils.AuthenticationEnvVar)
+
+	if !exists {
+		log.Warn("missing ", utils.AuthenticationEnvVar)
+		authURL = defaultAuthURL
+	}
+
 	return &AuthClient{
-		AuthAddr:   addr,
+		AuthAddr:   authURL,
 		httpClient: &http.Client{},
 	}
 }

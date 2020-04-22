@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -22,9 +23,18 @@ type TradeLobbyClient struct {
 	conn       *websocket.Conn
 }
 
-func NewTradesClient(addr string, config utils.TradesClientConfig) *TradeLobbyClient {
+var defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
+
+func NewTradesClient(config utils.TradesClientConfig) *TradeLobbyClient {
+	tradesURL, exists := os.LookupEnv(utils.TradesEnvVar)
+
+	if !exists {
+		log.Warn("missing ", utils.TradesEnvVar)
+		tradesURL = defaultTradesURL
+	}
+
 	return &TradeLobbyClient{
-		TradesAddr: addr,
+		TradesAddr: tradesURL,
 		config:     config,
 	}
 }

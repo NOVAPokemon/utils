@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -27,11 +28,20 @@ type TrainersClient struct {
 	PokemonClaims      map[string]tokens.PokemonToken
 }
 
+var defaultTrainersURL = fmt.Sprintf("%s:%d", utils.Host, utils.TrainersPort)
+
 // TRAINER
 
-func NewTrainersClient(addr string, client *http.Client) *TrainersClient {
+func NewTrainersClient(client *http.Client) *TrainersClient {
+	trainersURL, exists := os.LookupEnv(utils.TrainersEnvVar)
+
+	if !exists {
+		log.Warn("missing ", utils.TrainersEnvVar)
+		trainersURL = defaultTrainersURL
+	}
+
 	return &TrainersClient{
-		TrainersAddr: addr,
+		TrainersAddr: trainersURL,
 		HttpClient:   client,
 	}
 }

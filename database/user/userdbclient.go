@@ -147,7 +147,7 @@ func removeAll() error {
 }
 
 func init() {
-	url, exists := os.LookupEnv("MONGODB_URL")
+	url, exists := os.LookupEnv(utils.MongoEnvVar)
 
 	if !exists {
 		url = databaseUtils.DefaultMongoDBUrl

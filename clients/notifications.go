@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
@@ -10,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -20,9 +22,19 @@ type NotificationClient struct {
 	readChannel          chan *ws.Message
 }
 
-func NewNotificationClient(addr string, notificationsChannel chan *utils.Notification) *NotificationClient {
+var defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
+
+
+func NewNotificationClient(notificationsChannel chan *utils.Notification) *NotificationClient {
+	notificationsURL, exists := os.LookupEnv(utils.NotificationsEnvVar)
+
+	if !exists {
+		log.Warn("missing ", utils.NotificationsEnvVar)
+		notificationsURL = defaultNotificationsURL
+	}
+
 	return &NotificationClient{
-		NotificationsAddr:    addr,
+		NotificationsAddr:    notificationsURL,
 		httpClient:           &http.Client{},
 		NotificationsChannel: notificationsChannel,
 		readChannel:          make(chan *ws.Message),
