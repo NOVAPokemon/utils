@@ -5,12 +5,12 @@ const (
 
 	AuthenticationPort = 8001 + iota
 	BattlesPort
-	GeneratorPort
+	GymPort
+	LocationPort
+	MicrotransactionsPort
 	NotificationsPort
+	StorePort
 	TradesPort
 	TrainersPort
-	StorePort
-	MicrotransactionsPort
-	LocationPort
-	GymPort
+	GeneratorPort
 )
