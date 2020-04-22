@@ -12,7 +12,6 @@ import (
 	"os"
 )
 
-const defaultMongoDBUrl = "mongodb://localhost:27017"
 const databaseName = "NOVAPokemonDB"
 const collectionName = "Transactions"
 
@@ -23,7 +22,7 @@ func init() {
 	url, exists := os.LookupEnv("MONGODB_URL")
 
 	if !exists {
-		url = defaultMongoDBUrl
+		url = database.DefaultMongoDBUrl
 	}
 
 	client, err := mongo.NewClient(options.Client().ApplyURI(url))

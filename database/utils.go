@@ -6,6 +6,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+const DefaultMongoDBUrl = "mongodb://localhost:27017"
+
 type DBClient struct {
 	Client     *mongo.Client
 	Collection *mongo.Collection

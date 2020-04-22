@@ -11,7 +11,6 @@ import (
 	"os"
 )
 
-const defaultMongoDBUrl = "mongodb://localhost:27017"
 const databaseName = "NOVAPokemonDB"
 const collectionName = "Users"
 
@@ -148,11 +147,10 @@ func removeAll() error {
 }
 
 func init() {
-
 	url, exists := os.LookupEnv("MONGODB_URL")
 
 	if !exists {
-		url = defaultMongoDBUrl
+		url = databaseUtils.DefaultMongoDBUrl
 	}
 
 	client, err := mongo.NewClient(options.Client().ApplyURI(url))
@@ -178,6 +176,5 @@ func init() {
 	}
 
 	_, _ = collection.Indexes().CreateOne(ctx, index)
-
 	dbClient = databaseUtils.DBClient{Client: client, Ctx: &ctx, Collection: collection}
 }
