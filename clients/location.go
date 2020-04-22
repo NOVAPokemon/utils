@@ -201,6 +201,7 @@ func (c *LocationClient) move(timePassed int) utils.Location {
 func (c *LocationClient) AddGymLocation(gym utils.Gym) error {
 	req, err := BuildRequest("POST", c.LocationAddr, api.GymLocationRoute, gym)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
