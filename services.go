@@ -1,6 +1,18 @@
 package utils
 
 const (
+	AuthenticationPort = 8001 + iota
+	BattlesPort
+	GymPort
+	LocationPort
+	MicrotransactionsPort
+	NotificationsPort
+	StorePort
+	TradesPort
+	TrainersPort
+)
+
+const (
 	AuthenticationEnvVar    = "AUTHENTICATION_URL"
 	BattlesEnvVar           = "BATTLES_URL"
 	GymEnvVar               = "GYM_URL"
@@ -14,14 +26,4 @@ const (
 	MongoEnvVar = "MONGODB_URL"
 
 	Host = "localhost"
-
-	AuthenticationPort = 8001 + iota
-	BattlesPort
-	GymPort
-	LocationPort
-	MicrotransactionsPort
-	NotificationsPort
-	StorePort
-	TradesPort
-	TrainersPort
 )
