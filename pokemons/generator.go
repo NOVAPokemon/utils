@@ -3,7 +3,6 @@ package pokemons
 import (
 	"github.com/NOVAPokemon/utils/experience"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"log"
 	"math/rand"
 )
 
@@ -11,12 +10,10 @@ func GetOneWildPokemon(maxLevel float64, stdHPDeviation float64, maxHP float64, 
 
 	var level, hp, damage int
 	level = rand.Intn(int(maxLevel-1)) + 1
-	log.Println("Level: ", level)
 	randNormal := rand.NormFloat64()*
 		(stdHPDeviation*(float64(level)/maxLevel)) +
 		(maxHP * (float64(level) / maxLevel))
 	hp = int(randNormal)
-	log.Println("HP: ", hp)
 
 	//safeguards
 	if hp < 1 {
@@ -28,7 +25,6 @@ func GetOneWildPokemon(maxLevel float64, stdHPDeviation float64, maxHP float64, 
 		(maxDamage * (float64(level) / maxLevel))
 
 	damage = int(randNormal)
-	log.Println("Damage: ", damage)
 
 	//safeguards
 	if damage < 1 {

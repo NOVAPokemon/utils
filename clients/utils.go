@@ -116,12 +116,6 @@ func BuildRequest(method, host, path string, body interface{}) (request *http.Re
 		return nil, err
 	}
 
-	if request == nil || request.Header == nil {
-		log.Error(err)
-		log.Error("req ", request)
-		log.Error("header ", request.Header)
-	}
-
 	request.Header.Set("Content-Type", "application/json")
 
 	return request, nil

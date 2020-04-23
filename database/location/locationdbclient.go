@@ -72,8 +72,6 @@ func AddWildPokemon(pokemon pokemons.Pokemon) (error, primitive.ObjectID) {
 		return nil, [12]byte{}
 	}
 
-	log.Infof("Inserted new wild Pokemon %s", res.InsertedID)
-
 	return err, res.InsertedID.(primitive.ObjectID)
 }
 
