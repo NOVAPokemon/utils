@@ -26,4 +26,5 @@ const (
 	MongoEnvVar = "MONGODB_URL"
 
 	Host = "localhost"
+	ServeHost = "0.0.0.0"
 )
