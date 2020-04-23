@@ -50,6 +50,7 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 		HandshakeTimeout: 45 * time.Second,
 	}
 
+	log.Info("Dialing: ", u.String())
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
@@ -57,7 +58,7 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 	defer ws.CloseConnection(conn)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("err dialing: ", err)
 		return
 	}
 
@@ -130,14 +131,14 @@ func (client *NotificationClient) handleRecv(conn *websocket.Conn) {
 	for {
 		_, msgBytes, err := conn.ReadMessage()
 		if err != nil {
-			log.Error(err)
+			log.Error("err reading msg: ", err)
 			return
 		}
 
 		msgString := string(msgBytes)
 		msg, err := ws.ParseMessage(&msgString)
 		if err != nil {
-			log.Error(err)
+			log.Error("err parsing", err)
 			return
 		}
 

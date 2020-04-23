@@ -121,7 +121,7 @@ func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken s
 	log.Info("Dialing: ", u.String())
 	conn, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("err dialing: ", err)
 		return nil, err
 	}
 
@@ -274,7 +274,7 @@ func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish 
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			log.Error(err)
+			log.Error("err reading: ", err)
 			close(finish)
 			return
 		} else {
