@@ -7,7 +7,6 @@ import (
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/gps"
 	"github.com/NOVAPokemon/utils/items"
-	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/location"
@@ -31,7 +30,7 @@ type LocationClient struct {
 	HttpClient   *http.Client
 
 	Gyms     []utils.Gym
-	Pokemons []pokemons.Pokemon
+	Pokemons []utils.WildPokemon
 
 	CurrentLocation     utils.Location
 	LocationParameters  utils.LocationParameters
@@ -87,7 +86,10 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 
 	for {
 		select {
-		case msg := <-inChan:
+		case msg, ok := <-inChan:
+			if !ok{
+				continue
+			}
 			switch msg.MsgType {
 			case location.Gyms:
 				c.Gyms = location.Deserialize(msg).(*location.GymsMessage).Gyms
@@ -161,7 +163,7 @@ func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan webso
 		Data:    []byte(wsMsg.Serialize()),
 	}
 
-	//log.Info("updating location: ", c.CurrentLocation)
+	log.Info("updating location: ", c.CurrentLocation)
 
 	outChan <- genericMsg
 
@@ -227,11 +229,11 @@ func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (c
 
 	catchingPokemon := c.Pokemons[rand.Intn(len(c.Pokemons))]
 
-	log.Info("will try to catch ", catchingPokemon.Species)
+	log.Info("will try to catch ", catchingPokemon.Pokemon.Species)
 
 	requestBody := api.CatchWildPokemonRequest{
 		Pokeball: *pokeball,
-		Pokemon:  catchingPokemon,
+		Pokemon:  catchingPokemon.Pokemon,
 	}
 
 	req, err := BuildRequest("GET", c.LocationAddr, api.CatchWildPokemonPath, requestBody)
@@ -249,6 +251,15 @@ func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (c
 
 	if !msg.Caught {
 		return false, nil, nil
+	}
+
+	for i, pokemon := range c.Pokemons {
+		if pokemon.Pokemon.Id.Hex() == catchingPokemon.Pokemon.Id.Hex() {
+			log.Info("Removing caught pokemon...")
+			c.Pokemons = append(c.Pokemons[:i], c.Pokemons[i+1:]...)
+			log.Info(c.Pokemons)
+			break
+		}
 	}
 
 	return true, resp.Header, nil

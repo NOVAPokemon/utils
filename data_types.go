@@ -58,10 +58,10 @@ type UserJSON struct {
 }
 
 type Notification struct {
-	Id               primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Username         string             `json:"username" bson:"username,omitempty"`
-	Type             string
-	Content          []byte
+	Id       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Username string             `json:"username" bson:"username,omitempty"`
+	Type     string
+	Content  []byte
 }
 
 type Location struct {
@@ -79,4 +79,9 @@ type Gym struct {
 	Location    Location
 	RaidForming bool
 	RaidBoss    *pokemons.Pokemon
+}
+
+type WildPokemon struct {
+	Pokemon  pokemons.Pokemon
+	Location Location
 }

@@ -3,7 +3,6 @@ package location
 import (
 	"encoding/json"
 	"github.com/NOVAPokemon/utils"
-	"github.com/NOVAPokemon/utils/pokemons"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"
 )
@@ -52,7 +51,7 @@ func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
 }
 
 type PokemonMessage struct {
-	Pokemon []pokemons.Pokemon
+	Pokemon []utils.WildPokemon
 	ws.MessageWithId
 }
 
