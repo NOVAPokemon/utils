@@ -387,8 +387,6 @@ func (c *TrainersClient) AppendPokemonToken(header http.Header) error {
 			continue
 		}
 
-		log.Info(tkns[i])
-
 		pokemonClaims, err := tokens.ExtractPokemonToken(tkns[i])
 		if err != nil {
 			return err
