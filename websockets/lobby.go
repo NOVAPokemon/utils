@@ -2,6 +2,7 @@ package websockets
 
 import (
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -41,14 +42,40 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) {
 	trainerChanIn := make(chan *string)
 	trainerChanOut := make(chan *string)
 
-	go handleRecv(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
-	go handleSend(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
+	go HandleReceiveLobby(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
+	go HandleSendLobby(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
 
 	lobby.TrainerUsernames[lobby.TrainersJoined] = username
 	lobby.TrainerInChannels[lobby.TrainersJoined] = &trainerChanIn
 	lobby.TrainerOutChannels[lobby.TrainersJoined] = &trainerChanOut
 	lobby.trainerConnections[lobby.TrainersJoined] = trainerConn
 	lobby.TrainersJoined++
+}
+
+func HandleReceiveLobby(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{}, finished *bool) {
+	err := HandleRecv(conn, outChannel, endConnection)
+
+	if err != nil {
+		if *finished {
+			log.Info("lobby read routine finished properly")
+		} else {
+			log.Warn(err)
+			log.Warn("closed lobby because could not read")
+		}
+	}
+}
+
+func HandleSendLobby(conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}, finished *bool) {
+	err := HandleSend(conn, inChannel, endConnection)
+
+	if err != nil {
+		if *finished {
+			log.Info("lobby write routine finished properly")
+		} else {
+			log.Warn(err)
+			log.Warn("closed lobby because could not write")
+		}
+	}
 }
 
 func CloseLobby(lobby *Lobby) {

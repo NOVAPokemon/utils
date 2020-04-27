@@ -19,11 +19,10 @@ type NotificationClient struct {
 	NotificationsAddr    string
 	httpClient           *http.Client
 	NotificationsChannel chan *utils.Notification
-	readChannel          chan *ws.Message
+	readChannel          chan *string
 }
 
 var defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
-
 
 func NewNotificationClient(notificationsChannel chan *utils.Notification) *NotificationClient {
 	notificationsURL, exists := os.LookupEnv(utils.NotificationsEnvVar)
@@ -37,7 +36,7 @@ func NewNotificationClient(notificationsChannel chan *utils.Notification) *Notif
 		NotificationsAddr:    notificationsURL,
 		httpClient:           &http.Client{},
 		NotificationsChannel: notificationsChannel,
-		readChannel:          make(chan *ws.Message),
+		readChannel:          make(chan *string),
 	}
 }
 
@@ -62,12 +61,17 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 		return
 	}
 
-	go client.handleRecv(conn)
+	go func() {
+		if err := ws.HandleRecv(conn, client.readChannel, nil); err != nil {
+			log.Error(err)
+		}
+	}()
 
 Loop:
 	for {
 		select {
-		case msg := <-client.readChannel:
+		case msgString := <-client.readChannel:
+			msg := client.ParseMessage(msgString)
 			client.parseToNotification(msg)
 		case <-receiveFinish:
 			break Loop
@@ -127,23 +131,13 @@ func (client *NotificationClient) GetOthersListening(authToken string) ([]string
 	return usernames, nil
 }
 
-func (client *NotificationClient) handleRecv(conn *websocket.Conn) {
-	for {
-		_, msgBytes, err := conn.ReadMessage()
-		if err != nil {
-			log.Error("err reading msg: ", err)
-			return
-		}
-
-		msgString := string(msgBytes)
-		msg, err := ws.ParseMessage(&msgString)
-		if err != nil {
-			log.Error("err parsing", err)
-			return
-		}
-
-		client.readChannel <- msg
+func (client *NotificationClient) ParseMessage(msgString *string) *ws.Message {
+	msg, err := ws.ParseMessage(msgString)
+	if err != nil {
+		log.Error("err parsing", err)
+		return nil
 	}
+	return msg
 }
 
 func (client *NotificationClient) parseToNotification(msg *ws.Message) {

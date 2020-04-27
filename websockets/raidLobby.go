@@ -47,8 +47,8 @@ func (lobby *RaidLobby) AddTrainer(username string, trainerConn *websocket.Conn)
 	lobby.trainerConnections = append(lobby.trainerConnections, trainerConn)
 	lobby.EndConnectionChannels = append(lobby.EndConnectionChannels, endChan)
 
-	go handleRecv(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
-	go handleSend(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
+	go HandleReceiveLobby(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
+	go HandleSendLobby(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
 
 	lobby.TrainersJoined++
 	lobby.ActiveConnections++

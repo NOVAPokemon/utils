@@ -25,6 +25,7 @@ func Send(conn *websocket.Conn, msg *string) {
 func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished chan struct{}) {
 	defer log.Info("Closed in channel")
 	defer close(msgChan)
+
 	for {
 		select {
 		case <-finished:

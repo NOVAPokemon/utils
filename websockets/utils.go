@@ -34,7 +34,7 @@ func SendMessage(msg Message, channel chan *string) {
 	channel <- &toSend
 }
 
-func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}, finished *bool) {
+func HandleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}) error {
 	defer close(inChannel)
 	defer log.Warn("Closing send routine")
 
@@ -42,49 +42,36 @@ func handleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 		select {
 		case msg := <-inChannel:
 			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
-			if err != nil {
-
 				if err != nil {
-					if *finished {
-						log.Info("lobby write routine finished properly")
-					} else {
-						log.Warn(err)
-						log.Warn("closed lobby because could not read")
-					}
 					closeConnectionThroughChannel(conn, endConnection)
-					return
+					return err
 				}
 				log.Infof("Wrote %s into the channel", *msg)
-			}
 		case <-endConnection:
-			return
+			return nil
 		}
 
 	}
 }
 
-func handleRecv(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{}, finished *bool) {
+func HandleRecv(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{}) error {
 	defer close(outChannel)
+	defer log.Warn("Closing receiving routine")
+
 	for {
 		select {
 		case <-endConnection:
-			return
+			return nil
 		default:
 			_, message, err := conn.ReadMessage()
 
 			if err != nil {
-				if *finished {
-					log.Info("lobby read routine finished properly")
-				} else {
-					log.Warn(err)
-					log.Warn("closed lobby because could not read")
-				}
 				log.Warn("Closing finish channel and connection")
 				closeConnectionThroughChannel(conn, endConnection)
-				return
+				return err
 			} else {
 				msg := strings.TrimSpace(string(message))
-				log.Infof("Message received: %s", msg)
+				log.Debugf("Message received: %s", msg)
 				outChannel <- &msg
 			}
 		}
@@ -106,6 +93,10 @@ func CloseConnection(conn *websocket.Conn) {
 }
 
 func endChannel(channel chan struct{}) {
+	if channel == nil {
+		return
+	}
+
 	select {
 	case <-channel:
 		return

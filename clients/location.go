@@ -71,7 +71,7 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 }
 
 func (c *LocationClient) StartLocationUpdates(authToken string) {
-	inChan := make(chan *websockets.Message)
+	inChan := make(chan *string)
 	outChan := make(chan websockets.GenericMsg, bufferSize)
 	finish := make(chan struct{})
 
@@ -81,14 +81,23 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 		return
 	}
 
-	go readMessages(conn, inChan, finish)
+	go func() {
+		if err := websockets.HandleRecv(conn, inChan, finish); err != nil {
+			log.Error(err)
+		}
+	}()
 	go c.updateLocationLoop(conn, outChan)
 
 	for {
 		select {
-		case msg, ok := <-inChan:
+		case msgString, ok := <-inChan:
 			if !ok{
 				continue
+			}
+			msg, err := websockets.ParseMessage(msgString)
+			if err != nil {
+				log.Error(err)
+				return
 			}
 			switch msg.MsgType {
 			case location.Gyms:
@@ -279,23 +288,4 @@ func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error
 	}
 
 	return pokeballs[rand.Intn(len(pokeballs))], nil
-}
-
-func readMessages(conn *websocket.Conn, inChan chan *websockets.Message, finish chan struct{}) {
-	for {
-		_, msg, err := conn.ReadMessage()
-		if err != nil {
-			log.Error("err reading: ", err)
-			close(finish)
-			return
-		} else {
-			stringMsg := string(msg)
-			msg, err := websockets.ParseMessage(&stringMsg)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			inChan <- msg
-		}
-	}
 }
