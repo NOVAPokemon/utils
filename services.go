@@ -1,5 +1,16 @@
 package utils
 
+import (
+	"flag"
+	"fmt"
+	"github.com/NOVAPokemon/utils/websockets"
+	log "github.com/sirupsen/logrus"
+	"math/rand"
+	"net/http"
+	"os"
+	"time"
+)
+
 const (
 	AuthenticationPort = 8001 + iota
 	BattlesPort
@@ -25,6 +36,50 @@ const (
 
 	MongoEnvVar = "MONGODB_URL"
 
-	Host = "localhost"
+	Host      = "localhost"
 	ServeHost = "0.0.0.0"
 )
+
+const (
+	logDir = "/logs"
+)
+
+func StartServer(serviceName, host string, port int, routes Routes) {
+	rand.Seed(time.Now().UnixNano())
+
+	addr := fmt.Sprintf("%s:%d", host, port)
+	r := NewRouter(routes)
+
+	log.Infof("Starting %s server in port %d...\n", serviceName, port)
+	log.Fatal(http.ListenAndServe(addr, r))
+}
+
+func CheckLogFlag(serviceName string) {
+	logToStdout := GetLogFlag(serviceName)
+
+	if !logToStdout {
+		SetLogFile(serviceName)
+	}
+}
+
+func GetLogFlag(serviceName string) bool {
+	flag.Usage = func() {
+		fmt.Println("Usage:")
+		fmt.Printf("%s -l \n", serviceName)
+	}
+	var logToStdout bool
+	flag.BoolVar(&logToStdout, "l", false, "log to stdout")
+	flag.Parse()
+
+	return logToStdout
+}
+
+func SetLogFile(serviceName string) {
+	timestamp := websockets.MakeTimestamp()
+	logFile, err := os.Create(fmt.Sprintf("%s/%s-%d", logDir, serviceName, timestamp))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.SetOutput(logFile)
+}
