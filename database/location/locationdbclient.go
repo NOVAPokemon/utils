@@ -4,10 +4,8 @@ import (
 	"context"
 	"github.com/NOVAPokemon/utils"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
-	"github.com/NOVAPokemon/utils/pokemons"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
@@ -62,63 +60,6 @@ func init() {
 	dbClient = databaseUtils.DBClientMultipleCollections{Client: client, Ctx: &ctx, Collections: collections}
 }
 
-func AddWildPokemon(pokemon pokemons.Pokemon) (error, primitive.ObjectID) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[wildPokemonCollectionName]
-	res, err := collection.InsertOne(*ctx, pokemon)
-
-	if err != nil {
-		log.Error(err)
-		return nil, [12]byte{}
-	}
-
-	return err, res.InsertedID.(primitive.ObjectID)
-}
-
-func DeleteWildPokemons() error {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[wildPokemonCollectionName]
-	filter := bson.M{}
-
-	_, err := collection.DeleteMany(*ctx, filter)
-
-	if err != nil {
-		log.Error(err)
-	}
-
-	return err
-}
-
-func GetWildPokemons() ([]pokemons.Pokemon, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[wildPokemonCollectionName]
-	var results []pokemons.Pokemon
-
-	cur, err := collection.Find(*ctx, bson.M{})
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	defer databaseUtils.CloseCursor(cur, ctx)
-	for cur.Next(*ctx) {
-		var result pokemons.Pokemon
-		err := cur.Decode(&result)
-		if err != nil {
-			log.Error(err)
-		} else {
-			results = append(results, result)
-		}
-	}
-
-	if err := cur.Err(); err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	return results, nil
-}
-
 func AddGym(gym utils.Gym) error {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collections[gymsLocationCollectionName]
@@ -126,8 +67,7 @@ func AddGym(gym utils.Gym) error {
 	_, err := collection.InsertOne(*ctx, gym)
 
 	if err != nil {
-		log.Error(err)
-		return err
+		return wrapAddGymError(err)
 	}
 
 	log.Infof("Added gym %s at %f %f", gym.Name, gym.Location.Latitude, gym.Location.Longitude)
@@ -141,7 +81,7 @@ func GetGyms() ([]utils.Gym, error) {
 
 	cur, err := collection.Find(*ctx, bson.M{})
 	if err != nil {
-		return nil, err
+		return nil, wrapGetGymsError(err)
 	}
 
 	var gyms []utils.Gym
@@ -151,7 +91,7 @@ func GetGyms() ([]utils.Gym, error) {
 		var gym utils.Gym
 		err := cur.Decode(&gym)
 		if err != nil {
-			log.Error(err)
+			return nil, wrapGetGymsError(err)
 		} else {
 			gyms = append(gyms, gym)
 		}
@@ -161,18 +101,6 @@ func GetGyms() ([]utils.Gym, error) {
 		log.Error(err)
 	}
 	return gyms, nil
-}
-
-func DeleteAllGyms() error {
-	ctx := dbClient.Ctx
-	collection := dbClient.Collections[gymsLocationCollectionName]
-
-	_, err := collection.DeleteMany(*ctx, bson.M{})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func UpdateIfAbsentAddUserLocation(userLocation utils.UserLocation) (*utils.UserLocation, error) {
@@ -189,8 +117,7 @@ func UpdateIfAbsentAddUserLocation(userLocation utils.UserLocation) (*utils.User
 
 	res, err := collection.UpdateOne(*ctx, filter, changes, &updateOptions)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, wrapUpdateLocation(err, userLocation.Username)
 	}
 
 	if res.MatchedCount > 0 {
@@ -210,8 +137,7 @@ func GetUserLocation(username string) (*utils.UserLocation, error) {
 	filter := bson.M{"username": username}
 	err := collection.FindOne(*ctx, filter).Decode(&result)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, wrapGetLocation(err, username)
 	}
 
 	return &result, nil
@@ -224,9 +150,5 @@ func DeleteUserLocation(username string) error {
 
 	_, err := collection.DeleteOne(*ctx, filter)
 
-	if err != nil {
-		log.Error(err)
-	}
-
-	return err
+	return wrapDeleteLocation(err, username)
 }
