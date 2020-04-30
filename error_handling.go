@@ -8,6 +8,11 @@ import (
 	"net/http"
 )
 
+func LogAndSendHTTPError(w *http.ResponseWriter, err error, httpCode int) {
+	log.Error(err)
+	http.Error(*w, err.Error(), httpCode)
+}
+
 func HandleJSONEncodeError(w *http.ResponseWriter, caller string, err error) {
 	log.Warnf("Error encoding in %s response:\n", caller)
 	log.Warn(err)
