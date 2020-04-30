@@ -36,7 +36,7 @@ func randSeq(n int) []byte {
 
 func TestAddUser(t *testing.T) {
 
-	err, res := AddUser(&userMockup)
+	res, err := AddUser(&userMockup)
 
 	if err != nil {
 		log.Println(err)
@@ -47,7 +47,13 @@ func TestAddUser(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	res := GetAllUsers()
+	res, err := GetAllUsers()
+
+	if err != nil {
+		log.Println(err)
+		t.Fail()
+	}
+
 	for i, item := range res {
 		log.Println(i, item.Username)
 	}
@@ -55,7 +61,7 @@ func TestGetAll(t *testing.T) {
 
 func TestGetByID(t *testing.T) {
 
-	err, user := GetUserByUsername(userMockup.Username)
+	user, err := GetUserByUsername(userMockup.Username)
 
 	if err != nil {
 		log.Println(err)
@@ -68,7 +74,7 @@ func TestGetByID(t *testing.T) {
 
 func TestGetByUsername(t *testing.T) {
 
-	err, user := GetUserByUsername(userMockup.Username)
+	user, err := GetUserByUsername(userMockup.Username)
 
 	if err != nil {
 		log.Println(err)
@@ -85,13 +91,17 @@ func TestUpdate(t *testing.T) {
 		PasswordHash: randSeq(256),
 	}
 
-	err, _ := UpdateUser(userMockup.Username, &toUpdate)
-
+	_, err := UpdateUser(userMockup.Username, &toUpdate)
 	if err != nil {
 		log.Error(err)
 		t.Fail()
 	}
-	err, updatedUser := GetUserByUsername(userMockup.Username)
+
+	updatedUser, err := GetUserByUsername(userMockup.Username)
+	if err != nil {
+		log.Error(err)
+		t.Fail()
+	}
 
 	assert.Equal(t, toUpdate.Username, updatedUser.Username)
 	assert.Equal(t, toUpdate.PasswordHash, updatedUser.PasswordHash)
@@ -99,7 +109,7 @@ func TestUpdate(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	userMockup.Username = "user2"
-	err, oID := AddUser(&userMockup)
+	oID, err := AddUser(&userMockup)
 
 	if err != nil {
 		log.Println(err)
@@ -107,13 +117,16 @@ func TestDelete(t *testing.T) {
 	}
 
 	err = DeleteUser(oID)
-
 	if err != nil {
 		log.Error(err)
 		t.Fail()
 	}
 
-	users := GetAllUsers()
+	users, err := GetAllUsers()
+	if err != nil {
+		log.Error(err)
+		t.Fail()
+	}
 
 	for _, user := range users {
 		if user.Username == userMockup.Username {
