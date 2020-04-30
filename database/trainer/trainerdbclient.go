@@ -108,11 +108,11 @@ func UpdateTrainerStats(username string, stats utils.TrainerStats) (*utils.Train
 	collection := dbClient.Collection
 
 	if stats.Level < 0 {
-		return nil, wrapUpdateTrainerStatsError(errorInvalidLevel, username)
+		return nil, wrapUpdateTrainerStatsError(ErrorInvalidLevel, username)
 	}
 
 	if stats.Coins < 0 {
-		return nil, wrapUpdateTrainerStatsError(errorInvalidCoins, username)
+		return nil, wrapUpdateTrainerStatsError(ErrorInvalidCoins, username)
 	}
 
 	filter := bson.M{"username": username}
@@ -127,7 +127,7 @@ func UpdateTrainerStats(username string, stats utils.TrainerStats) (*utils.Train
 	if res.MatchedCount > 0 {
 		log.Infof("Updated Trainer %s", username)
 	} else {
-		return nil, wrapUpdateTrainerStatsError(errorTrainerNotFound, username)
+		return nil, wrapUpdateTrainerStatsError(ErrorTrainerNotFound, username)
 	}
 
 	return &stats, nil
@@ -167,7 +167,7 @@ func AddItemToTrainer(username string, item items.Item) (map[string]items.Item, 
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, wrapAddItemToTrainerError(errorTrainerNotFound, username)
+		return nil, wrapAddItemToTrainerError(ErrorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
@@ -192,7 +192,7 @@ func AddItemsToTrainer(username string, itemsToAdd []items.Item) (map[string]ite
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, wrapAddItemsToTrainerError(errorTrainerNotFound, username)
+		return nil, wrapAddItemsToTrainerError(ErrorTrainerNotFound, username)
 	}
 
 	log.Infof("Added items to user %s:", username)
@@ -215,7 +215,7 @@ func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (map[stri
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, wrapRemoveItemToTrainerError(errorTrainerNotFound, username)
+		return nil, wrapRemoveItemToTrainerError(ErrorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
@@ -239,7 +239,7 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) (map[
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, wrapRemoveItemsToTrainerError(errorTrainerNotFound, username)
+		return nil, wrapRemoveItemsToTrainerError(ErrorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
@@ -260,7 +260,7 @@ func AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (map[string]
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, wrapAddPokemonToTrainerError(errorTrainerNotFound, username)
+		return nil, wrapAddPokemonToTrainerError(ErrorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
@@ -281,7 +281,7 @@ func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, wrapUpdateTrainerPokemonError(errorTrainerNotFound, username)
+		return nil, wrapUpdateTrainerPokemonError(ErrorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
@@ -300,7 +300,7 @@ func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) (ma
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, wrapRemovePokemonFromTrainerError(errorTrainerNotFound, username)
+		return nil, wrapRemovePokemonFromTrainerError(ErrorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
