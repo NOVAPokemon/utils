@@ -7,7 +7,6 @@ import (
 	"github.com/NOVAPokemon/utils/experience"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,32 +18,21 @@ import (
 const databaseName = "NOVAPokemonDB"
 const collectionName = "Trainers"
 
-var (
-	ErrTrainerNotFound = errors.New("Trainer Not Found")
-	ErrInvalidLevel    = errors.New("Invalid level")
-	ErrInvalidCoins    = errors.New("Invalid coin ammount")
-	ErrItemNotFound    = errors.New("Item not found")
-	ErrPokemonNotFound = errors.New("Pokemon not found")
-)
-
 var dbClient databaseUtils.DBClient
 
 func init() {
 	url, exists := os.LookupEnv(utils.MongoEnvVar)
-
 	if !exists {
 		url = databaseUtils.DefaultMongoDBUrl
 	}
 
 	client, err := mongo.NewClient(options.Client().ApplyURI(url))
-
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ctx := context.Background()
 	err = client.Connect(ctx)
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,13 +51,12 @@ func init() {
 }
 
 func AddTrainer(trainer utils.Trainer) (string, error) {
-
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
-	_, err := collection.InsertOne(*ctx, trainer)
 
+	_, err := collection.InsertOne(*ctx, trainer)
 	if err != nil {
-		return "", err
+		return "", wrapAddTrainerError(err, trainer.Username)
 	} else {
 		log.Infof("Added new trainer: %s", trainer.Username)
 		return trainer.Username, nil
@@ -83,10 +70,8 @@ func GetAllTrainers() ([]utils.Trainer, error) {
 	var results = make([]utils.Trainer, 0)
 
 	cur, err := collection.Find(*ctx, bson.M{})
-
 	if err != nil {
-		log.Error(err)
-		return []utils.Trainer{}, err
+		return nil, wrapGetAllTrainersError(err)
 	}
 
 	defer databaseUtils.CloseCursor(cur, ctx)
@@ -94,16 +79,13 @@ func GetAllTrainers() ([]utils.Trainer, error) {
 		var result utils.Trainer
 		err := cur.Decode(&result)
 		if err != nil {
-			log.Error(err)
+			return nil, wrapGetAllTrainersError(err)
 		} else {
 			results = append(results, result)
 		}
 	}
 
-	if err := cur.Err(); err != nil {
-		log.Error(err)
-	}
-	return results, nil
+	return results, wrapGetAllTrainersError(cur.Err())
 }
 
 func GetTrainerByUsername(username string) (*utils.Trainer, error) {
@@ -115,58 +97,50 @@ func GetTrainerByUsername(username string) (*utils.Trainer, error) {
 	err := collection.FindOne(*ctx, filter).Decode(&result)
 
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, wrapGetTrainerError(err, username)
 	}
 
 	return &result, nil
 }
 
 func UpdateTrainerStats(username string, stats utils.TrainerStats) (*utils.TrainerStats, error) {
-
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
 	if stats.Level < 0 {
-		return nil, ErrInvalidLevel
+		return nil, wrapUpdateTrainerStatsError(errorInvalidLevel, username)
 	}
 
 	if stats.Coins < 0 {
-		return nil, ErrInvalidCoins
+		return nil, wrapUpdateTrainerStatsError(errorInvalidCoins, username)
 	}
 
 	filter := bson.M{"username": username}
 	stats.Level = experience.CalculateLevel(stats.XP)
 	changes := bson.M{"$set": bson.M{"stats.level": stats.Level, "stats.coins": stats.Coins, "stats.xp": stats.XP}}
-	res, err := collection.UpdateOne(*ctx, filter, changes)
 
+	res, err := collection.UpdateOne(*ctx, filter, changes)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, wrapUpdateTrainerStatsError(err, username)
 	}
 
 	if res.MatchedCount > 0 {
 		log.Infof("Updated Trainer %s", username)
 	} else {
-		return nil, ErrTrainerNotFound
+		return nil, wrapUpdateTrainerStatsError(errorTrainerNotFound, username)
 	}
 
 	return &stats, nil
 }
 
 func DeleteTrainer(username string) error {
-
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
-	filter := bson.M{"username": username}
 
+	filter := bson.M{"username": username}
 	_, err := collection.DeleteOne(*ctx, filter)
 
-	if err != nil {
-		log.Error(err)
-	}
-
-	return err
+	return wrapDeleteTrainerError(err, username)
 }
 
 func removeAll() error {
@@ -174,17 +148,12 @@ func removeAll() error {
 	collection := dbClient.Collection
 	_, err := collection.DeleteMany(*ctx, bson.M{})
 
-	if err != nil {
-		log.Error(err)
-	}
-
-	return err
+	return wrapDeleteAllTrainersError(err)
 }
 
 // BAG OPERATIONS
 
 func AddItemToTrainer(username string, item items.Item) (map[string]items.Item, error) {
-
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
@@ -197,15 +166,13 @@ func AddItemToTrainer(username string, item items.Item) (map[string]items.Item, 
 	opts.SetReturnDocument(options.After)
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
-	err := res.Err()
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	if res.Err() != nil {
+		return nil, wrapAddItemToTrainerError(errorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
-	decodeErr := res.Decode(&trainer)
-	return trainer.Items, decodeErr
+	err := res.Decode(&trainer)
+	return trainer.Items, wrapAddItemToTrainerError(err, username)
 }
 
 func AddItemsToTrainer(username string, itemsToAdd []items.Item) (map[string]items.Item, error) {
@@ -224,9 +191,8 @@ func AddItemsToTrainer(username string, itemsToAdd []items.Item) (map[string]ite
 	opts.SetReturnDocument(options.After)
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
-
 	if res.Err() != nil {
-		return nil, ErrTrainerNotFound
+		return nil, wrapAddItemsToTrainerError(errorTrainerNotFound, username)
 	}
 
 	log.Infof("Added items to user %s:", username)
@@ -235,8 +201,8 @@ func AddItemsToTrainer(username string, itemsToAdd []items.Item) (map[string]ite
 	}
 
 	trainer := utils.Trainer{}
-	decodeErr := res.Decode(&trainer)
-	return trainer.Items, decodeErr
+	err := res.Decode(&trainer)
+	return trainer.Items, wrapAddItemsToTrainerError(err, username)
 }
 
 func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (map[string]items.Item, error) {
@@ -248,14 +214,13 @@ func RemoveItemFromTrainer(username string, itemId primitive.ObjectID) (map[stri
 	opts.SetReturnDocument(options.After)
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
-
 	if res.Err() != nil {
-		return nil, ErrTrainerNotFound
+		return nil, wrapRemoveItemToTrainerError(errorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
-	decodeErr := res.Decode(&trainer)
-	return trainer.Items, decodeErr
+	err := res.Decode(&trainer)
+	return trainer.Items, wrapRemoveItemToTrainerError(err, username)
 }
 
 func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) (map[string]items.Item, error) {
@@ -264,7 +229,6 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) (map[
 	filter := bson.M{"username": username}
 
 	itemsObjects := make(map[string]*struct{}, len(itemIds))
-
 	for _, id := range itemIds {
 		itemsObjects["items."+id.Hex()] = nil
 	}
@@ -275,18 +239,17 @@ func RemoveItemsFromTrainer(username string, itemIds []primitive.ObjectID) (map[
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, ErrTrainerNotFound
+		return nil, wrapRemoveItemsToTrainerError(errorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
-	decodeErr := res.Decode(&trainer)
-	return trainer.Items, decodeErr
+	err := res.Decode(&trainer)
+	return trainer.Items, wrapRemoveItemsToTrainerError(err, username)
 }
 
 // POKEMON OPERATIONS
 
 func AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (map[string]pokemons.Pokemon, error) {
-
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
@@ -297,12 +260,12 @@ func AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (map[string]
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, ErrTrainerNotFound
+		return nil, wrapAddPokemonToTrainerError(errorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
-	decodeErr := res.Decode(&trainer)
-	return trainer.Pokemons, decodeErr
+	err := res.Decode(&trainer)
+	return trainer.Pokemons, wrapAddPokemonToTrainerError(err, username)
 }
 
 func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon pokemons.Pokemon) (map[string]pokemons.Pokemon, error) {
@@ -318,16 +281,15 @@ func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, ErrTrainerNotFound
+		return nil, wrapUpdateTrainerPokemonError(errorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
-	decodeErr := res.Decode(&trainer)
-	return trainer.Pokemons, decodeErr
+	err := res.Decode(&trainer)
+	return trainer.Pokemons, wrapUpdateTrainerPokemonError(err, username)
 }
 
 func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) (map[string]pokemons.Pokemon, error) {
-
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
@@ -338,10 +300,10 @@ func RemovePokemonFromTrainer(username string, pokemonId primitive.ObjectID) (ma
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
-		return nil, ErrTrainerNotFound
+		return nil, wrapRemovePokemonFromTrainerError(errorTrainerNotFound, username)
 	}
 
 	trainer := utils.Trainer{}
-	decodeErr := res.Decode(&trainer)
-	return trainer.Pokemons, decodeErr
+	err := res.Decode(&trainer)
+	return trainer.Pokemons, wrapRemovePokemonFromTrainerError(err, username)
 }
