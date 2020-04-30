@@ -18,9 +18,7 @@ const collectionName = "Transactions"
 var dbClient database.DBClient
 
 func init() {
-
 	url, exists := os.LookupEnv(utils.MongoEnvVar)
-
 	if !exists {
 		url = database.DefaultMongoDBUrl
 	}
@@ -48,26 +46,22 @@ func GetTransactionsFromUser(username string) ([]utils.TransactionRecord, error)
 	var result []utils.TransactionRecord
 
 	filter := bson.M{"user": username}
-	cursor, err := collection.Find(*ctx, filter)
 
+	cursor, err := collection.Find(*ctx, filter)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, wrapGetUserTransactionsError(err, username)
 	}
 
 	defer database.CloseCursor(cursor, ctx)
 	err = cursor.All(*ctx, &result)
-
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, wrapGetUserTransactionsError(err, username)
 	}
 
 	return result, nil
 }
 
 func AddTransaction(transaction utils.TransactionRecord) (*primitive.ObjectID, error) {
-
 	transaction.Id = primitive.NewObjectID()
 
 	var ctx = dbClient.Ctx
@@ -75,7 +69,7 @@ func AddTransaction(transaction utils.TransactionRecord) (*primitive.ObjectID, e
 	_, err := collection.InsertOne(*ctx, transaction)
 
 	if err != nil {
-		return nil, err
+		return nil, wrapAddTransactionError(err, transaction.User)
 	} else {
 		log.Infof("Added new transaction: %s", transaction.Id.Hex())
 		return &transaction.Id, nil
@@ -87,9 +81,5 @@ func RemoveAllTransactions() error {
 	collection := dbClient.Collection
 	_, err := collection.DeleteMany(*ctx, bson.M{})
 
-	if err != nil {
-		log.Error(err)
-	}
-
-	return err
+	return wrapRemoveAllTransactionsError(err)
 }
