@@ -26,11 +26,11 @@ const (
 )
 
 var (
-	errorTrainerNotFound = errors.New("trainer not found")
-	errorInvalidLevel    = errors.New("invalid level")
-	errorInvalidCoins    = errors.New("invalid coin ammount")
-	errorItemNotFound    = errors.New("item not found")
-	errorPokemonNotFound = errors.New("pokemon not found")
+	ErrorTrainerNotFound = errors.New("trainer not found")
+	ErrorInvalidLevel    = errors.New("invalid level")
+	ErrorInvalidCoins    = errors.New("invalid coin ammount")
+	ErrorItemNotFound    = errors.New("item not found")
+	ErrorPokemonNotFound = errors.New("pokemon not found")
 )
 
 func wrapAddTrainerError(err error, username string) error {
