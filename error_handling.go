@@ -8,6 +8,15 @@ import (
 	"net/http"
 )
 
+const (
+	// Generic Handler errors
+	ErrorInHandlerFormat = "error in %s"
+)
+
+var (
+	ErrorConnectionUpgrade = errors.New("error upgrading connection")
+)
+
 func LogAndSendHTTPError(w *http.ResponseWriter, err error, httpCode int) {
 	log.Error(err)
 	http.Error(*w, err.Error(), httpCode)
