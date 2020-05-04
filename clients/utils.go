@@ -7,19 +7,14 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
-	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 )
 
-func Send(conn *websocket.Conn, msg *string) {
-	err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
-
-	if err != nil {
-		return
-	}
+func Send(conn *websocket.Conn, msg *string) error {
+	return websockets.WrapWritingMessageError(conn.WriteMessage(websocket.TextMessage, []byte(*msg)))
 }
 
 func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished chan struct{}) {
@@ -55,10 +50,10 @@ func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished cha
 	}
 }
 
-func ReadMessagesWithoutParse(conn *websocket.Conn) (*websockets.Message, error) {
+func Read(conn *websocket.Conn) (*websockets.Message, error) {
 	_, msgBytes, err := conn.ReadMessage()
 	if err != nil {
-		return nil, err
+		return nil, websockets.WrapReadingMessageError(err)
 	}
 
 	msgString := string(msgBytes)
@@ -66,7 +61,7 @@ func ReadMessagesWithoutParse(conn *websocket.Conn) (*websockets.Message, error)
 
 	msg, err := websockets.ParseMessage(&msgString)
 	if err != nil {
-		return trades.NoneMessageConst, nil
+		return nil, websockets.WrapReadingMessageError(err)
 	}
 
 	return msg, nil

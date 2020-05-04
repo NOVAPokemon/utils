@@ -140,7 +140,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 	var itemsToken *string = nil
 
 	for {
-		msg, err := ReadMessagesWithoutParse(conn)
+		msg, err := Read(conn)
 		if err != nil {
 			log.Error(err)
 			return
