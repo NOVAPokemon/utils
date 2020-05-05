@@ -12,8 +12,6 @@ var (
 		Info:  "error parsing message",
 		Fatal: false,
 	}.SerializeToWSMessage()
-
-	NoneMessageConst = NoneMessage{}.SerializeToWSMessage()
 )
 
 // Message Types
