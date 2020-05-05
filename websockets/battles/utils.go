@@ -12,7 +12,7 @@ func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, 
 	if issuer.Cooldown {
 		websockets.SendMessage(
 			*ErrorMessage{
-				Info:  fmt.Sprintf(ErrCooldown.Error()),
+				Info:  fmt.Sprintf(ErrorCooldown.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage(), issuerChan)
 		return false
@@ -23,7 +23,7 @@ func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, 
 	if !ok {
 		websockets.SendMessage(
 			*ErrorMessage{
-				Info:  fmt.Sprintf(ErrInvalidItemSelected.Error()),
+				Info:  fmt.Sprintf(ErrorInvalidItemSelected.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage(), issuerChan)
 		return false
@@ -32,7 +32,7 @@ func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, 
 	if !item.Effect.Appliable {
 		websockets.SendMessage(
 			*ErrorMessage{
-				Info:  fmt.Sprintf(ErrItemNotAppliable.Error()),
+				Info:  fmt.Sprintf(ErrorItemNotAppliable.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage(), issuerChan)
 		return false
@@ -69,7 +69,7 @@ func HandleSelectPokemon(selectedPokemonMsg *SelectPokemonMessage, issuer *Train
 	if !ok {
 		websockets.SendMessage(
 			*ErrorMessage{
-				Info:  fmt.Sprintf(ErrInvalidPokemonSelected.Error()),
+				Info:  fmt.Sprintf(ErrorInvalidPokemonSelected.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage(), issuerChan)
 		return false
@@ -77,7 +77,7 @@ func HandleSelectPokemon(selectedPokemonMsg *SelectPokemonMessage, issuer *Train
 	if pokemon.HP <= 0 {
 		websockets.SendMessage(
 			*ErrorMessage{
-				Info:  fmt.Sprintf(ErrPokemonNoHP.Error()),
+				Info:  fmt.Sprintf(ErrorPokemonNoHP.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage(), issuerChan)
 		return false
@@ -94,7 +94,7 @@ func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan *string, cool
 	if issuer.SelectedPokemon.HP == 0 {
 		websockets.SendMessage(
 			*ErrorMessage{
-				Info:  fmt.Sprintf(ErrPokemonNoHP.Error()),
+				Info:  fmt.Sprintf(ErrorPokemonNoHP.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage(), issuerChan)
 		return
@@ -104,7 +104,7 @@ func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan *string, cool
 	if issuer.Cooldown {
 		websockets.SendMessage(
 			*ErrorMessage{
-				Info:  fmt.Sprintf(ErrCooldown.Error()),
+				Info:  fmt.Sprintf(ErrorCooldown.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage(), issuerChan)
 		return
@@ -125,7 +125,7 @@ func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan chan *string, defe
 	if issuer.SelectedPokemon.HP == 0 {
 		websockets.SendMessage(
 			*ErrorMessage{
-				Info:  fmt.Sprintf(ErrPokemonNoHP.Error()),
+				Info:  fmt.Sprintf(ErrorPokemonNoHP.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage(), issuerChan)
 		return false
@@ -135,7 +135,7 @@ func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan chan *string, defe
 	if issuer.Cooldown {
 		websockets.SendMessage(
 			*ErrorMessage{
-				Info:  fmt.Sprintf(ErrCooldown.Error()),
+				Info:  fmt.Sprintf(ErrorCooldown.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage(), issuerChan)
 		return false
