@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	notificationMessages "github.com/NOVAPokemon/utils/websockets/notifications"
@@ -56,13 +57,13 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 	conn, _, err := dialer.Dial(u.String(), header)
 	defer ws.CloseConnection(conn)
 	if err != nil {
-		err = wrapListeningNotificationsError(ws.WrapDialingError(err, u.String()))
+		err = errors.WrapListeningNotificationsError(ws.WrapDialingError(err, u.String()))
 		return err
 	}
 
 	go func() {
 		if err := ws.HandleRecv(conn, client.readChannel, nil); err != nil {
-			log.Error(wrapListeningNotificationsError(err))
+			log.Error(errors.WrapListeningNotificationsError(err))
 		}
 	}()
 
@@ -72,7 +73,7 @@ Loop:
 		case msgString := <-client.readChannel:
 			msg, err := ws.ParseMessage(msgString)
 			if err != nil {
-				log.Error(wrapListeningNotificationsError(err))
+				log.Error(errors.WrapListeningNotificationsError(err))
 				continue
 			}
 			client.parseToNotification(msg)
@@ -85,7 +86,7 @@ Loop:
 
 	err = client.StopListening(authToken)
 	if err != nil {
-		return wrapListeningNotificationsError(err)
+		return errors.WrapListeningNotificationsError(err)
 	}
 
 	emitFinish <- true
@@ -95,32 +96,32 @@ Loop:
 func (client *NotificationClient) StopListening(authToken string) error {
 	req, err := BuildRequest("GET", client.NotificationsAddr, api.UnsubscribeNotificationPath, nil)
 	if err != nil {
-		return wrapStopListeningError(err)
+		return errors.WrapStopListeningError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	_, err = DoRequest(client.httpClient, req, nil)
-	return wrapStopListeningError(err)
+	return errors.WrapStopListeningError(err)
 }
 
 func (client *NotificationClient) AddNotification(notificationMsg *notificationMessages.NotificationMessage,
 	authToken string) error {
 	req, err := BuildRequest("POST", client.NotificationsAddr, api.NotificationPath, notificationMsg)
 	if err != nil {
-		return wrapAddNotificationError(err)
+		return errors.WrapAddNotificationError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	_, err = DoRequest(client.httpClient, req, nil)
-	return wrapAddNotificationError(err)
+	return errors.WrapAddNotificationError(err)
 }
 
 func (client *NotificationClient) GetOthersListening(authToken string) ([]string, error) {
 	req, err := BuildRequest("GET", client.NotificationsAddr, api.GetListenersPath, nil)
 	if err != nil {
-		return nil, wrapGetOthersListeningError(err)
+		return nil, errors.WrapGetOthersListeningError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
@@ -128,7 +129,7 @@ func (client *NotificationClient) GetOthersListening(authToken string) ([]string
 	var usernames []string
 	_, err = DoRequest(client.httpClient, req, &usernames)
 	if err != nil {
-		return nil, wrapGetOthersListeningError(err)
+		return nil, errors.WrapGetOthersListeningError(err)
 	}
 
 	return usernames, nil
