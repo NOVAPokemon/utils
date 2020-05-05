@@ -1,7 +1,6 @@
 package websockets
 
 import (
-	"errors"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"strings"
@@ -12,15 +11,14 @@ const PongWait = 10 * time.Second
 const PingPeriod = (PongWait * 9) / 10
 
 func ParseMessage(msg *string) (*Message, error) {
-
 	if msg == nil {
-		return nil, errors.New("message is nil")
+		return nil, wrapMsgParsingError(ErrorMessageNil)
 	}
 
 	msgParts := strings.Split(*msg, " ")
 
 	if len(msgParts) < 1 {
-		return nil, errors.New("invalid msg format")
+		return nil, wrapMsgParsingError(ErrorInvalidMessageFormat)
 	}
 
 	return &Message{
@@ -42,11 +40,11 @@ func HandleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 		select {
 		case msg := <-inChannel:
 			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
-				if err != nil {
-					closeConnectionThroughChannel(conn, endConnection)
-					return err
-				}
-				log.Infof("Wrote %s into the channel", *msg)
+			if err != nil {
+				closeConnectionThroughChannel(conn, endConnection)
+				return wrapHandleSendError(err)
+			}
+			log.Infof("Wrote %s into the channel", *msg)
 		case <-endConnection:
 			return nil
 		}
@@ -64,11 +62,10 @@ func HandleRecv(conn *websocket.Conn, outChannel chan *string, endConnection cha
 			return nil
 		default:
 			_, message, err := conn.ReadMessage()
-
 			if err != nil {
 				log.Warn("Closing finish channel and connection")
 				closeConnectionThroughChannel(conn, endConnection)
-				return err
+				return wrapHandleReceiveError(err)
 			} else {
 				msg := strings.TrimSpace(string(message))
 				log.Debugf("Message received: %s", msg)
