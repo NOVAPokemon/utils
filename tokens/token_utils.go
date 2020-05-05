@@ -68,7 +68,6 @@ func ExtractAndVerifyTrainerStatsToken(headers http.Header) (*TrainerStatsToken,
 }
 
 func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error) {
-
 	tkns, ok := headers[PokemonsTokenHeaderName]
 
 	if !ok {
@@ -84,7 +83,8 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error)
 		}
 
 		pokemonTkn := PokemonToken{}
-		_, err := jwt.ParseWithClaims(strings.TrimSpace(tkns[i]), &pokemonTkn, func(token *jwt.Token) (interface{}, error) {
+		_, err := jwt.ParseWithClaims(strings.TrimSpace(tkns[i]), &pokemonTkn,
+			func(token *jwt.Token) (interface{}, error) {
 			return authJWTKey, nil
 		})
 		if err != nil {
