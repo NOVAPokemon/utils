@@ -1,7 +1,6 @@
 package clients
 
 import (
-	"errors"
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -70,35 +69,39 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 	}
 }
 
-func (c *LocationClient) StartLocationUpdates(authToken string) {
+func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	inChan := make(chan *string)
 	outChan := make(chan websockets.GenericMsg, bufferSize)
 	finish := make(chan struct{})
 
 	conn, err := c.connect(outChan, authToken)
 	if err != nil {
-		log.Error(err)
-		return
+		return wrapStartLocationUpdatesError(err)
 	}
 
 	go func() {
 		if err := websockets.HandleRecv(conn, inChan, finish); err != nil {
-			log.Error(err)
+			log.Error(wrapStartLocationUpdatesError(err))
 		}
 	}()
-	go c.updateLocationLoop(conn, outChan)
+	go func() {
+		if err := c.updateLocationLoop(conn, outChan); err!= nil {
+			log.Error(wrapStartLocationUpdatesError(err))
+		}
+	}()
 
 	for {
 		select {
 		case msgString, ok := <-inChan:
-			if !ok{
+			if !ok {
 				continue
 			}
+
 			msg, err := websockets.ParseMessage(msgString)
 			if err != nil {
-				log.Error(err)
-				return
+				return wrapStartLocationUpdatesError(err)
 			}
+
 			switch msg.MsgType {
 			case location.Gyms:
 				c.Gyms = location.Deserialize(msg).(*location.GymsMessage).Gyms
@@ -109,11 +112,11 @@ func (c *LocationClient) StartLocationUpdates(authToken string) {
 			}
 		case <-finish:
 			log.Warn("Trainer stopped updating location")
-			return
+			return nil
 		case msg := <-outChan:
-			if err := conn.WriteMessage(msg.MsgType, msg.Data); err != nil {
-				log.Error(err)
-				return
+			err = conn.WriteMessage(msg.MsgType, msg.Data)
+			if err != nil {
+				return wrapStartLocationUpdatesError(err)
 			}
 		}
 	}
@@ -132,11 +135,10 @@ func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken s
 	log.Info("Dialing: ", u.String())
 	conn, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
-		log.Fatal("err dialing: ", err)
-		return nil, err
+		return nil, wrapConnectError(err)
 	}
 
-	_ = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+	err = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 	conn.SetPingHandler(func(string) error {
 		if err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration)); err != nil {
 			return err
@@ -146,23 +148,29 @@ func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken s
 		return nil
 	})
 
-	return conn, err
+	return conn, wrapConnectError(err)
 }
 
-func (c *LocationClient) updateLocationLoop(conn *websocket.Conn, outChan chan websockets.GenericMsg) {
-	c.updateLocation(conn, outChan)
+func (c *LocationClient) updateLocationLoop(conn *websocket.Conn, outChan chan websockets.GenericMsg) error {
+	err := c.updateLocation(conn, outChan)
+	if err != nil {
+		return err
+	}
 
 	updateTicker := time.NewTicker(time.Duration(c.config.UpdateInterval) * time.Second)
 
 	for {
 		select {
 		case <-updateTicker.C:
-			c.updateLocation(conn, outChan)
+			err = c.updateLocation(conn, outChan)
+			if err != nil {
+				return err
+			}
 		}
 	}
 }
 
-func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan websockets.GenericMsg) {
+func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan websockets.GenericMsg) error {
 	locationMsg := location.UpdateLocationMessage{
 		Location: c.CurrentLocation,
 	}
@@ -178,15 +186,14 @@ func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan webso
 
 	err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 	if err != nil {
-		log.Error(err)
-		return
+		return wrapUpdateLocation(err)
 	}
 
 	if rand.Float64() <= c.LocationParameters.MovingProbability {
 		c.CurrentLocation = c.move(c.config.UpdateInterval)
 	}
 
-	// log.Info(c.DistanceToStartLat, c.DistanceToStartLong)
+	return nil
 }
 
 func (c *LocationClient) move(timePassed int) utils.Location {
@@ -212,28 +219,28 @@ func (c *LocationClient) move(timePassed int) utils.Location {
 func (c *LocationClient) AddGymLocation(gym utils.Gym) error {
 	req, err := BuildRequest("POST", c.LocationAddr, api.GymLocationRoute, gym)
 	if err != nil {
-		log.Error(err)
-		return err
+		return wrapAddGymLocationError(err)
 	}
 
 	_, err = DoRequest(c.HttpClient, req, nil)
-	return err
+	return wrapAddGymLocationError(err)
 }
 
 func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (caught bool,
 	header http.Header, err error) {
 	itemsToken, err := tokens.ExtractItemsToken(itemsTokenString)
 	if err != nil {
-		return false, nil, err
+		return false, nil, wrapCatchWildPokemonError(err)
 	}
 
 	pokeball, err := getRandomPokeball(itemsToken.Items)
 	if err != nil {
-		return false, nil, err
+		return false, nil, wrapCatchWildPokemonError(err)
 	}
 
 	if len(c.Pokemons) <= 0 {
-		return false, nil, errors.New("no pokemons in vicinity")
+		err = wrapCatchWildPokemonError(errorNoPokemonsVinicity)
+		return false, nil, err
 	}
 
 	catchingPokemon := c.Pokemons[rand.Intn(len(c.Pokemons))]
@@ -247,7 +254,7 @@ func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (c
 
 	req, err := BuildRequest("GET", c.LocationAddr, api.CatchWildPokemonPath, requestBody)
 	if err != nil {
-		return false, nil, err
+		return false, nil, wrapCatchWildPokemonError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
@@ -255,7 +262,7 @@ func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (c
 	var msg CaughtPokemonMessage
 	resp, err := DoRequest(c.HttpClient, req, &msg)
 	if err != nil {
-		return false, nil, err
+		return false, nil, wrapCatchWildPokemonError(err)
 	}
 
 	if !msg.Caught {
@@ -284,7 +291,7 @@ func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error
 	}
 
 	if pokeballs == nil {
-		return nil, errors.New("no pokeballs")
+		return nil, errorNoPokeballs
 	}
 
 	return pokeballs[rand.Intn(len(pokeballs))], nil

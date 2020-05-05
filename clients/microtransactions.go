@@ -35,18 +35,19 @@ func NewMicrotransactionsClient() *MicrotransactionsClient {
 func (c *MicrotransactionsClient) GetOffers() ([]utils.TransactionTemplate, error) {
 	req, err := BuildRequest("GET", c.MicrotransactionsAddr, api.GetTransactionOffersPath, nil)
 	if err != nil {
-		return nil, err
+		return nil, wrapGetOffersError(err)
 	}
 
 	var transactionOffers []utils.TransactionTemplate
+
 	_, err = DoRequest(c.httpClient, req, &transactionOffers)
-	return transactionOffers, err
+	return transactionOffers, wrapGetOffersError(err)
 }
 
 func (c *MicrotransactionsClient) GetTransactionRecords(authToken string) ([]utils.TransactionRecord, error) {
 	req, err := BuildRequest("GET", c.MicrotransactionsAddr, api.GetPerformedTransactionsPath, nil)
 	if err != nil {
-		return nil, err
+		return nil, wrapGetTransactionsRecordsError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
@@ -54,13 +55,15 @@ func (c *MicrotransactionsClient) GetTransactionRecords(authToken string) ([]uti
 	var transactions []utils.TransactionRecord
 	_, err = DoRequest(c.httpClient, req, &transactions)
 
-	return transactions, err
+	return transactions, wrapGetTransactionsRecordsError(err)
 }
 
-func (c *MicrotransactionsClient) PerformTransaction(offerName, authToken, statsToken string) (*primitive.ObjectID, string, error) {
-	req, err := BuildRequest("POST", c.MicrotransactionsAddr, fmt.Sprintf(api.MakeTransactionPath, offerName), nil)
+func (c *MicrotransactionsClient) PerformTransaction(offerName, authToken, statsToken string) (*primitive.ObjectID,
+	string, error) {
+	req, err := BuildRequest("POST", c.MicrotransactionsAddr,
+		fmt.Sprintf(api.MakeTransactionPath, offerName),nil)
 	if err != nil {
-		return nil, "", err
+		return nil, "", wrapPerformTransactionError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
@@ -69,8 +72,8 @@ func (c *MicrotransactionsClient) PerformTransaction(offerName, authToken, stats
 	transactionId := &primitive.ObjectID{}
 	resp, err := DoRequest(c.httpClient, req, transactionId)
 	if err != nil {
-		return nil, "", nil
+		return nil, "", wrapPerformTransactionError(err)
 	}
 
-	return transactionId, resp.Header.Get(tokens.StatsTokenHeaderName), err
+	return transactionId, resp.Header.Get(tokens.StatsTokenHeaderName), nil
 }

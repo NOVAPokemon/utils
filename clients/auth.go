@@ -33,11 +33,12 @@ func NewAuthClient() *AuthClient {
 }
 
 func (client *AuthClient) LoginWithUsernameAndPassword(username, password string) error {
-	req, err := BuildRequest("POST", client.AuthAddr, api.LoginPath, utils.UserJSON{Username: username, Password: password})
+	userJSON := utils.UserJSON{Username: username, Password: password}
+	req, err := BuildRequest("POST", client.AuthAddr, api.LoginPath, userJSON)
 
 	resp, err := DoRequest(client.httpClient, req, nil)
 	if err != nil {
-		return err
+		return wrapLoginError(err)
 	}
 
 	client.AuthToken = resp.Header.Get(tokens.AuthTokenHeaderName)
@@ -46,11 +47,12 @@ func (client *AuthClient) LoginWithUsernameAndPassword(username, password string
 }
 
 func (client *AuthClient) Register(username string, password string) error {
-	req, err := BuildRequest("POST", client.AuthAddr, api.RegisterPath, utils.UserJSON{Username: username, Password: password})
+	userJSON := utils.UserJSON{Username: username, Password: password}
+	req, err := BuildRequest("POST", client.AuthAddr, api.RegisterPath, userJSON)
 
 	resp, err := DoRequest(client.httpClient, req, nil)
 	if err != nil {
-		return err
+		return wrapRegisterError(err)
 	}
 
 	client.AuthToken = resp.Header.Get(tokens.AuthTokenHeaderName)

@@ -5,6 +5,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/tokens"
+	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -38,36 +39,40 @@ func NewGymClient(httpClient *http.Client) *GymClient {
 func (g *GymClient) GetGymInfo(gymName string) (*utils.Gym, error) {
 	req, err := BuildRequest("GET", g.GymAddr, fmt.Sprintf(api.GetGymInfoPath, gymName), nil)
 	if err != nil {
-		return nil, err
+		return nil, wrapGetGymInfoError(err)
 	}
 
 	gym := &utils.Gym{}
 	_, err = DoRequest(g.HttpClient, req, gym)
-	return gym, err
+	return gym, wrapGetGymInfoError(err)
 }
 
 func (g *GymClient) CreateGym(toCreate utils.Gym) (*utils.Gym, error) {
 	req, err := BuildRequest("POST", g.GymAddr, api.CreateGymPath, toCreate)
 	if err != nil {
-		return nil, err
+		return nil, wrapCreateGymError(err)
 	}
 
 	createdGym := &utils.Gym{}
 	_, err = DoRequest(g.HttpClient, req, createdGym)
-	return createdGym, err
+	return createdGym, wrapCreateGymError(err)
 }
 
 func (g *GymClient) CreateRaid(gymName string) error {
 	req, err := BuildRequest("POST", g.GymAddr, fmt.Sprintf(api.CreateRaidPath, gymName), nil)
 	if err != nil {
-		return err
+		return wrapCreateRaidError(err)
 	}
+
 	_, err = DoRequest(g.HttpClient, req, nil)
 	log.Info("Finish createRaid")
-	return err
+
+	return wrapCreateRaidError(err)
 }
 
-func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsToken string, itemsToken string, gymId string) (*websocket.Conn, *battles.BattleChannels, error) {
+func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsToken string, itemsToken string,
+	gymId string) (*websocket.Conn, *battles.BattleChannels, error) {
+
 	log.Infof("Dialing: %s %s", g.GymAddr, fmt.Sprintf(api.GetGymInfoPath, gymId))
 	u := url.URL{Scheme: "ws", Host: g.GymAddr, Path: fmt.Sprintf(api.JoinRaidPath, gymId)}
 	log.Infof("Connecting to: %s", u.String())
@@ -85,7 +90,7 @@ func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsTo
 
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
-		log.Fatal(err)
+		err = wrapEnterRaidError(websockets.WrapDialingError(err, u.String()))
 		return nil, nil, err
 	}
 
