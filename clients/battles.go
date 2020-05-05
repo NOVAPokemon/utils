@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
@@ -43,13 +44,13 @@ func (client *BattleLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
 
 	resp, err := http.Get(u.String())
 	if err != nil {
-		return nil, wrapGetBattleLobbiesError(err)
+		return nil, errors.WrapGetBattleLobbiesError(err)
 	}
 
 	var availableBattles []utils.Lobby
 	err = json.NewDecoder(resp.Body).Decode(&availableBattles)
 	if err != nil {
-		return nil, wrapGetBattleLobbiesError(err)
+		return nil, errors.WrapGetBattleLobbiesError(err)
 	}
 
 	return availableBattles, nil
@@ -73,7 +74,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
-		err = wrapQueueForBattleError(websockets.WrapDialingError(err, u.String()))
+		err = errors.WrapQueueForBattleError(websockets.WrapDialingError(err, u.String()))
 		return nil, nil, err
 	}
 
@@ -105,7 +106,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
-		err = wrapChallengeForBattleError(websockets.WrapDialingError(err, u.String()))
+		err = errors.WrapChallengeForBattleError(websockets.WrapDialingError(err, u.String()))
 		return nil, nil, err
 	}
 
@@ -138,7 +139,7 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
-		err = wrapAcceptBattleChallengeError(websockets.WrapDialingError(err, u.String()))
+		err = errors.WrapAcceptBattleChallengeError(websockets.WrapDialingError(err, u.String()))
 		return nil, nil, err
 	}
 

@@ -2,60 +2,6 @@ package clients
 
 import "github.com/pkg/errors"
 
-
-
-// BATTLES CLIENT
-// Battles client error messages
-const (
-	errorGetBattleLobbies      = "error getting battle lobbies"
-	errorQueueForBattle        = "error queueing for battle"
-	errorChallengeForBattle    = "error challenging for battle"
-	errorAcceptBattleChallenge = "error accepting battle challenge"
-)
-
-// Battles client wrappers
-func wrapGetBattleLobbiesError(err error) error {
-	return errors.Wrap(err, errorGetBattleLobbies)
-}
-
-func wrapQueueForBattleError(err error) error {
-	return errors.Wrap(err, errorQueueForBattle)
-}
-
-func wrapChallengeForBattleError(err error) error {
-	return errors.Wrap(err, errorChallengeForBattle)
-}
-
-func wrapAcceptBattleChallengeError(err error) error {
-	return errors.Wrap(err, errorAcceptBattleChallenge)
-}
-
-// GYM CLIENT
-// Gym client error messages
-const (
-	errorGetGymInfo = "error getting gym info"
-	errorCreateGym  = "error creating gym"
-	errorCreateRaid = "error creating raid"
-	errorEnterRaid  = "error entering raid"
-)
-
-// Gym client wrappers
-func wrapGetGymInfoError(err error) error {
-	return errors.Wrap(err, errorGetGymInfo)
-}
-
-func wrapCreateGymError(err error) error {
-	return errors.Wrap(err, errorCreateGym)
-}
-
-func wrapCreateRaidError(err error) error {
-	return errors.Wrap(err, errorCreateRaid)
-}
-
-func wrapEnterRaidError(err error) error {
-	return errors.Wrap(err, errorEnterRaid)
-}
-
 // LOCATION CLIENT
 // Location client error messages
 const (

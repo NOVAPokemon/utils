@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
@@ -39,35 +40,35 @@ func NewGymClient(httpClient *http.Client) *GymClient {
 func (g *GymClient) GetGymInfo(gymName string) (*utils.Gym, error) {
 	req, err := BuildRequest("GET", g.GymAddr, fmt.Sprintf(api.GetGymInfoPath, gymName), nil)
 	if err != nil {
-		return nil, wrapGetGymInfoError(err)
+		return nil, errors.WrapGetGymInfoError(err)
 	}
 
 	gym := &utils.Gym{}
 	_, err = DoRequest(g.HttpClient, req, gym)
-	return gym, wrapGetGymInfoError(err)
+	return gym, errors.WrapGetGymInfoError(err)
 }
 
 func (g *GymClient) CreateGym(toCreate utils.Gym) (*utils.Gym, error) {
 	req, err := BuildRequest("POST", g.GymAddr, api.CreateGymPath, toCreate)
 	if err != nil {
-		return nil, wrapCreateGymError(err)
+		return nil, errors.WrapCreateGymError(err)
 	}
 
 	createdGym := &utils.Gym{}
 	_, err = DoRequest(g.HttpClient, req, createdGym)
-	return createdGym, wrapCreateGymError(err)
+	return createdGym, errors.WrapCreateGymError(err)
 }
 
 func (g *GymClient) CreateRaid(gymName string) error {
 	req, err := BuildRequest("POST", g.GymAddr, fmt.Sprintf(api.CreateRaidPath, gymName), nil)
 	if err != nil {
-		return wrapCreateRaidError(err)
+		return errors.WrapCreateRaidError(err)
 	}
 
 	_, err = DoRequest(g.HttpClient, req, nil)
 	log.Info("Finish createRaid")
 
-	return wrapCreateRaidError(err)
+	return errors.WrapCreateRaidError(err)
 }
 
 func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsToken string, itemsToken string,
@@ -90,7 +91,7 @@ func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsTo
 
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
-		err = wrapEnterRaidError(websockets.WrapDialingError(err, u.String()))
+		err = errors.WrapEnterRaidError(websockets.WrapDialingError(err, u.String()))
 		return nil, nil, err
 	}
 
