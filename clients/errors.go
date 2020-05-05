@@ -21,10 +21,10 @@ func wrapRegisterError(err error) error {
 // BATTLES CLIENT
 // Battles client error messages
 const (
-	errorGetBattleLobbies      = "error getting lobbies"
+	errorGetBattleLobbies      = "error getting battle lobbies"
 	errorQueueForBattle        = "error queueing for battle"
 	errorChallengeForBattle    = "error challenging for battle"
-	errorAcceptBattleChallenge = "error accepting challenge"
+	errorAcceptBattleChallenge = "error accepting battle challenge"
 )
 
 // Battles client wrappers
@@ -130,10 +130,10 @@ func wrapPerformTransactionError(err error) error {
 // NOTIFICATIONS CLIENT
 // Notifications client error messages
 const (
-	errorListeningNotifications = "error getting offers"
-	errorStopListening          = "error getting transaction records"
-	errorAddNotification        = "error performing transaction"
-	errorGetOthersListening     = "error performing transaction"
+	errorListeningNotifications = "error listening to notifications"
+	errorStopListening          = "error stopping listen on notifications"
+	errorAddNotification        = "error adding notification"
+	errorGetOthersListening     = "error getting others listening"
 )
 
 // Notifications client wrappers
@@ -151,4 +151,46 @@ func wrapAddNotificationError(err error) error {
 
 func wrapGetOthersListeningError(err error) error {
 	return errors.Wrap(err, errorGetOthersListening)
+}
+
+// STORE CLIENT
+// Store client error messages
+const (
+	errorGetItems = "error getting items"
+	errorBuyItem  = "error buying item"
+)
+
+// Store client wrappers
+func wrapGetItemsError(err error) error {
+	return errors.Wrap(err, errorGetItems)
+}
+
+func wrapBuyItemError(err error) error {
+	return errors.Wrap(err, errorBuyItem)
+}
+
+// TRADES CLIENT
+// Trades client error messages
+const (
+	errorGetTradeLobbies          = "error getting trade lobbies"
+	errorCreateTradeLobby         = "error creating trade lobby"
+	errorJoinTradeLobby           = "error joining trade lobby"
+	errorHandleMessagesTradeLobby = "error handling received messages"
+)
+
+// Trades client wrappers
+func wrapGetTradeLobbiesError(err error) error {
+	return errors.Wrap(err, errorGetTradeLobbies)
+}
+
+func wrapCreateTradeLobbyError(err error) error {
+	return errors.Wrap(err, errorCreateTradeLobby)
+}
+
+func wrapJoinTradeLobbyError(err error) error {
+	return errors.Wrap(err, errorJoinTradeLobby)
+}
+
+func wrapHandleMessagesTradeError(err error) error {
+	return errors.Wrap(err, errorHandleMessagesTradeLobby)
 }
