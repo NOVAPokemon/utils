@@ -39,29 +39,27 @@ func NewTradesClient(config utils.TradesClientConfig) *TradeLobbyClient {
 	}
 }
 
-func (client *TradeLobbyClient) GetAvailableLobbies() []utils.Lobby {
+func (client *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
 	req, err := BuildRequest("GET", client.TradesAddr, api.GetTradesPath, nil)
 	if err != nil {
-		log.Error(err)
-		return nil
+		return nil, wrapGetTradeLobbiesError(err)
 	}
 
 	var tradesArray []utils.Lobby
 	_, err = DoRequest(&http.Client{}, req, &tradesArray)
 	if err != nil {
-		log.Error(err)
-		return nil
+		return nil, wrapGetTradeLobbiesError(err)
 	}
 
-	return tradesArray
+	return tradesArray, nil
 }
 
-func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken string, itemsToken string) *primitive.ObjectID {
+func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken string,
+	itemsToken string) (*primitive.ObjectID, error) {
 	body := api.CreateLobbyRequest{Username: username}
 	req, err := BuildRequest("POST", client.TradesAddr, api.StartTradePath, &body)
 	if err != nil {
-		log.Error(err)
-		return nil
+		return nil, wrapCreateTradeLobbyError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
@@ -70,20 +68,19 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	var lobbyIdHex string
 	_, err = DoRequest(&http.Client{}, req, &lobbyIdHex)
 	if err != nil {
-		log.Error(err)
-		return nil
+		return nil, wrapCreateTradeLobbyError(err)
 	}
 
 	lobbyId, err := primitive.ObjectIDFromHex(lobbyIdHex)
 	if err != nil {
-		log.Error(err)
-		return nil
+		return nil, wrapCreateTradeLobbyError(err)
 	}
 
-	return &lobbyId
+	return &lobbyId, nil
 }
 
-func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, authToken string, itemsToken string) *string {
+func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, authToken string,
+	itemsToken string) (*string, error) {
 	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: fmt.Sprintf(api.JoinTradePath, tradeId.Hex())}
 	log.Infof("Connecting to: %s", u.String())
 
@@ -98,7 +95,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 
 	conn, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
-		log.Fatal(err)
+		return nil, wrapJoinTradeLobbyError(err)
 	}
 
 	defer websockets.CloseConnection(conn)
@@ -106,8 +103,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 
 	items, err := tokens.ExtractItemsToken(itemsToken)
 	if err != nil {
-		log.Error(err)
-		return nil
+		return nil, wrapJoinTradeLobbyError(err)
 	}
 
 	started := make(chan struct{})
@@ -115,7 +111,11 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 	setItemsToken := make(chan *string)
 	writeChannel := make(chan *string)
 
-	go client.HandleReceivedMessages(conn, started, finished, setItemsToken)
+	go func() {
+		if err := client.HandleReceivedMessages(conn, started, finished, setItemsToken); err != nil{
+			log.Error(err)
+		}
+	}()
 
 	itemIds := make([]string, len(items.Items))
 	i := 0
@@ -132,18 +132,17 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 
 	log.Info("Finishing trade...")
 
-	return <-setItemsToken
+	return <-setItemsToken, nil
 }
 
 func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, started, finished chan struct{},
-	setItemsToken chan *string) {
+	setItemsToken chan *string) error {
 	var itemsToken *string = nil
 
 	for {
 		msg, err := Read(conn)
 		if err != nil {
-			log.Error(err)
-			return
+			return wrapHandleMessagesTradeError(err)
 		}
 
 		switch msg.MsgType {
@@ -157,8 +156,9 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			tokenMessage := trades.DeserializeTradeMessage(msg).(*trades.SetTokenMessage)
 			token, err := tokens.ExtractItemsToken(tokenMessage.TokenString)
 			if err != nil {
-				log.Error(err)
+				log.Error(wrapHandleMessagesTradeError(err))
 			}
+
 			itemsToken = &tokenMessage.TokenString
 			log.Info(token.ItemsHash)
 		case trades.Finish:
@@ -166,12 +166,13 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			log.Info("Finished, Success: ", finishMsg.Success)
 			close(finished)
 			setItemsToken <- itemsToken
-			return
+			return wrapHandleMessagesTradeError(err)
 		}
 	}
 }
 
-func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel chan *string, finished chan struct{}) {
+func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel chan *string,
+	finished chan struct{}) {
 	select {
 	case <-finished:
 		return
