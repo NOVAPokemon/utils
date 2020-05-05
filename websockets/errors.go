@@ -10,14 +10,17 @@ const (
 	errorClosingConnection = "error closing connection"
 	errorWritingMessage    = "error writing message"
 	errorReadingMessage    = "error reading message"
+	errorParsingMessage    = "error parsing message from websocket"
+	errorHandleRecv        = "error in receive routine"
+	errorHandleSend        = "error in sending routine"
 
-	errorParsingMessageFormat = "error parsing message from websocket, %s"
 	errorInvalidMsgTypeFormat = "error unsupported msg type %s"
 	errorDialingMessageFormat = "error dialing %s"
 )
 
 var (
-	ErrorInvalidMessageFormat = errors.New("error parsing message from websocket")
+	ErrorMessageNil           = errors.New("message is nil")
+	ErrorInvalidMessageFormat = errors.New("error invalid message format")
 	ErrorInvalidMessageType   = errors.New("error invalid message type")
 )
 
@@ -38,12 +41,20 @@ func WrapReadingMessageError(err error) error {
 	return errors.Wrap(err, errorReadingMessage)
 }
 
-func WrapMsgParsingError(err error, msgString string) error {
-	return errors.Wrap(err, fmt.Sprintf(errorParsingMessageFormat, msgString))
-}
-
 func WrapDialingError(err error, url string) error {
 	return errors.Wrap(err, fmt.Sprintf(errorDialingMessageFormat, url))
+}
+
+func wrapMsgParsingError(err error) error {
+	return errors.Wrap(err, errorParsingMessage)
+}
+
+func wrapHandleReceiveError(err error) error {
+	return errors.Wrap(err, errorHandleRecv)
+}
+
+func wrapHandleSendError(err error) error {
+	return errors.Wrap(err, errorHandleSend)
 }
 
 // Error builders
