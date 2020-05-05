@@ -2,21 +2,7 @@ package clients
 
 import "github.com/pkg/errors"
 
-// AUTH CLIENT
-// Auth client error messages
-const (
-	errorLogin    = "error logging in"
-	errorRegister = "error registering"
-)
 
-// Auth client wrappers
-func wrapLoginError(err error) error {
-	return errors.Wrap(err, errorLogin)
-}
-
-func wrapRegisterError(err error) error {
-	return errors.Wrap(err, errorRegister)
-}
 
 // BATTLES CLIENT
 // Battles client error messages

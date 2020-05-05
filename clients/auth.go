@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -38,7 +39,7 @@ func (client *AuthClient) LoginWithUsernameAndPassword(username, password string
 
 	resp, err := DoRequest(client.httpClient, req, nil)
 	if err != nil {
-		return wrapLoginError(err)
+		return errors.WrapLoginError(err)
 	}
 
 	client.AuthToken = resp.Header.Get(tokens.AuthTokenHeaderName)
@@ -52,7 +53,7 @@ func (client *AuthClient) Register(username string, password string) error {
 
 	resp, err := DoRequest(client.httpClient, req, nil)
 	if err != nil {
-		return wrapRegisterError(err)
+		return errors.WrapRegisterError(err)
 	}
 
 	client.AuthToken = resp.Header.Get(tokens.AuthTokenHeaderName)
