@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
+	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/trades"
@@ -42,13 +43,13 @@ func NewTradesClient(config utils.TradesClientConfig) *TradeLobbyClient {
 func (client *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
 	req, err := BuildRequest("GET", client.TradesAddr, api.GetTradesPath, nil)
 	if err != nil {
-		return nil, wrapGetTradeLobbiesError(err)
+		return nil, errors.WrapGetTradeLobbiesError(err)
 	}
 
 	var tradesArray []utils.Lobby
 	_, err = DoRequest(&http.Client{}, req, &tradesArray)
 	if err != nil {
-		return nil, wrapGetTradeLobbiesError(err)
+		return nil, errors.WrapGetTradeLobbiesError(err)
 	}
 
 	return tradesArray, nil
@@ -59,7 +60,7 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	body := api.CreateLobbyRequest{Username: username}
 	req, err := BuildRequest("POST", client.TradesAddr, api.StartTradePath, &body)
 	if err != nil {
-		return nil, wrapCreateTradeLobbyError(err)
+		return nil, errors.WrapCreateTradeLobbyError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
@@ -68,12 +69,12 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	var lobbyIdHex string
 	_, err = DoRequest(&http.Client{}, req, &lobbyIdHex)
 	if err != nil {
-		return nil, wrapCreateTradeLobbyError(err)
+		return nil, errors.WrapCreateTradeLobbyError(err)
 	}
 
 	lobbyId, err := primitive.ObjectIDFromHex(lobbyIdHex)
 	if err != nil {
-		return nil, wrapCreateTradeLobbyError(err)
+		return nil, errors.WrapCreateTradeLobbyError(err)
 	}
 
 	return &lobbyId, nil
@@ -95,7 +96,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 
 	conn, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
-		return nil, wrapJoinTradeLobbyError(err)
+		return nil, errors.WrapJoinTradeLobbyError(err)
 	}
 
 	defer websockets.CloseConnection(conn)
@@ -103,7 +104,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 
 	items, err := tokens.ExtractItemsToken(itemsToken)
 	if err != nil {
-		return nil, wrapJoinTradeLobbyError(err)
+		return nil, errors.WrapJoinTradeLobbyError(err)
 	}
 
 	started := make(chan struct{})
@@ -142,7 +143,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 	for {
 		msg, err := Read(conn)
 		if err != nil {
-			return wrapHandleMessagesTradeError(err)
+			return errors.WrapHandleMessagesTradeError(err)
 		}
 
 		switch msg.MsgType {
@@ -156,7 +157,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			tokenMessage := trades.DeserializeTradeMessage(msg).(*trades.SetTokenMessage)
 			token, err := tokens.ExtractItemsToken(tokenMessage.TokenString)
 			if err != nil {
-				log.Error(wrapHandleMessagesTradeError(err))
+				log.Error(errors.WrapHandleMessagesTradeError(err))
 			}
 
 			itemsToken = &tokenMessage.TokenString
@@ -166,7 +167,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			log.Info("Finished, Success: ", finishMsg.Success)
 			close(finished)
 			setItemsToken <- itemsToken
-			return wrapHandleMessagesTradeError(err)
+			return errors.WrapHandleMessagesTradeError(err)
 		}
 	}
 }
