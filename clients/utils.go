@@ -3,8 +3,6 @@ package clients
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
 	"github.com/gorilla/websocket"
@@ -84,32 +82,40 @@ func MainLoop(conn *websocket.Conn, writeChannel chan *string, finished chan str
 		case <-finished:
 			return
 		case msg := <-writeChannel:
-			Send(conn, msg)
+			err := Send(conn, msg)
+			log.Error(wrapMainLoopError(err))
 		}
 	}
 }
 
 // REQUESTS
 
-func BuildRequest(method, host, path string, body interface{}) (request *http.Request, err error) {
+func BuildRequest(method, host, path string, body interface{}) (*http.Request, error) {
 	hostUrl := url.URL{
 		Scheme: "http",
 		Host:   host,
 		Path:   path,
 	}
 
+	var (
+		err        error
+		request    *http.Request
+		bodyBuffer *bytes.Buffer
+	)
+
 	if body != nil {
-		jsonStr, err := json.Marshal(body)
+		var jsonStr []byte
+		jsonStr, err = json.Marshal(body)
 		if err != nil {
-			return nil, err
+			return nil, wrapBuildRequestError(err)
 		}
-		request, err = http.NewRequest(method, hostUrl.String(), bytes.NewBuffer(jsonStr))
-	} else {
-		request, err = http.NewRequest(method, hostUrl.String(), nil)
+
+		bodyBuffer = bytes.NewBuffer(jsonStr)
 	}
 
+	request, err = http.NewRequest(method, hostUrl.String(), bodyBuffer)
 	if err != nil {
-		return nil, err
+		return nil, wrapBuildRequestError(err)
 	}
 
 	request.Header.Set("Content-Type", "application/json")
@@ -122,25 +128,23 @@ func DoRequest(httpClient *http.Client, request *http.Request, responseBody inte
 	log.Infof("Doing request: %s %s", request.Method, request.URL.String())
 
 	if httpClient == nil {
-		return nil, errors.New(fmt.Sprintf("httpclient is nil for: %s", request.URL.String()))
+		return nil, wrapDoRequestError(newHttpClientNilError(request.URL.String()))
 	}
 
 	resp, err := httpClient.Do(request)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, wrapDoRequestError(err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Warnf("got status code %d", resp.StatusCode)
-		return nil, errors.New(fmt.Sprintf("got status code %d", resp.StatusCode))
+		return nil, wrapDoRequestError(newUnexpectedResponseStatusError(resp.StatusCode))
 	}
 
 	if responseBody != nil {
 		err = json.NewDecoder(resp.Body).Decode(responseBody)
 		if err != nil {
-			log.Error(err)
-			return nil, err
+			return nil, wrapDoRequestError(err)
 		}
 	}
 
