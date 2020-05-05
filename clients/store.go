@@ -35,20 +35,20 @@ func NewStoreClient() *StoreClient {
 func (c *StoreClient) GetItems(authToken string) ([]*items.StoreItem, error) {
 	req, err := BuildRequest("GET", c.StoreAddr, api.GetShopItemsPath, nil)
 	if err != nil {
-		return nil, err
+		return nil, wrapGetItemsError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var respItems []*items.StoreItem
 	_, err = DoRequest(c.httpClient, req, &respItems)
-	return respItems, err
+	return respItems, wrapGetItemsError(err)
 }
 
 func (c *StoreClient) BuyItem(itemName, authToken, statsToken string) (string, string, error) {
 	req, err := BuildRequest("POST", c.StoreAddr, fmt.Sprintf(api.BuyItemPath, itemName), nil)
 	if err != nil {
-		return "","", err
+		return "","", wrapBuyItemError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
@@ -56,8 +56,8 @@ func (c *StoreClient) BuyItem(itemName, authToken, statsToken string) (string, s
 
 	resp, err := DoRequest(c.httpClient, req, nil)
 	if err != nil {
-		return "", "", nil
+		return "", "", wrapBuyItemError(err)
 	}
 
-	return resp.Header.Get(tokens.StatsTokenHeaderName), resp.Header.Get(tokens.ItemsTokenHeaderName), err
+	return resp.Header.Get(tokens.StatsTokenHeaderName), resp.Header.Get(tokens.ItemsTokenHeaderName), nil
 }
