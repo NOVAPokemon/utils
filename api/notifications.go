@@ -2,11 +2,11 @@ package api
 
 import "fmt"
 
-const NotificationPath = "/notification"
-const SubscribeNotificationPath = "/subscribe"
-const UnsubscribeNotificationPath = "/unsubscribe"
-const SpecificNotificationPath = "/notification/%s"
-const GetListenersPath = "/listening"
+const NotificationPath = "/notifications"
+const SubscribeNotificationPath = "/notifications/subscribe"
+const UnsubscribeNotificationPath = "/notifications/unsubscribe"
+const SpecificNotificationPath = "/notifications/notification/%s"
+const GetListenersPath = "/notifications/listening"
 
 const IdPathVar = "id"
 

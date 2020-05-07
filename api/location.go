@@ -5,10 +5,10 @@ import (
 	"github.com/NOVAPokemon/utils/pokemons"
 )
 
-const UserLocationPath = "/user_location"
-const GymLocationPath = "/gym_location"
-const CatchWildPokemonPath = "/catch"
-const SetRegionAreaPath = "/region"
+const UserLocationPath = "/location/user_location"
+const GymLocationPath = "/location/gym_location"
+const CatchWildPokemonPath = "/location/catch"
+const SetRegionAreaPath = "/location/region"
 
 var SetRegionAreaRoute = SetRegionAreaPath
 var UserLocationRoute = UserLocationPath

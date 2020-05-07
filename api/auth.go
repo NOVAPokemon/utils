@@ -1,5 +1,5 @@
 package api
 
-const RegisterPath = "/register"
-const LoginPath = "/login"
-const RefreshPath = "/refresh"
+const RegisterPath = "/authentication/register"
+const LoginPath = "/authentication/login"
+const RefreshPath = "/authentication/refresh"
