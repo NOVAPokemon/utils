@@ -38,19 +38,17 @@ func (nMsg NotificationMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func DeserializeNotificationMessage(msg *ws.Message) ws.Serializable {
+func DeserializeNotificationMessage(msg *ws.Message) (ws.Serializable, error) {
 	switch msg.MsgType {
 	case Notification:
 		var notificationMsg NotificationMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &notificationMsg)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeNotificationMsgError(err, msg.MsgType)
 		}
 
-		return &notificationMsg
+		return &notificationMsg, nil
 	default:
-		log.Info("invalid msg type")
-		return nil
+		return nil, wrapDeserializeNotificationMsgError(ws.ErrorInvalidMessageType, msg.MsgType)
 	}
 }

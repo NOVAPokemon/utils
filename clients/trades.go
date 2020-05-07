@@ -6,7 +6,7 @@ import (
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
-	"github.com/NOVAPokemon/utils/websockets"
+	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -99,7 +99,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 		return nil, errors.WrapJoinTradeLobbyError(err)
 	}
 
-	defer websockets.CloseConnection(conn)
+	defer ws.CloseConnection(conn)
 	client.conn = conn
 
 	items, err := tokens.ExtractItemsToken(itemsToken)
@@ -138,7 +138,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 
 func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, started, finished chan struct{},
 	setItemsToken chan *string) error {
-	var itemsToken *string = nil
+	var itemsToken *string
 
 	for {
 		msg, err := Read(conn)
@@ -147,23 +147,42 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 		}
 
 		switch msg.MsgType {
-		case trades.Start:
+		case ws.Start:
 			close(started)
 		case trades.Update:
-			updateMsg := trades.DeserializeTradeMessage(msg).(*trades.UpdateMessage)
-			updateMsg.Receive(websockets.MakeTimestamp())
-			updateMsg.LogReceive(trades.Update)
-		case trades.SetToken:
-			tokenMessage := trades.DeserializeTradeMessage(msg).(*trades.SetTokenMessage)
-			token, err := tokens.ExtractItemsToken(tokenMessage.TokenString)
+			desMsg, err := trades.DeserializeTradeMessage(msg)
 			if err != nil {
 				log.Error(errors.WrapHandleMessagesTradeError(err))
+				continue
 			}
 
-			itemsToken = &tokenMessage.TokenString
+			updateMsg := desMsg.(*trades.UpdateMessage)
+			updateMsg.Receive(ws.MakeTimestamp())
+			updateMsg.LogReceive(trades.Update)
+		case ws.SetToken:
+			desMsg, err := trades.DeserializeTradeMessage(msg)
+			if err != nil {
+				log.Error(errors.WrapHandleMessagesTradeError(err))
+				continue
+			}
+
+			tokenMessage := desMsg.(*ws.SetTokenMessage)
+			token, err := tokens.ExtractItemsToken(tokenMessage.TokensString[0])
+			if err != nil {
+				log.Error(errors.WrapHandleMessagesTradeError(err))
+				continue
+			}
+
+			itemsToken = &tokenMessage.TokensString[0]
 			log.Info(token.ItemsHash)
-		case trades.Finish:
-			finishMsg := trades.DeserializeTradeMessage(msg).(*trades.FinishMessage)
+		case ws.Finish:
+			desMsg, err := trades.DeserializeTradeMessage(msg)
+			if err != nil {
+				log.Error(errors.WrapHandleMessagesTradeError(err))
+				continue
+			}
+
+			finishMsg := desMsg.(*ws.FinishMessage)
 			log.Info("Finished, Success: ", finishMsg.Success)
 			close(finished)
 			setItemsToken <- itemsToken

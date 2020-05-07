@@ -3,8 +3,7 @@ package clients
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/NOVAPokemon/utils/websockets"
-	"github.com/NOVAPokemon/utils/websockets/battles"
+	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -12,7 +11,7 @@ import (
 )
 
 func Send(conn *websocket.Conn, msg *string) error {
-	return websockets.WrapWritingMessageError(conn.WriteMessage(websocket.TextMessage, []byte(*msg)))
+	return ws.WrapWritingMessageError(conn.WriteMessage(websocket.TextMessage, []byte(*msg)))
 }
 
 func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished chan struct{}) {
@@ -32,13 +31,13 @@ func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished cha
 			}
 
 			msg := string(message)
-			battleMsg, err := websockets.ParseMessage(&msg)
+			battleMsg, err := ws.ParseMessage(&msg)
 			if err != nil {
 				close(finished)
 				return
 			}
 
-			if battleMsg.MsgType == battles.Finish {
+			if battleMsg.MsgType == ws.Finish {
 				log.Info("Received finish message")
 				close(finished)
 				return
@@ -48,18 +47,18 @@ func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished cha
 	}
 }
 
-func Read(conn *websocket.Conn) (*websockets.Message, error) {
+func Read(conn *websocket.Conn) (*ws.Message, error) {
 	_, msgBytes, err := conn.ReadMessage()
 	if err != nil {
-		return nil, websockets.WrapReadingMessageError(err)
+		return nil, ws.WrapReadingMessageError(err)
 	}
 
 	msgString := string(msgBytes)
 	log.Debugf("Received %s from the websocket", msgString)
 
-	msg, err := websockets.ParseMessage(&msgString)
+	msg, err := ws.ParseMessage(&msgString)
 	if err != nil {
-		return nil, websockets.WrapReadingMessageError(err)
+		return nil, ws.WrapReadingMessageError(err)
 	}
 
 	return msg, nil

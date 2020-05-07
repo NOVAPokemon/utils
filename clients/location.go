@@ -105,9 +105,19 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 
 			switch msg.MsgType {
 			case location.Gyms:
-				c.Gyms = location.Deserialize(msg).(*location.GymsMessage).Gyms
+				desMsg, err := location.Deserialize(msg)
+				if err != nil {
+					return errors.WrapStartLocationUpdatesError(err)
+				}
+
+				c.Gyms = desMsg.(*location.GymsMessage).Gyms
 			case location.Pokemon:
-				c.Pokemons = location.Deserialize(msg).(*location.PokemonMessage).Pokemon
+				desMsg, err := location.Deserialize(msg)
+				if err != nil {
+					return errors.WrapStartLocationUpdatesError(err)
+				}
+
+				c.Pokemons = desMsg.(*location.PokemonMessage).Pokemon
 			default:
 				log.Warn("got message type ", msg.MsgType)
 			}

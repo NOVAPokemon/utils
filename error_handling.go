@@ -15,10 +15,6 @@ const (
 	errorReadingStdin   = "error reading from stdin"
 )
 
-var (
-	ErrorConnectionUpgrade = errors.New("error upgrading connection")
-)
-
 func LogAndSendHTTPError(w *http.ResponseWriter, err error, httpCode int) {
 	log.Error(err)
 	http.Error(*w, err.Error(), httpCode)

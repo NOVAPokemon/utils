@@ -1,7 +1,6 @@
 package items
 
 import (
-	"errors"
 	"github.com/NOVAPokemon/utils/pokemons"
 )
 
@@ -27,11 +26,6 @@ type Effect struct {
 }
 
 var (
-	ErrNotAppliable = errors.New("item not appliable")
-	ErrInvalidId    = errors.New("invalid item id")
-)
-
-var (
 	HealEffect       = Effect{Appliable: true, Id: HealId, Value: NoValue}
 	ReviveEffect     = Effect{Appliable: true, Id: ReviveId, Value: NoValue}
 	PokeBallEffect   = Effect{Appliable: false, Id: PokeBallId, Value: PokeBallValue}
@@ -42,7 +36,7 @@ var (
 
 func (item *Item) Apply(pokemon *pokemons.Pokemon) error {
 	if !item.Effect.Appliable {
-		return ErrNotAppliable
+		return ErrorNotAppliable
 	}
 
 	switch item.Effect.Id {
@@ -54,7 +48,7 @@ func (item *Item) Apply(pokemon *pokemons.Pokemon) error {
 	case ReviveId:
 		pokemon.HP = pokemon.MaxHP
 	default:
-		return ErrInvalidId
+		return ErrorInvalidId
 	}
 
 	return nil

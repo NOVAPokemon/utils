@@ -136,7 +136,13 @@ func (client *NotificationClient) GetOthersListening(authToken string) ([]string
 }
 
 func (client *NotificationClient) parseToNotification(msg *ws.Message) {
-	notificationMsg := notificationMessages.DeserializeNotificationMessage(msg).(*notificationMessages.NotificationMessage)
+	desMsg, err := notificationMessages.DeserializeNotificationMessage(msg)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	notificationMsg := desMsg.(*notificationMessages.NotificationMessage)
 	notificationMsg.Receive(ws.MakeTimestamp())
 	notificationMsg.LogReceive(notificationMessages.Notification)
 	client.NotificationsChannel <- &notificationMsg.Notification

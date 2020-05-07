@@ -12,16 +12,11 @@ import (
 const (
 	Attack        = "ATTACK"
 	Defend        = "DEFEND"
-	Error         = "ERROR"          // done
-	UpdatePokemon = "UPDATE_POKEMON" // done
-	RemoveItem    = "REMOVE_ITEM"    // done
-	SetToken      = "SET_TOKEN"      // done
-	UseItem       = "USE_ITEM"       // done
-	SelectPokemon = "SELECT_POKEMON" // done
-	Start         = "START"          // done
-	Finish        = "FINISH"         // done
-	Status        = "STATUS"         // done
-
+	UpdatePokemon = "UPDATE_POKEMON"
+	RemoveItem    = "REMOVE_ITEM"
+	UseItem       = "USE_ITEM"
+	SelectPokemon = "SELECT_POKEMON"
+	Status        = "STATUS"
 )
 
 type DefendMessage struct {
@@ -31,7 +26,7 @@ type DefendMessage struct {
 func (aMsg DefendMessage) SerializeToWSMessage() *websockets.Message {
 	return &websockets.Message{
 		MsgType: Defend,
-		MsgArgs: []string{},
+		MsgArgs: nil,
 	}
 }
 
@@ -46,10 +41,9 @@ func NewAttackMessage() AttackMessage {
 }
 
 func (aMsg AttackMessage) SerializeToWSMessage() *websockets.Message {
-
 	msgJson, err := json.Marshal(aMsg)
 	if err != nil {
-		log.Error(err)
+		log.Error(websockets.WrapSerializeToWSMessageError(err, Attack))
 		return nil
 	}
 
@@ -68,7 +62,7 @@ type UpdatePokemonMessage struct {
 func (upMsg UpdatePokemonMessage) SerializeToWSMessage() *websockets.Message {
 	msgJson, err := json.Marshal(upMsg)
 	if err != nil {
-		log.Error(err)
+		log.Error(websockets.WrapSerializeToWSMessageError(err, UpdatePokemon))
 		return nil
 	}
 
@@ -86,7 +80,7 @@ type RemoveItemMessage struct {
 func (riMsg RemoveItemMessage) SerializeToWSMessage() *websockets.Message {
 	msgJson, err := json.Marshal(riMsg)
 	if err != nil {
-		log.Error(err)
+		log.Error(websockets.WrapSerializeToWSMessageError(err, RemoveItem))
 		return nil
 	}
 
@@ -111,7 +105,7 @@ func NewUseItemMessage(itemId string) UseItemMessage {
 func (uiMsg UseItemMessage) SerializeToWSMessage() *websockets.Message {
 	msgJson, err := json.Marshal(uiMsg)
 	if err != nil {
-		log.Error(err)
+		log.Error(websockets.WrapSerializeToWSMessageError(err, UseItem))
 		return nil
 	}
 
@@ -129,7 +123,7 @@ type StatusMessage struct {
 func (statusMsg StatusMessage) SerializeToWSMessage() *websockets.Message {
 	msgJson, err := json.Marshal(statusMsg)
 	if err != nil {
-		log.Error(err)
+		log.Error(websockets.WrapSerializeToWSMessageError(err, Status))
 		return nil
 	}
 
@@ -154,7 +148,7 @@ func NewSelectPokemonMessage(pokemonId string) SelectPokemonMessage {
 func (spMsg SelectPokemonMessage) SerializeToWSMessage() *websockets.Message {
 	msgJson, err := json.Marshal(spMsg)
 	if err != nil {
-		log.Error(err)
+		log.Error(websockets.WrapSerializeToWSMessageError(err, SelectPokemon))
 		return nil
 	}
 
@@ -164,202 +158,63 @@ func (spMsg SelectPokemonMessage) SerializeToWSMessage() *websockets.Message {
 	}
 }
 
-// Could be utils messages:
-
-// Start
-type StartMessage struct {
-	websockets.MessageWithId
-}
-
-func (sMsg StartMessage) SerializeToWSMessage() *websockets.Message {
-	msgJson, err := json.Marshal(sMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &websockets.Message{
-		MsgType: Start,
-		MsgArgs: []string{string(msgJson)},
-	}
-}
-
-// Finish
-type FinishMessage struct {
-	Success bool
-	websockets.MessageWithId
-}
-
-func (fMsg FinishMessage) SerializeToWSMessage() *websockets.Message {
-	msgJson, err := json.Marshal(fMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &websockets.Message{
-		MsgType: Finish,
-		MsgArgs: []string{string(msgJson)},
-	}
-}
-
-// SetToken
-type SetTokenMessage struct {
-	TokenField   string
-	TokensString [] string
-	websockets.MessageWithId
-}
-
-func (sMsg SetTokenMessage) SerializeToWSMessage() *websockets.Message {
-	msgJson, err := json.Marshal(sMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &websockets.Message{
-		MsgType: SetToken,
-		MsgArgs: []string{string(msgJson)},
-	}
-}
-
-// Error
-type ErrorMessage struct {
-	Info  string
-	Fatal bool
-	websockets.MessageWithId
-}
-
-func (eMsg ErrorMessage) SerializeToWSMessage() *websockets.Message {
-	msgJson, err := json.Marshal(eMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &websockets.Message{
-		MsgType: Error,
-		MsgArgs: []string{string(msgJson)},
-	}
-}
-
-/*
-const (
-	Status        = "STATUS"         // done
-	Start         = "START"          // done
-	Finish        = "FINISH"         // done
-	Error         = "ERROR"          // done
-	SetToken      = "SET_TOKEN"      // done
-
-	Move          = "MOVE"           // done
-	UpdatePokemon = "UPDATE_POKEMON" // done
-	RemoveItem    = "REMOVE_ITEM"    // done
-	UseItem       = "USE_ITEM"       // done
-	SelectPokemon = "SELECT_POKEMON" // done
-)
-*/
-
-func DeserializeBattleMsg(msg *websockets.Message) websockets.Serializable {
+func DeserializeBattleMsg(msg *websockets.Message) (websockets.Serializable, error) {
 	switch msg.MsgType {
 	case Status:
 		var statusMsg StatusMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &statusMsg)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeBattleMsgError(err, Status)
 		}
-		return &statusMsg
-
-	case Start:
-		var startMsg StartMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &startMsg)
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
-	case Finish:
-		var finishMsg FinishMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &finishMsg)
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
-		return &finishMsg
-
-	case Error:
-		var errMsg ErrorMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &errMsg)
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
-		return &errMsg
-
-	case SetToken:
-		var setTokenMessage SetTokenMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &setTokenMessage)
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
-		return &setTokenMessage
-
+		return &statusMsg, nil
 	case Attack:
 		var attackMessage AttackMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &attackMessage)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeBattleMsgError(err, Attack)
 		}
-		return &attackMessage
-
+		return &attackMessage, nil
 	case Defend:
 		var defendMessage DefendMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &defendMessage)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeBattleMsgError(err, Defend)
 		}
-		return &defendMessage
-
+		return &defendMessage, nil
 	case UpdatePokemon:
 		var updatePokemonMessage UpdatePokemonMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &updatePokemonMessage)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeBattleMsgError(err, UpdatePokemon)
 		}
-		return &updatePokemonMessage
-
+		return &updatePokemonMessage, nil
 	case RemoveItem:
 		var removeItemMessage RemoveItemMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &removeItemMessage)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeBattleMsgError(err, RemoveItem)
 		}
-		return &removeItemMessage
-
+		return &removeItemMessage, nil
 	case UseItem:
 		var useItemMessage UseItemMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &useItemMessage)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeBattleMsgError(err, UseItem)
 		}
-		return &useItemMessage
+		return &useItemMessage, nil
 	case SelectPokemon:
 		var selectPokemonMessage SelectPokemonMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &selectPokemonMessage)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeBattleMsgError(err, SelectPokemon)
 		}
-		return &selectPokemonMessage
-
+		return &selectPokemonMessage, nil
 	default:
-		log.Info("invalid msg type")
-		return nil
+		deserializedMsg, err := websockets.DeserializeMsg(msg)
+		if err != nil {
+			return nil, wrapDeserializeBattleMsgError(err, msg.MsgType)
+		}
+
+		return deserializedMsg, nil
 	}
-	return nil
 }

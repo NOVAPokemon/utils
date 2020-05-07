@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	ErrorParsing = ErrorMessage{
+	ErrorParsing = ws.ErrorMessage{
 		Info:  "error parsing message",
 		Fatal: false,
 	}.SerializeToWSMessage()
@@ -16,36 +16,10 @@ var (
 
 // Message Types
 const (
-	Start = "START"
-
 	Trade  = "TRADE"
 	Accept = "ACCEPT"
 	Update = "UPDATE"
-
-	SetToken = "SETTOKEN"
-	Finish   = "FINISH_TRADE"
-
-	Error = "ERROR"
-	None  = "NONE"
 )
-
-// Start
-type StartMessage struct {
-	ws.MessageWithId
-}
-
-func (sMsg StartMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(sMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: Start,
-		MsgArgs: []string{string(msgJson)},
-	}
-}
 
 // Trade
 type TradeMessage struct {
@@ -130,140 +104,40 @@ func UpdateMessageFromTrade(trade *TradeStatus, trackedMsg ws.TrackedMessage) *U
 	}
 }
 
-// SetToken
-type SetTokenMessage struct {
-	TokenString string
-	ws.MessageWithId
-}
-
-func (sMsg SetTokenMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(sMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: SetToken,
-		MsgArgs: []string{string(msgJson)},
-	}
-}
-
-// Finish
-type FinishMessage struct {
-	Success bool
-	ws.MessageWithId
-}
-
-func (fMsg FinishMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(fMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: Finish,
-		MsgArgs: []string{string(msgJson)},
-	}
-}
-
-// Error
-type ErrorMessage struct {
-	Info  string
-	Fatal bool
-	ws.MessageWithId
-}
-
-func (eMsg ErrorMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(eMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: Error,
-		MsgArgs: []string{string(msgJson)},
-	}
-}
-
-type NoneMessage struct{}
-
-func (nMsg NoneMessage) SerializeToWSMessage() *ws.Message {
-	return &ws.Message{
-		MsgType: None,
-		MsgArgs: nil,
-	}
-}
-
-func DeserializeTradeMessage(msg *ws.Message) ws.Serializable {
+func DeserializeTradeMessage(msg *ws.Message) (ws.Serializable, error) {
 	switch msg.MsgType {
-	case Start:
-		var startMessage StartMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &startMessage)
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
-
-		return &startMessage
 	case Trade:
 		var tradeMsg TradeMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &tradeMsg)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeTradeMsgError(err, Trade)
 		}
 
-		return &tradeMsg
+		return &tradeMsg, nil
 	case Accept:
 		var acceptMsg AcceptMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &acceptMsg)
 		if err != nil {
 			log.Error(err)
-			return nil
+			return nil, wrapDeserializeTradeMsgError(err, Trade)
 		}
 
-		return &acceptMsg
+		return &acceptMsg, nil
 	case Update:
 		var updateMsg UpdateMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &updateMsg)
 		if err != nil {
 			log.Error(err)
-			return nil
+			return nil, wrapDeserializeTradeMsgError(err, Update)
 		}
 
-		return &updateMsg
-	case SetToken:
-		var setTokenMsg SetTokenMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &setTokenMsg)
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
-
-		return &setTokenMsg
-	case Finish:
-		var finishMsg FinishMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &finishMsg)
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
-
-		return &finishMsg
-	case Error:
-		var errorMsg ErrorMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &errorMsg)
-		if err != nil {
-			log.Error(err)
-			return nil
-		}
-
-		return &errorMsg
+		return &updateMsg, nil
 	default:
-		log.Error("invalid msg type")
-		return nil
+		deserializedMsg, err := ws.DeserializeMsg(msg)
+		if err != nil {
+			return nil, wrapDeserializeTradeMsgError(err, msg.MsgType)
+		}
+
+		return deserializedMsg, nil
 	}
 }

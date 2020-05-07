@@ -6,7 +6,8 @@ import (
 	"math/rand"
 )
 
-func GetOneWildPokemon(maxLevel float64, stdHPDeviation float64, maxHP float64, stdDamageDeviation float64, maxDamage float64, species string) *Pokemon {
+func GetOneWildPokemon(maxLevel float64, stdHPDeviation float64, maxHP float64, stdDamageDeviation float64,
+	maxDamage float64, species string) *Pokemon {
 
 	var level, hp, damage int
 	level = rand.Intn(int(maxLevel-1)) + 1
@@ -43,7 +44,8 @@ func GetOneWildPokemon(maxLevel float64, stdHPDeviation float64, maxHP float64, 
 	return wildPokemon
 }
 
-func GenerateRaidBoss(maxLevel float64, stdHPDeviation float64, maxHP float64, stdDamageDeviation float64, maxDamage float64, species string) *Pokemon {
+func GenerateRaidBoss(maxLevel float64, stdHPDeviation float64, maxHP float64, stdDamageDeviation float64,
+	maxDamage float64, species string) *Pokemon {
 	generated := GetOneWildPokemon(maxLevel*2, stdHPDeviation, maxHP*3, stdDamageDeviation, maxDamage, species)
 	return generated
 }

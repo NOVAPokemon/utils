@@ -7,8 +7,6 @@ import (
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 	"time"
@@ -28,56 +26,55 @@ var (
 )
 
 func ExtractAndVerifyAuthToken(headers http.Header) (*AuthToken, error) {
-
 	tknStr := headers.Get(AuthTokenHeaderName)
 	authToken := &AuthToken{}
+
 	jwtToken, err := jwt.ParseWithClaims(tknStr, authToken, func(token *jwt.Token) (interface{}, error) {
 		return authJWTKey, nil
 	})
-
 	if err != nil {
-		log.Errorf("Token %s has error: %s", tknStr, err.Error())
+		err = wrapExtractVerifyAuthTokenError(wrapParsingTokenError(err))
 		return nil, err
 	}
 
 	if !jwtToken.Valid {
-		return nil, errors.New("Invalid Token")
+		err = wrapExtractVerifyAuthTokenError(ErrorInvalidAuthToken)
+		return nil, err
 	}
 
-	return authToken, err
+	return authToken, nil
 }
 
 func ExtractAndVerifyTrainerStatsToken(headers http.Header) (*TrainerStatsToken, error) {
-
 	tknStr := headers.Get(StatsTokenHeaderName)
 	statsTkn := &TrainerStatsToken{}
+
 	jwtToken, err := jwt.ParseWithClaims(tknStr, statsTkn, func(token *jwt.Token) (interface{}, error) {
 		return authJWTKey, nil
 	})
-
 	if err != nil {
-		log.Errorf("Token %s has error: %s", tknStr, err.Error())
+		err = wrapExtractVerifyStatsTokenError(wrapParsingTokenError(err))
 		return nil, err
 	}
 
 	if !jwtToken.Valid {
-		return nil, errors.New("Invalid Token")
+		err = wrapExtractVerifyStatsTokenError(ErrorInvalidStatsToken)
+		return nil, err
 	}
 
-	return statsTkn, err
+	return statsTkn, nil
 }
 
 func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error) {
 	tkns, ok := headers[PokemonsTokenHeaderName]
-
 	if !ok {
-		return nil, errors.New("No pokemon tokens in header")
+		err := wrapExtractVerifyPokemonTokensError(ErrorNoPokemonTokens)
+		return nil, err
 	}
 
 	var pokemonTkns = make([]*PokemonToken, len(tkns))
 	i := 0
 	for ; i < len(tkns); i++ {
-
 		if len(tkns[i]) == 0 {
 			continue
 		}
@@ -88,64 +85,69 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error)
 			return authJWTKey, nil
 		})
 		if err != nil {
-			log.Errorf("Token %s has error: %s", strings.TrimSpace(tkns[i]), err.Error())
+			err = wrapExtractVerifyPokemonTokensError(wrapParsingTokenError(err))
 			return nil, err
 		}
+
 		pokemonTkns[i] = &pokemonTkn
 	}
+
 	return pokemonTkns[:i], nil
 }
 
 func ExtractAndVerifyItemsToken(headers http.Header) (*ItemsToken, error) {
-
 	tknStr := headers.Get(ItemsTokenHeaderName)
 	itemsToken := &ItemsToken{}
+
 	jwtToken, err := jwt.ParseWithClaims(tknStr, itemsToken, func(token *jwt.Token) (interface{}, error) {
 		return authJWTKey, nil
 	})
-
 	if err != nil {
-		log.Errorf("Token %s has error: %s", tknStr, err.Error())
+		err = wrapExtractVerifyItemsTokenError(wrapParsingTokenError(err))
 		return nil, err
 	}
 
 	if !jwtToken.Valid {
-		return nil, errors.New("Invalid Token")
+		err = wrapExtractVerifyItemsTokenError(ErrorInvalidItemsToken)
+		return nil, err
 	}
 
-	return itemsToken, err
+	return itemsToken, nil
+}
+
+func ExtractStatsToken(statsToken string) (*TrainerStatsToken, error) {
+	claims := TrainerStatsToken{}
+
+	_, _, err := new(jwt.Parser).ParseUnverified(statsToken, &claims)
+	if err != nil {
+		err = wrapExtractStatsTokenError(wrapParsingTokenError(err))
+		return nil, err
+	}
+
+	return &claims, nil
+}
+
+func ExtractPokemonToken(pokemonsToken string) (*PokemonToken, error) {
+	claims := PokemonToken{}
+
+	_, _, err := new(jwt.Parser).ParseUnverified(pokemonsToken, &claims)
+	if err != nil {
+		err = wrapExtractPokemonTokenError(wrapParsingTokenError(err))
+		return nil, err
+	}
+
+	return &claims, nil
 }
 
 func ExtractItemsToken(itemsToken string) (*ItemsToken, error) {
 	claims := ItemsToken{}
 	_, _, err := new(jwt.Parser).ParseUnverified(itemsToken, &claims)
 	if err != nil {
-		log.Error("error parsing items token, ", err)
-		return nil, err
-	}
-	return &claims, err
-}
-
-func ExtractPokemonToken(pokemonsToken string) (*PokemonToken, error) {
-	claims := PokemonToken{}
-	_, _, err := new(jwt.Parser).ParseUnverified(pokemonsToken, &claims)
-	if err != nil {
-		log.Error("error parsing pokemon token, ", err)
+		err = wrapExtractItemsTokenError(wrapParsingTokenError(err))
 		return nil, err
 	}
 
-	return &claims, err
-}
-
-func ExtractStatsToken(statsToken string) (*TrainerStatsToken, error) {
-	claims := TrainerStatsToken{}
-	_, _, err := new(jwt.Parser).ParseUnverified(statsToken, &claims)
-	if err != nil {
-		log.Error("error parsing stats token, ", err)
-		return nil, err
-	}
-
-	return &claims, err
+	return &claims, nil
 }
 
 func AddAuthToken(username string, headers http.Header) {
@@ -154,7 +156,18 @@ func AddAuthToken(username string, headers http.Header) {
 		Username:       username,
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
+
 	setTokenInHeader(AuthTokenHeaderName, authToken, headers)
+}
+
+func AddTrainerStatsToken(stats utils.TrainerStats, headers http.Header) {
+	expirationTime := time.Now().Add(JWTDuration)
+	trainerStatsToken := &TrainerStatsToken{
+		TrainerStats:   stats,
+		TrainerHash:    generateHash(stats),
+		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
+	}
+	setTokenInHeader(StatsTokenHeaderName, trainerStatsToken, headers)
 }
 
 func AddPokemonsTokens(pokemons map[string]pokemons.Pokemon, headers http.Header) {
@@ -179,22 +192,13 @@ func AddItemsToken(items map[string]items.Item, headers http.Header) {
 	setTokenInHeader(ItemsTokenHeaderName, trainerItemsToken, headers)
 }
 
-func AddTrainerStatsToken(stats utils.TrainerStats, headers http.Header) {
-	expirationTime := time.Now().Add(JWTDuration)
-	trainerStatsToken := &TrainerStatsToken{
-		TrainerStats:   stats,
-		TrainerHash:    generateHash(stats),
-		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
-	}
-	setTokenInHeader(StatsTokenHeaderName, trainerStatsToken, headers)
-}
-
 func addTokenToHeader(headerName string, token interface{ jwt.Claims }, headers http.Header) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, token)
 	tokenString, err := jwtToken.SignedString(authJWTKey)
 	if err != nil {
 		panic(err)
 	}
+
 	headers.Add(headerName, tokenString)
 }
 

@@ -16,12 +16,18 @@ const (
 
 	errorInvalidMsgTypeFormat = "error unsupported msg type %s"
 	errorDialingMessageFormat = "error dialing %s"
+
+	errorDeserializeMessageFormat = "error deserializing message type %s"
+	errorSerializeMessageFormat   = "error serializing message type %s"
 )
 
 var (
 	ErrorMessageNil           = errors.New("message is nil")
 	ErrorInvalidMessageFormat = errors.New("error invalid message format")
 	ErrorInvalidMessageType   = errors.New("error invalid message type")
+
+	ErrorTooEarlyToLogEmit    = errors.New("tried logging before setting emitted timestamp")
+	ErrorTooEarlyToLogReceive = errors.New("tried logging before setting received timestamp")
 )
 
 // Wrappers
@@ -43,6 +49,14 @@ func WrapReadingMessageError(err error) error {
 
 func WrapDialingError(err error, url string) error {
 	return errors.Wrap(err, fmt.Sprintf(errorDialingMessageFormat, url))
+}
+
+func WrapSerializeToWSMessageError(err error, msgType string) error {
+	return errors.Wrap(err, fmt.Sprintf(errorSerializeMessageFormat, msgType))
+}
+
+func wrapDeserializeMsgError(err error, msgType string) error {
+	return errors.Wrap(err, fmt.Sprintf(errorDeserializeMessageFormat, msgType))
 }
 
 func wrapMsgParsingError(err error) error {

@@ -68,38 +68,35 @@ func (pokemonMsg PokemonMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func Deserialize(msg *ws.Message) ws.Serializable {
+func Deserialize(msg *ws.Message) (ws.Serializable, error) {
 	switch msg.MsgType {
 	case UpdateLocation:
 		var locationMsg UpdateLocationMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &locationMsg)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeLocationMsgError(err, UpdateLocation)
 		}
 
-		return &locationMsg
+		return &locationMsg, nil
 	case Gyms:
 		var gymsMsg GymsMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &gymsMsg)
 		if err != nil {
-			log.Error(err)
-			return nil
+			return nil, wrapDeserializeLocationMsgError(err, Gyms)
 		}
 
-		return &gymsMsg
+		return &gymsMsg, nil
 
 	case Pokemon:
 		var pokemonMsg PokemonMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &pokemonMsg)
 		if err != nil {
 			log.Error(err)
-			return nil
+			return nil, wrapDeserializeLocationMsgError(err, Pokemon)
 		}
 
-		return &pokemonMsg
+		return &pokemonMsg, nil
 	default:
-		log.Info("invalid msg type")
-		return nil
+		return nil, wrapDeserializeLocationMsgError(ws.ErrorInvalidMessageType, msg.MsgType)
 	}
 }
