@@ -108,8 +108,9 @@ func BuildRequest(method, host, path string, body interface{}) (*http.Request, e
 		if err != nil {
 			return nil, wrapBuildRequestError(err)
 		}
-
 		bodyBuffer = bytes.NewBuffer(jsonStr)
+	} else {
+		bodyBuffer = new(bytes.Buffer)
 	}
 
 	request, err = http.NewRequest(method, hostUrl.String(), bodyBuffer)

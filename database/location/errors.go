@@ -10,7 +10,12 @@ const (
 	errorGetGyms        = "error getting gyms"
 	errorUpdateLocation = "error updating user %s location"
 	errorGetLocation    = "error getting user %s location"
-	errorDeleteLocation    = "error deleting user %s location"
+	errorDeleteLocation = "error deleting user %s location"
+
+	errorGetServerConfig       = "error updating server %s configs"
+	errorInsertServerConfig    = "error updating server %s configs"
+	errorUpdateServerConfig    = "error updating server %s configs"
+	errorGetGlobalServerConfig = "error fetching global server configs"
 )
 
 func wrapAddGymError(err error) error {
@@ -31,4 +36,20 @@ func wrapGetLocation(err error, username string) error {
 
 func wrapDeleteLocation(err error, username string) error {
 	return errors.Wrap(err, fmt.Sprintf(errorDeleteLocation, username))
+}
+
+func wrapUpdateServerConfig(err error, serverName string) error {
+	return errors.Wrap(err, fmt.Sprintf(errorUpdateServerConfig, serverName))
+}
+
+func wrapGetServerConfig(err error, serverName string) error {
+	return errors.Wrap(err, fmt.Sprintf(errorGetServerConfig, serverName))
+}
+
+func wrapInsertServerConfig(err error, serverName string) error {
+	return errors.Wrap(err, fmt.Sprintf(errorInsertServerConfig, serverName))
+}
+
+func wrapGetGlobalServerConfigs(err error) error {
+	return errors.Wrap(err, errorGetGlobalServerConfig)
 }

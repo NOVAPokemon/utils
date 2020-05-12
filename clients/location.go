@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -86,7 +87,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 		}
 	}()
 	go func() {
-		if err := c.updateLocationLoop(conn, outChan); err!= nil {
+		if err := c.updateLocationLoop(conn, outChan); err != nil {
 			log.Error(errors.WrapStartLocationUpdatesError(err))
 		}
 	}()
@@ -134,7 +135,13 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 }
 
 func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken string) (*websocket.Conn, error) {
-	u := url.URL{Scheme: "ws", Host: c.LocationAddr, Path: fmt.Sprintf(api.UserLocationPath)}
+
+	serverUrl, err := c.GetServerForLocation(c.CurrentLocation)
+	if err != nil {
+		return nil, errors.WrapConnectError(err)
+	}
+
+	u := url.URL{Scheme: "ws", Host: *serverUrl, Path: fmt.Sprintf(api.UserLocationPath)}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
@@ -235,6 +242,32 @@ func (c *LocationClient) AddGymLocation(gym utils.Gym) error {
 
 	_, err = DoRequest(c.HttpClient, req, nil)
 	return errors.WrapAddGymLocationError(err)
+}
+
+func (c *LocationClient) GetServerForLocation(loc utils.Location) (*string, error) {
+	base, err := url.Parse(c.LocationAddr)
+	if err != nil {
+		return nil, errors.WrapGetServerForLocation(err)
+	}
+
+	base.Path += api.GetServerForLocationPath
+	params := url.Values{}
+
+	params.Add(api.LongitudeQueryParam, fmt.Sprintf("%f", loc.Latitude))
+	params.Add(api.LongitudeQueryParam, fmt.Sprintf("%f", loc.Longitude))
+	base.RawQuery = params.Encode()
+
+	req, err := http.NewRequest("GET", base.String(), nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.WrapGetServerForLocation(err)
+	}
+	var servername *string
+	err = json.NewDecoder(resp.Body).Decode(servername)
+	if err != nil {
+		return nil, errors.WrapGetServerForLocation(err)
+	}
+	return servername, nil
 }
 
 func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (caught bool,

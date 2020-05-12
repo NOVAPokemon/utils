@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
 )
@@ -8,9 +9,22 @@ import (
 const UserLocationPath = "/location/user_location"
 const GymLocationPath = "/location/gym_location"
 const CatchWildPokemonPath = "/location/catch"
-const SetRegionAreaPath = "/location/region"
 
-var SetRegionAreaRoute = SetRegionAreaPath
+const GetAllConfigsPath = "/location/configs"
+const SetServerConfigPath = "/location/configs/%s"
+const ForceLoadConfigPath = "/location/config/reload"
+const GetServerForLocationPath = "/location/server"
+
+const ServerNamePathVar = "serverName"
+const LatitudeQueryParam = "latitude"
+const LongitudeQueryParam = "longitude"
+
+var GetAllConfigsRoute = GetAllConfigsPath
+var SetServerConfigRoute = fmt.Sprintf(SetServerConfigPath, ServerNamePathVar)
+var GetServerForLocationRoute = GetServerForLocationPath
+
+var ForceLoadConfigRoute = ForceLoadConfigPath
+
 var UserLocationRoute = UserLocationPath
 var GymLocationRoute = GymLocationPath
 var CatchWildPokemonRoute = CatchWildPokemonPath

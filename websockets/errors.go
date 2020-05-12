@@ -19,6 +19,7 @@ const (
 
 	errorDeserializeMessageFormat = "error deserializing message type %s"
 	errorSerializeMessageFormat   = "error serializing message type %s"
+
 )
 
 var (

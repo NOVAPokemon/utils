@@ -85,3 +85,9 @@ type WildPokemon struct {
 	Pokemon  pokemons.Pokemon
 	Location Location
 }
+
+type LocationServerBoundary struct {
+	TopLeftCorner  Location
+	BotRightCorner Location
+	ServerName     string
+}

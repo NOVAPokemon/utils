@@ -14,6 +14,7 @@ import (
 const databaseName = "NOVAPokemonDB"
 const usersLocationCollectionName = "UsersLocation"
 const gymsLocationCollectionName = "GymsLocation"
+const globalConfigCollectionName = "RegionConfigs"
 const wildPokemonCollectionName = "WildPokemons"
 
 var dbClient databaseUtils.DBClientMultipleCollections
@@ -38,6 +39,7 @@ func init() {
 	usersLocationCollection := client.Database(databaseName).Collection(usersLocationCollectionName)
 	gymsLocationCollection := client.Database(databaseName).Collection(gymsLocationCollectionName)
 	wildPokemonsCollection := client.Database(databaseName).Collection(wildPokemonCollectionName)
+	globalConfigCollection := client.Database(databaseName).Collection(globalConfigCollectionName)
 
 	op := options.Index()
 	op.SetUnique(true)
@@ -55,6 +57,7 @@ func init() {
 		usersLocationCollectionName: usersLocationCollection,
 		gymsLocationCollectionName:  gymsLocationCollection,
 		wildPokemonCollectionName:   wildPokemonsCollection,
+		globalConfigCollectionName:  globalConfigCollection,
 	}
 
 	dbClient = databaseUtils.DBClientMultipleCollections{Client: client, Ctx: &ctx, Collections: collections}
@@ -63,9 +66,7 @@ func init() {
 func AddGym(gym utils.Gym) error {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collections[gymsLocationCollectionName]
-
 	_, err := collection.InsertOne(*ctx, gym)
-
 	if err != nil {
 		return wrapAddGymError(err)
 	}
@@ -151,4 +152,61 @@ func DeleteUserLocation(username string) error {
 	_, err := collection.DeleteOne(*ctx, filter)
 
 	return wrapDeleteLocation(err, username)
+}
+
+func UpdateServerConfig(serverName string, config utils.LocationServerBoundary) error {
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[globalConfigCollectionName]
+	var filter = bson.D{{"ServerName:", serverName}}
+	upsert := true
+	updateOptions := options.ReplaceOptions{
+		Upsert: &upsert,
+	}
+	config.ServerName = serverName
+	_, err := collection.ReplaceOne(*ctx, filter, config, &updateOptions)
+	if err != nil {
+		return wrapUpdateServerConfig(err, serverName)
+	}
+
+	return nil
+}
+
+func GetServerConfig(serverName string) (*utils.LocationServerBoundary, error) {
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[globalConfigCollectionName]
+	var filter = bson.D{{"servername", serverName}}
+
+	res := collection.FindOne(*ctx, filter)
+
+	if res.Err() != nil {
+		return nil, wrapGetServerConfig(res.Err(), serverName)
+	}
+
+	var regionConfig = &utils.LocationServerBoundary{}
+	if err := res.Decode(regionConfig); err != nil {
+		return nil, wrapGetServerConfig(res.Err(), serverName)
+	}
+	return regionConfig, nil
+}
+
+func GetAllServerConfigs() (map[string]utils.LocationServerBoundary, error) {
+	var ctx = dbClient.Ctx
+	var collection = dbClient.Collections[globalConfigCollectionName]
+	var filter = bson.M{}
+
+	cursor, err := collection.Find(*ctx, filter)
+
+	if err != nil {
+		return nil, wrapGetGlobalServerConfigs(err)
+	}
+
+	var out = make(map[string]utils.LocationServerBoundary, 0)
+	for cursor.Next(*ctx) {
+		var regionCfg utils.LocationServerBoundary
+		if err = cursor.Decode(&regionCfg); err != nil {
+			log.Fatal(err)
+		}
+		out[regionCfg.ServerName] = regionCfg
+	}
+	return out, nil
 }

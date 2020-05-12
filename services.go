@@ -34,7 +34,8 @@ const (
 	TradesEnvVar            = "TRADES_URL"
 	TrainersEnvVar          = "TRAINERS_URL"
 
-	MongoEnvVar = "MONGODB_URL"
+	LocationServerNameEnvVar = "HOSTNAME"
+	MongoEnvVar              = "MONGODB_URL"
 
 	Host      = "localhost"
 	ServeHost = "0.0.0.0"

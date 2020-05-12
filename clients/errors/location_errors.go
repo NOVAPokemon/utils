@@ -3,11 +3,12 @@ package errors
 import "github.com/pkg/errors"
 
 const (
-	errorStartLocationUpdate = "error starting location updates"
-	errorAddGymLocation      = "error adding gym location"
-	errorCatchWildPokemon    = "error catching wild pokemon"
-	errorConnect             = "error connecting"
-	errorUpdateLocation      = "error updating location"
+	errorStartLocationUpdate  = "error starting location updates"
+	errorAddGymLocation       = "error adding gym location"
+	errorCatchWildPokemon     = "error catching wild pokemon"
+	errorConnect              = "error connecting"
+	errorUpdateLocation       = "error updating location"
+	errorGetServerForLocation = "error fetching server for current location"
 )
 
 var (
@@ -33,4 +34,8 @@ func WrapConnectError(err error) error {
 
 func WrapUpdateLocation(err error) error {
 	return errors.Wrap(err, errorUpdateLocation)
+}
+
+func WrapGetServerForLocation(err error) error {
+	return errors.Wrap(err, errorGetServerForLocation)
 }
