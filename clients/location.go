@@ -135,13 +135,12 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 }
 
 func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken string) (*websocket.Conn, error) {
-
 	serverUrl, err := c.GetServerForLocation(c.CurrentLocation)
 	if err != nil {
 		return nil, errors.WrapConnectError(err)
 	}
 
-	u := url.URL{Scheme: "ws", Host: *serverUrl, Path: fmt.Sprintf(api.UserLocationPath)}
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s.%s", *serverUrl, c.LocationAddr), Path: fmt.Sprintf(api.UserLocationPath)}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
@@ -245,29 +244,24 @@ func (c *LocationClient) AddGymLocation(gym utils.Gym) error {
 }
 
 func (c *LocationClient) GetServerForLocation(loc utils.Location) (*string, error) {
-	base, err := url.Parse(c.LocationAddr)
+	u := url.URL{Scheme: "http", Host: c.LocationAddr, Path: fmt.Sprintf(api.GetServerForLocationPath)}
+	q := u.Query()
+	q.Set(api.LatitudeQueryParam, fmt.Sprintf("%f", loc.Latitude))
+	q.Set(api.LongitudeQueryParam, fmt.Sprintf("%f", loc.Longitude))
+	u.RawQuery = q.Encode()
+	log.Info(u.String())
+	req, err := http.NewRequest("GET", u.String(), nil)
+	resp, err := c.HttpClient.Do(req)
 	if err != nil {
 		return nil, errors.WrapGetServerForLocation(err)
 	}
 
-	base.Path += api.GetServerForLocationPath
-	params := url.Values{}
-
-	params.Add(api.LongitudeQueryParam, fmt.Sprintf("%f", loc.Latitude))
-	params.Add(api.LongitudeQueryParam, fmt.Sprintf("%f", loc.Longitude))
-	base.RawQuery = params.Encode()
-
-	req, err := http.NewRequest("GET", base.String(), nil)
-	resp, err := http.DefaultClient.Do(req)
+	var servername string
+	err = json.NewDecoder(resp.Body).Decode(&servername)
 	if err != nil {
 		return nil, errors.WrapGetServerForLocation(err)
 	}
-	var servername *string
-	err = json.NewDecoder(resp.Body).Decode(servername)
-	if err != nil {
-		return nil, errors.WrapGetServerForLocation(err)
-	}
-	return servername, nil
+	return &servername, nil
 }
 
 func (c *LocationClient) CatchWildPokemon(authToken, itemsTokenString string) (caught bool,

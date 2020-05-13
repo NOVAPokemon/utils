@@ -71,7 +71,6 @@ func GetLogFlag(serviceName string) bool {
 	var logToStdout bool
 	flag.BoolVar(&logToStdout, "l", false, "log to stdout")
 	flag.Parse()
-
 	return logToStdout
 }
 
