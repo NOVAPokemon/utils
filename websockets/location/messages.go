@@ -68,7 +68,7 @@ func (pokemonMsg PokemonMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-func Deserialize(msg *ws.Message) (ws.Serializable, error) {
+func DeserializeLocationMsg(msg *ws.Message) (ws.Serializable, error) {
 	switch msg.MsgType {
 	case UpdateLocation:
 		var locationMsg UpdateLocationMessage

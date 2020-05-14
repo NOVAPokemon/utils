@@ -97,10 +97,6 @@ func GetGyms() ([]utils.Gym, error) {
 			gyms = append(gyms, gym)
 		}
 	}
-
-	if err := cur.Err(); err != nil {
-		log.Error(err)
-	}
 	return gyms, nil
 }
 

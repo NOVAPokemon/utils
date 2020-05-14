@@ -18,9 +18,11 @@ func Status(w http.ResponseWriter, _ *http.Request) {
 	_, _ = fmt.Fprintln(w, StatusOnline)
 }
 
-var DefaultRoute = utils.Route{
-	Name:        StatusName,
-	Method:      GET,
-	Pattern:     StatusPath,
-	HandlerFunc: Status,
+func GenStatusRoute(serverName string) utils.Route {
+	return utils.Route{
+		Name:        StatusName,
+		Method:      GET,
+		Pattern:     fmt.Sprintf("/%s", serverName),
+		HandlerFunc: Status,
+	}
 }

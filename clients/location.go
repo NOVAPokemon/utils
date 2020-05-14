@@ -106,14 +106,14 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 
 			switch msg.MsgType {
 			case location.Gyms:
-				desMsg, err := location.Deserialize(msg)
+				desMsg, err := location.DeserializeLocationMsg(msg)
 				if err != nil {
 					return errors.WrapStartLocationUpdatesError(err)
 				}
 
 				c.Gyms = desMsg.(*location.GymsMessage).Gyms
 			case location.Pokemon:
-				desMsg, err := location.Deserialize(msg)
+				desMsg, err := location.DeserializeLocationMsg(msg)
 				if err != nil {
 					return errors.WrapStartLocationUpdatesError(err)
 				}
