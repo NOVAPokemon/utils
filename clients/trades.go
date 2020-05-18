@@ -56,33 +56,33 @@ func (client *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
 }
 
 func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken string,
-	itemsToken string) (*primitive.ObjectID, error) {
+	itemsToken string) (*primitive.ObjectID, *string, error) {
 	body := api.CreateLobbyRequest{Username: username}
 	req, err := BuildRequest("POST", client.TradesAddr, api.StartTradePath, &body)
 	if err != nil {
-		return nil, errors.WrapCreateTradeLobbyError(err)
+		return nil, nil, errors.WrapCreateTradeLobbyError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 	req.Header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
-	var lobbyIdHex string
-	_, err = DoRequest(&http.Client{}, req, &lobbyIdHex)
+	var resp api.CreateLobbyResponse
+	_, err = DoRequest(&http.Client{}, req, &resp)
 	if err != nil {
-		return nil, errors.WrapCreateTradeLobbyError(err)
+		return nil, nil, errors.WrapCreateTradeLobbyError(err)
 	}
 
-	lobbyId, err := primitive.ObjectIDFromHex(lobbyIdHex)
+	lobbyId, err := primitive.ObjectIDFromHex(resp.LobbyId)
 	if err != nil {
-		return nil, errors.WrapCreateTradeLobbyError(err)
+		return nil, nil, errors.WrapCreateTradeLobbyError(err)
 	}
 
-	return &lobbyId, nil
+	return &lobbyId, &resp.ServerName, nil
 }
 
-func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, authToken string,
+func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serverName string, authToken string,
 	itemsToken string) (*string, error) {
-	u := url.URL{Scheme: "ws", Host: client.TradesAddr, Path: fmt.Sprintf(api.JoinTradePath, tradeId.Hex())}
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s.%s", serverName, client.TradesAddr), Path: fmt.Sprintf(api.JoinTradePath, tradeId.Hex())}
 	log.Infof("Connecting to: %s", u.String())
 
 	header := http.Header{}
@@ -113,7 +113,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, auth
 	writeChannel := make(chan *string)
 
 	go func() {
-		if err := client.HandleReceivedMessages(conn, started, finished, setItemsToken); err != nil{
+		if err := client.HandleReceivedMessages(conn, started, finished, setItemsToken); err != nil {
 			log.Error(err)
 		}
 	}()

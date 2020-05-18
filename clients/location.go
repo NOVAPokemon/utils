@@ -45,7 +45,6 @@ const (
 
 var (
 	timeoutInDuration time.Duration
-
 	defaultLocationURL = fmt.Sprintf("%s:%d", utils.Host, utils.LocationPort)
 )
 
@@ -140,7 +139,7 @@ func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken s
 		return nil, errors.WrapConnectError(err)
 	}
 
-	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s.%s", *serverUrl, c.LocationAddr), Path: fmt.Sprintf(api.UserLocationPath)}
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s.%s", *serverUrl, c.LocationAddr), Path: api.UserLocationPath}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
@@ -161,7 +160,6 @@ func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken s
 			return err
 		}
 		outChan <- websockets.GenericMsg{MsgType: websocket.PongMessage, Data: nil}
-
 		return nil
 	})
 

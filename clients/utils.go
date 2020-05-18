@@ -81,8 +81,9 @@ func MainLoop(conn *websocket.Conn, writeChannel chan *string, finished chan str
 		case <-finished:
 			return
 		case msg := <-writeChannel:
-			err := Send(conn, msg)
-			log.Error(wrapMainLoopError(err))
+			if err := Send(conn, msg); err != nil {
+				log.Error(wrapMainLoopError(err))
+			}
 		}
 	}
 }
