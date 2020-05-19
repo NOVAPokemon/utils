@@ -22,7 +22,7 @@ func GenStatusRoute(serverName string) utils.Route {
 	return utils.Route{
 		Name:        StatusName,
 		Method:      GET,
-		Pattern:     fmt.Sprintf("/%s", serverName),
+		Pattern:     fmt.Sprintf("/%s/status", serverName),
 		HandlerFunc: Status,
 	}
 }
