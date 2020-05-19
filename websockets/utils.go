@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const PongWait = 10 * time.Second
+const PongWait = 2 * time.Second
 const PingPeriod = (PongWait * 9) / 10
 
 func ParseMessage(msg *string) (*Message, error) {
@@ -27,24 +27,31 @@ func ParseMessage(msg *string) (*Message, error) {
 	}, nil
 }
 
-func SendMessage(msg Message, channel chan *string) {
-	toSend := msg.Serialize()
-	channel <- &toSend
-}
-
-func HandleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}) error {
-	defer close(inChannel)
+func HandleSend(conn *websocket.Conn, outChannel chan GenericMsg, endConnection chan struct{}) error {
+	defer close(outChannel)
 	defer log.Warn("Closing send routine")
+
+	pingTicker := time.NewTicker(PingPeriod)
+	conn.SetPongHandler(func(_ string) error {
+		//log.Info("Received pong")
+		return conn.SetReadDeadline(time.Now().Add(PongWait))
+	})
 
 	for {
 		select {
-		case msg := <-inChannel:
-			err := conn.WriteMessage(websocket.TextMessage, []byte(*msg))
+		case <-pingTicker.C:
+			//log.Warn("Pinging")
+			if err := conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+				closeConnectionThroughChannel(conn, endConnection)
+				return wrapHandleSendError(err)
+			}
+		case msg := <-outChannel:
+			err := conn.WriteMessage(msg.MsgType, msg.Data)
 			if err != nil {
 				closeConnectionThroughChannel(conn, endConnection)
 				return wrapHandleSendError(err)
 			}
-			log.Infof("Wrote %s into the channel", *msg)
+			log.Infof("Wrote %s into the channel", msg.Data)
 		case <-endConnection:
 			return nil
 		}
@@ -52,8 +59,8 @@ func HandleSend(conn *websocket.Conn, inChannel chan *string, endConnection chan
 	}
 }
 
-func HandleRecv(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{}) error {
-	defer close(outChannel)
+func HandleRecv(conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}) error {
+	defer close(inChannel)
 	defer log.Warn("Closing receiving routine")
 
 	for {
@@ -69,7 +76,7 @@ func HandleRecv(conn *websocket.Conn, outChannel chan *string, endConnection cha
 			} else {
 				msg := strings.TrimSpace(string(message))
 				log.Debugf("Message received: %s", msg)
-				outChannel <- &msg
+				inChannel <- &msg
 			}
 		}
 	}

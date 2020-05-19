@@ -34,8 +34,9 @@ const (
 	TradesEnvVar            = "TRADES_URL"
 	TrainersEnvVar          = "TRAINERS_URL"
 
-	LocationServerNameEnvVar = "HOSTNAME"
-	MongoEnvVar              = "MONGODB_URL"
+	HeadlessServiceNameEnvVar = "HEADLESS_SERVICE_NAME"
+	HostnameEnvVar = "HOSTNAME"
+	MongoEnvVar    = "MONGODB_URL"
 
 	Host      = "localhost"
 	ServeHost = "0.0.0.0"

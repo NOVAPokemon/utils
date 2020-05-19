@@ -214,7 +214,6 @@ func DeserializeBattleMsg(msg *websockets.Message) (websockets.Serializable, err
 		if err != nil {
 			return nil, wrapDeserializeBattleMsgError(err, msg.MsgType)
 		}
-
 		return deserializedMsg, nil
 	}
 }
