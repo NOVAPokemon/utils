@@ -14,6 +14,7 @@ const (
 var (
 	ErrorNoPokemonsVinicity = errors.New("no pokemons in vicinity")
 	ErrorNoPokeballs        = errors.New("no pokeballs")
+	ErrorNotConnected        = errors.New("not connected to location server")
 )
 
 func WrapStartLocationUpdatesError(err error) error {

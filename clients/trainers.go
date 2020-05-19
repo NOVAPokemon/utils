@@ -368,18 +368,12 @@ func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
 	return nil
 }
 
-func (c *TrainersClient) AppendPokemonToken(header http.Header) error {
-	tkns, ok := header[tokens.PokemonsTokenHeaderName]
-
-	if !ok {
-		err := errors.WrapAppendPokemonTokensError(tokens.ErrorNoPokemonTokens)
-		return err
-	}
+func (c *TrainersClient) AppendPokemonTokens(tkns []string) error {
 
 	i := 0
 	added := 0
 	for ; i < len(tkns); i++ {
-		if len(tkns[i]) == 0 {
+		if len(tkns) == 0 {
 			continue
 		}
 

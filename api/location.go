@@ -2,8 +2,6 @@ package api
 
 import (
 	"fmt"
-	"github.com/NOVAPokemon/utils/items"
-	"github.com/NOVAPokemon/utils/pokemons"
 )
 
 const UserLocationPath = "/location/user_location"
@@ -27,9 +25,4 @@ var ForceLoadConfigRoute = ForceLoadConfigPath
 
 var UserLocationRoute = UserLocationPath
 var GymLocationRoute = GymLocationPath
-var CatchWildPokemonRoute = CatchWildPokemonPath
-
-type CatchWildPokemonRequest struct {
-	Pokeball items.Item
-	Pokemon  pokemons.Pokemon
-}
+//var CatchWildPokemonRoute = CatchWildPokemonPath
