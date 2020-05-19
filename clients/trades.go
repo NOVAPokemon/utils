@@ -80,9 +80,9 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	return &lobbyId, &resp.ServerName, nil
 }
 
-func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serverName string, authToken string,
+func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serverHostname string, authToken string,
 	itemsToken string) (*string, error) {
-	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s.%s", serverName, client.TradesAddr), Path: fmt.Sprintf(api.JoinTradePath, tradeId.Hex())}
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort), Path: fmt.Sprintf(api.JoinTradePath, tradeId.Hex())}
 	log.Infof("Connecting to: %s", u.String())
 
 	header := http.Header{}
@@ -110,7 +110,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	started := make(chan struct{})
 	finished := make(chan struct{})
 	setItemsToken := make(chan *string)
-	writeChannel := make(chan *string)
+	writeChannel := make(chan ws.GenericMsg)
 
 	go func() {
 		if err := client.HandleReceivedMessages(conn, started, finished, setItemsToken); err != nil {
@@ -191,7 +191,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 	}
 }
 
-func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel chan *string,
+func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel chan ws.GenericMsg,
 	finished chan struct{}) {
 	select {
 	case <-finished:
@@ -210,13 +210,13 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 		log.Infof("will trade %d items", numItemsToAdd)
 
 		for i := 0; i < numItemsToAdd; i++ {
-			randomItemIdx := rand.Intn(numItems)
+			randomItemIdx := rand.Intn(len(availableItems))
 			tradeMsg := trades.NewTradeMessage(availableItems[randomItemIdx])
 			//TODO Is it too soon to emit the log?
 			tradeMsg.LogEmit(trades.Trade)
 			msg := tradeMsg.SerializeToWSMessage()
 			s := (*msg).Serialize()
-			writeChannel <- &s
+			writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
 
 			log.Infof("adding %s to trade", availableItems[randomItemIdx])
 
@@ -236,8 +236,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 		acceptMsg.LogEmit(trades.Accept)
 		msg := acceptMsg.SerializeToWSMessage()
 		s := (*msg).Serialize()
-		writeChannel <- &s
-
+		writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
 		<-finished
 	}
 }

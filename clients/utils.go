@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 func Send(conn *websocket.Conn, msg *string) error {
@@ -73,16 +74,25 @@ func WaitForStart(started, finish chan struct{}) {
 	}
 }
 
-func MainLoop(conn *websocket.Conn, writeChannel chan *string, finished chan struct{}) {
+func MainLoop(conn *websocket.Conn, writeChannel chan ws.GenericMsg, finished chan struct{}) {
 	defer log.Info("Closed out channel")
 	defer close(writeChannel)
+
+	_ = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+	conn.SetPingHandler(func(string) error {
+		//log.Warn("Received ping, ponging...")
+		writeChannel <- ws.GenericMsg{MsgType: websocket.PongMessage, Data: nil}
+		return conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+	})
+
 	for {
 		select {
 		case <-finished:
 			return
 		case msg := <-writeChannel:
-			if err := Send(conn, msg); err != nil {
+			if err := conn.WriteMessage(msg.MsgType, msg.Data); err != nil {
 				log.Error(wrapMainLoopError(err))
+				return
 			}
 		}
 	}

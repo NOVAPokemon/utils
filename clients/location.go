@@ -44,7 +44,7 @@ const (
 )
 
 var (
-	timeoutInDuration time.Duration
+	timeoutInDuration  time.Duration
 	defaultLocationURL = fmt.Sprintf("%s:%d", utils.Host, utils.LocationPort)
 )
 

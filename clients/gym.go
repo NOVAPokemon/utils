@@ -95,7 +95,7 @@ func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsTo
 		return nil, nil, err
 	}
 
-	outChannel := make(chan *string)
+	outChannel := make(chan websockets.GenericMsg)
 	inChannel := make(chan *string)
 	finished := make(chan struct{})
 

@@ -4,6 +4,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
+	"github.com/NOVAPokemon/utils/websockets"
 	"time"
 )
 
@@ -12,7 +13,7 @@ var (
 )
 
 type BattleChannels struct {
-	OutChannel    chan *string
+	OutChannel    chan websockets.GenericMsg
 	InChannel     chan *string
 	FinishChannel chan struct{}
 }

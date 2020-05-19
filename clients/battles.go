@@ -11,7 +11,6 @@ import (
 	"github.com/NOVAPokemon/utils/websockets/battles"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"net/url"
 	"os"
@@ -78,7 +77,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 		return nil, nil, err
 	}
 
-	outChannel := make(chan *string)
+	outChannel := make(chan websockets.GenericMsg)
 	inChannel := make(chan *string)
 	finished := make(chan struct{})
 
@@ -110,8 +109,8 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 		return nil, nil, err
 	}
 
-	outChannel := make(chan *string)
 	inChannel := make(chan *string)
+	outChannel := make(chan websockets.GenericMsg)
 	finished := make(chan struct{})
 
 	go ReadMessagesToChan(c, inChannel, finished)
@@ -122,10 +121,10 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 }
 
 func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string,
-	itemsToken string, battleId primitive.ObjectID) (*websocket.Conn, *battles.BattleChannels, error) {
-	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.AcceptChallengePath, battleId.Hex())}
-	log.Infof("Accepting challenge: %s", u.String())
+	itemsToken string, battleId string, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
 
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.BattlesPort), Path: fmt.Sprintf(api.AcceptChallengePath, battleId)}
+	log.Infof("Accepting challenge: %s", u.String())
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.StatsTokenHeaderName, statsToken)
@@ -143,7 +142,7 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 		return nil, nil, err
 	}
 
-	outChannel := make(chan *string)
+	outChannel := make(chan websockets.GenericMsg)
 	inChannel := make(chan *string)
 	finished := make(chan struct{})
 
