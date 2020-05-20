@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"strings"
 	"time"
 )
 
@@ -19,17 +18,11 @@ type Message struct {
 }
 
 func (msg Message) Serialize() string {
-	builder := strings.Builder{}
-
-	builder.WriteString(msg.MsgType)
-	builder.WriteString(" ")
-
-	for _, arg := range msg.MsgArgs {
-		builder.WriteString(arg)
-		builder.WriteString(" ")
+	jsonbytes, err := json.Marshal(msg)
+	if err != nil {
+		panic(err)
 	}
-
-	return builder.String()
+	return string(jsonbytes)
 }
 
 type MessageWithId struct {
@@ -163,6 +156,7 @@ type ErrorMessage struct {
 }
 
 func (eMsg ErrorMessage) SerializeToWSMessage() *Message {
+
 	msgJson, err := json.Marshal(eMsg)
 	if err != nil {
 		log.Error(WrapSerializeToWSMessageError(err, Error))
@@ -197,12 +191,10 @@ func DeserializeMsg(msg *Message) (Serializable, error) {
 		return &finishMsg, nil
 	case Error:
 		var errMsg ErrorMessage
-
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &errMsg)
 		if err != nil {
 			return nil, wrapDeserializeMsgError(err, Error)
 		}
-
 		return &errMsg, nil
 	case SetToken:
 		var setTokenMessage SetTokenMessage

@@ -1,6 +1,7 @@
 package websockets
 
 import (
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"strings"
@@ -14,17 +15,11 @@ func ParseMessage(msg *string) (*Message, error) {
 	if msg == nil {
 		return nil, wrapMsgParsingError(ErrorMessageNil)
 	}
-
-	msgParts := strings.Split(*msg, " ")
-
-	if len(msgParts) < 1 {
-		return nil, wrapMsgParsingError(ErrorInvalidMessageFormat)
+	toReturn := &Message{}
+	if err := json.Unmarshal([]byte(*msg), toReturn); err != nil {
+		return nil, wrapMsgParsingError(ErrorMessageNil)
 	}
-
-	return &Message{
-		MsgType: msgParts[0],
-		MsgArgs: msgParts[1:],
-	}, nil
+	return toReturn, nil
 }
 
 func HandleSend(conn *websocket.Conn, outChannel chan GenericMsg, endConnection chan struct{}) error {

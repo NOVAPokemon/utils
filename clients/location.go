@@ -103,8 +103,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string, trainersCLient *
 			if !ok {
 				continue
 			}
-
-			log.Infof("Received message: %s", *msgString)
+			//log.Infof("Received message: %s", *msgString)
 			msg, err := websockets.ParseMessage(msgString)
 			if err != nil {
 				return errors2.WrapStartLocationUpdatesError(err)
@@ -146,8 +145,8 @@ func (c *LocationClient) StartLocationUpdates(authToken string, trainersCLient *
 				}
 
 				errMsg := desMsg.(*websockets.ErrorMessage)
-
 				log.Error(errMsg.Info)
+
 				if errMsg.Fatal {
 					return errors2.WrapStartLocationUpdatesError(errors.New(errMsg.Info))
 				}
