@@ -35,8 +35,10 @@ const (
 	TrainersEnvVar          = "TRAINERS_URL"
 
 	HeadlessServiceNameEnvVar = "HEADLESS_SERVICE_NAME"
-	HostnameEnvVar = "HOSTNAME"
-	MongoEnvVar    = "MONGODB_URL"
+	HostnameEnvVar            = "HOSTNAME"
+	MongoEnvVar               = "MONGODB_URL"
+
+	KafkaEnvVar = "KAFKA_URL"
 
 	Host      = "localhost"
 	ServeHost = "0.0.0.0"
