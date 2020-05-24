@@ -11,8 +11,8 @@ const (
 	ErrorInHandlerFormat = "error in %s"
 
 	// Other errors
-	errorLoadingConfigs = "error loading configs"
-	errorReadingStdin   = "error reading from stdin"
+	errorLoadingConfigs     = "error loading configs"
+	errorReadingStdin       = "error reading from stdin"
 )
 
 func LogAndSendHTTPError(w *http.ResponseWriter, err error, httpCode int) {

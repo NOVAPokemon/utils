@@ -77,12 +77,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string, trainersCLient *
 	outChan = make(chan websockets.GenericMsg, bufferSize)
 	finish := make(chan struct{})
 
-	serverUrl, err := c.GetServerForLocation(c.CurrentLocation)
-	if err != nil {
-		return errors2.WrapStartLocationUpdatesError(err)
-	}
-
-	conn, err := c.connect(outChan, authToken, fmt.Sprintf("%s.%s", *serverUrl, c.LocationAddr))
+	conn, err := c.connect(outChan, authToken)
 	if err != nil {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
@@ -166,9 +161,13 @@ func (c *LocationClient) StartLocationUpdates(authToken string, trainersCLient *
 	}
 }
 
-func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken string, serverUrl string) (*websocket.Conn, error) {
+func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken string) (*websocket.Conn, error) {
 
-	u := url.URL{Scheme: "ws", Host: serverUrl, Path: api.UserLocationPath}
+	serverUrl, err := c.GetServerForLocation(c.CurrentLocation)
+	if err != nil {
+		return nil, errors2.WrapConnectError(err)
+	}
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s.%s", *serverUrl, c.LocationAddr), Path: api.UserLocationPath}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
@@ -261,7 +260,13 @@ func (c *LocationClient) move(timePassed int) utils.Location {
 }
 
 func (c *LocationClient) AddGymLocation(gym utils.Gym) error {
-	req, err := BuildRequest("POST", c.LocationAddr, api.GymLocationRoute, gym)
+
+	serverUrl, err := c.GetServerForLocation(gym.Location)
+	if err != nil {
+		return errors2.WrapAddGymLocationError(err)
+	}
+
+	req, err := BuildRequest("POST", fmt.Sprintf("%s.%s", *serverUrl, c.LocationAddr), api.GymLocationRoute, gym)
 	if err != nil {
 		return errors2.WrapAddGymLocationError(err)
 	}
