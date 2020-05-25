@@ -91,3 +91,8 @@ type LocationServerBoundary struct {
 	BotRightCorner Location
 	ServerName     string
 }
+
+type GymsForServer struct {
+	Gyms       []Gym
+	ServerName string
+}
