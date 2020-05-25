@@ -23,7 +23,12 @@ type NotificationClient struct {
 	readChannel          chan *string
 }
 
-var defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
+var (
+	defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
+
+	totalTimeTookNotificationMsgs  int64 = 0
+	numberMeasuresNotificationMsgs       = 0
+)
 
 func NewNotificationClient(notificationsChannel chan *utils.Notification) *NotificationClient {
 	notificationsURL, exists := os.LookupEnv(utils.NotificationsEnvVar)
@@ -69,7 +74,7 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 	}()
 
 	conn.SetPingHandler(func(string) error {
-		//log.Warn("Received ping from notifications, sending pong")
+		// log.Warn("Received ping from notifications, sending pong")
 		return conn.WriteMessage(websocket.PongMessage, nil)
 	})
 
@@ -152,6 +157,17 @@ func (client *NotificationClient) parseToNotification(msg *ws.Message) {
 
 	notificationMsg := desMsg.(*notificationMessages.NotificationMessage)
 	notificationMsg.Receive(ws.MakeTimestamp())
+
+	timeTook, ok := notificationMsg.TimeTook()
+	if ok {
+		totalTimeTookNotificationMsgs += timeTook
+		numberMeasuresNotificationMsgs++
+
+		log.Infof("time took: %d ms", timeTook)
+		log.Infof("average time for notification msgs: %f ms",
+			float64(totalTimeTookNotificationMsgs)/float64(numberMeasuresNotificationMsgs))
+	}
+
 	notificationMsg.LogReceive(notificationMessages.Notification)
 	client.NotificationsChannel <- &notificationMsg.Notification
 

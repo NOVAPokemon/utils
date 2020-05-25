@@ -65,12 +65,13 @@ func Read(conn *websocket.Conn) (*ws.Message, error) {
 	return msg, nil
 }
 
-func WaitForStart(started, finish chan struct{}) {
+func WaitForStart(started, finish chan struct{}, requestTimestamp int64) int64 {
 	select {
 	case <-started:
-		return
+		responseTimestamp := ws.MakeTimestamp()
+		return responseTimestamp - requestTimestamp
 	case <-finish:
-		return
+		return 0
 	}
 }
 

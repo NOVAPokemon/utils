@@ -82,6 +82,20 @@ func (msg *TrackedMessage) LogReceive(msgType string) {
 	log.Infof("[RECEIVE] %s %s %d", msgType, msg.Id.Hex(), msg.TimeReceived)
 }
 
+func (msg *TrackedMessage) TimeTook() (int64, bool){
+	if msg.TimeEmitted == 0 {
+		log.Error(ErrorMsgWasNotEmmitted)
+		return 0, false
+	}
+
+	if msg.TimeReceived == 0 {
+		log.Error(ErrorMsgWasNotEmmitted)
+		return 0, false
+	}
+
+	return msg.TimeReceived - msg.TimeEmitted, true
+}
+
 func MakeTimestamp() int64 {
 	return time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
 }

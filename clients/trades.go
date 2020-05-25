@@ -24,7 +24,15 @@ type TradeLobbyClient struct {
 	conn       *websocket.Conn
 }
 
-var defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
+var (
+	defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
+
+	totalTimeTookStart  int64 = 0
+	numberMeasuresStart       = 0
+
+	totalTimeTookTradeMsgs  int64 = 0
+	numberMeasuresTradeMsgs       = 0
+)
 
 func NewTradesClient(config utils.TradesClientConfig) *TradeLobbyClient {
 	tradesURL, exists := os.LookupEnv(utils.TradesEnvVar)
@@ -99,6 +107,8 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 		return nil, errors.WrapJoinTradeLobbyError(err)
 	}
 
+	requestTimestamp := ws.MakeTimestamp()
+
 	defer ws.CloseConnection(conn)
 	client.conn = conn
 
@@ -125,7 +135,12 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 		i++
 	}
 
-	WaitForStart(started, finished)
+	timeTook := WaitForStart(started, finished, requestTimestamp)
+	log.Infof("time took to initiate interaction: %d ms", timeTook)
+
+	numberMeasuresStart++
+	totalTimeTookStart += timeTook
+	log.Infof("average time starting: %f ms", float64(totalTimeTookStart)/float64(numberMeasuresStart))
 
 	go client.autoTrader(itemIds, writeChannel, finished)
 
@@ -158,6 +173,17 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 
 			updateMsg := desMsg.(*trades.UpdateMessage)
 			updateMsg.Receive(ws.MakeTimestamp())
+
+			timeTook, ok := updateMsg.TimeTook()
+			if ok {
+				totalTimeTookTradeMsgs += timeTook
+				numberMeasuresTradeMsgs++
+
+				log.Infof("time took: %d ms", timeTook)
+				log.Infof("average time for trade msgs: %f ms",
+					float64(totalTimeTookTradeMsgs)/float64(numberMeasuresTradeMsgs))
+			}
+
 			updateMsg.LogReceive(trades.Update)
 		case ws.SetToken:
 			desMsg, err := trades.DeserializeTradeMessage(msg)
@@ -212,7 +238,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 		for i := 0; i < numItemsToAdd; i++ {
 			randomItemIdx := rand.Intn(len(availableItems))
 			tradeMsg := trades.NewTradeMessage(availableItems[randomItemIdx])
-			//TODO Is it too soon to emit the log?
+			// TODO Is it too soon to emit the log?
 			tradeMsg.LogEmit(trades.Trade)
 			msg := tradeMsg.SerializeToWSMessage()
 			s := (*msg).Serialize()
@@ -232,7 +258,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 		}
 
 		acceptMsg := trades.NewAcceptMessage()
-		//TODO Is it too soon to emit the log?
+		// TODO Is it too soon to emit the log?
 		acceptMsg.LogEmit(trades.Accept)
 		msg := acceptMsg.SerializeToWSMessage()
 		s := (*msg).Serialize()

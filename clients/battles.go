@@ -117,7 +117,6 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	go MainLoop(c, outChannel, finished)
 
 	return c, &battles.BattleChannels{OutChannel: outChannel, InChannel: inChannel, FinishChannel: finished}, nil
-
 }
 
 func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string,
