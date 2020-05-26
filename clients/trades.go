@@ -90,7 +90,11 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 
 func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serverHostname string, authToken string,
 	itemsToken string) (*string, error) {
-	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort), Path: fmt.Sprintf(api.JoinTradePath, tradeId.Hex())}
+	u := url.URL{
+		Scheme: "ws",
+		Host:   fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort),
+		Path:   fmt.Sprintf(api.JoinTradePath, tradeId.Hex()),
+	}
 	log.Infof("Connecting to: %s", u.String())
 
 	header := http.Header{}
@@ -118,12 +122,13 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	}
 
 	started := make(chan struct{})
+	rejected := make(chan struct{})
 	finished := make(chan struct{})
 	setItemsToken := make(chan *string)
 	writeChannel := make(chan ws.GenericMsg)
 
 	go func() {
-		if err := client.HandleReceivedMessages(conn, started, finished, setItemsToken); err != nil {
+		if err := client.HandleReceivedMessages(conn, started, rejected, finished, setItemsToken); err != nil {
 			log.Error(err)
 		}
 	}()
@@ -135,12 +140,17 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 		i++
 	}
 
-	timeTook := WaitForStart(started, finished, requestTimestamp)
+	timeTook := WaitForStart(started, rejected, finished, requestTimestamp)
 	log.Infof("time took to initiate interaction: %d ms", timeTook)
 
 	numberMeasuresStart++
 	totalTimeTookStart += timeTook
 	log.Infof("average time starting: %f ms", float64(totalTimeTookStart)/float64(numberMeasuresStart))
+
+	if _, ok := <-rejected; !ok {
+		log.Infof("trade was rejected")
+		return nil, nil
+	}
 
 	go client.autoTrader(itemIds, writeChannel, finished)
 
@@ -151,7 +161,27 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	return <-setItemsToken, nil
 }
 
-func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, started, finished chan struct{},
+func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostname, authToken,
+	itemsToken string) error {
+	addr := fmt.Sprintf("%s:%d/%s", serverHostname, utils.TradesPort, lobbyId.Hex())
+
+	req, err := BuildRequest("POST", addr, api.RejectTradePath, nil)
+	if err != nil {
+		return errors.WrapRejectTradeLobbyError(err)
+	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
+	req.Header.Set(tokens.ItemsTokenHeaderName, itemsToken)
+
+	_, err = DoRequest(&http.Client{}, req, nil)
+	if err != nil {
+		return errors.WrapRejectTradeLobbyError(err)
+	}
+
+	return nil
+}
+
+func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, started, rejected, finished chan struct{},
 	setItemsToken chan *string) error {
 	var itemsToken *string
 
@@ -164,6 +194,8 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 		switch msg.MsgType {
 		case ws.Start:
 			close(started)
+		case ws.Reject:
+			close(rejected)
 		case trades.Update:
 			desMsg, err := trades.DeserializeTradeMessage(msg)
 			if err != nil {

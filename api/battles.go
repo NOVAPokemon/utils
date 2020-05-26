@@ -2,13 +2,21 @@ package api
 
 import "fmt"
 
-const GetBattlesPath = "/battles"
-const ChallengeToBattlePath = "/battles/challenge/%s"
-const AcceptChallengePath = "/battles/accept/%s"
-const QueueForBattlePath = "/battles/queue"
+const (
+	GetBattlesPath        = "/battles"
+	ChallengeToBattlePath = "/battles/challenge/%s"
+	AcceptChallengePath   = "/battles/accept/%s"
+	QueueForBattlePath    = "/battles/queue"
+	RejectChallengePath   = "/battles/reject/%s"
+)
 
-const BattleIdPathVar = "battleId"
-const TargetPlayerIdPathvar = "targetPlayer"
+const (
+	BattleIdPathVar       = "battleId"
+	TargetPlayerIdPathvar = "targetPlayer"
+)
 
-var ChallengeToBattleRoute = fmt.Sprintf(ChallengeToBattlePath, fmt.Sprintf("{%s}", TargetPlayerIdPathvar))
-var AcceptChallengeRoute = fmt.Sprintf(AcceptChallengePath, fmt.Sprintf("{%s}", BattleIdPathVar))
+var (
+	ChallengeToBattleRoute = fmt.Sprintf(ChallengeToBattlePath, fmt.Sprintf("{%s}", TargetPlayerIdPathvar))
+	AcceptChallengeRoute   = fmt.Sprintf(AcceptChallengePath, fmt.Sprintf("{%s}", BattleIdPathVar))
+	RejectChallengeRoute   = fmt.Sprintf(RejectChallengePath, fmt.Sprintf("{%s}", BattleIdPathVar))
+)

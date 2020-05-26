@@ -7,6 +7,7 @@ const (
 	errorQueueForBattle        = "error queueing for battle"
 	errorChallengeForBattle    = "error challenging for battle"
 	errorAcceptBattleChallenge = "error accepting battle challenge"
+	errorRejectBattleChallenge = "error rejecting battle challenge"
 )
 
 func WrapGetBattleLobbiesError(err error) error {
@@ -23,4 +24,8 @@ func WrapChallengeForBattleError(err error) error {
 
 func WrapAcceptBattleChallengeError(err error) error {
 	return errors.Wrap(err, errorAcceptBattleChallenge)
+}
+
+func WrapRejectBattleChallengeError(err error) error {
+	return errors.Wrap(err, errorRejectBattleChallenge)
 }

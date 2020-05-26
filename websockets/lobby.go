@@ -38,7 +38,6 @@ func NewLobby(id primitive.ObjectID) *Lobby {
 }
 
 func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) {
-
 	trainerChanIn := make(chan *string)
 	trainerChanOut := make(chan GenericMsg)
 

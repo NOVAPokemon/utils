@@ -6,6 +6,7 @@ const (
 	errorGetTradeLobbies          = "error getting trade lobbies"
 	errorCreateTradeLobby         = "error creating trade lobby"
 	errorJoinTradeLobby           = "error joining trade lobby"
+	errorRejectTradeLobby         = "error rejecting trade lobby"
 	errorHandleMessagesTradeLobby = "error handling received messages"
 )
 
@@ -19,6 +20,10 @@ func WrapCreateTradeLobbyError(err error) error {
 
 func WrapJoinTradeLobbyError(err error) error {
 	return errors.Wrap(err, errorJoinTradeLobby)
+}
+
+func WrapRejectTradeLobbyError(err error) error {
+	return errors.Wrap(err, errorRejectTradeLobby)
 }
 
 func WrapHandleMessagesTradeError(err error) error {

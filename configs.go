@@ -10,6 +10,7 @@ type ClientConfig struct {
 type TradesClientConfig struct {
 	MaxItemsToTrade int `json:"max_items"`
 	MaxSleepTime    int `json:"max_sleep_time"` // in seconds
+	AcceptProbability float64 `json"accept_probability"`
 }
 
 type LocationClientConfig struct {
@@ -20,6 +21,7 @@ type LocationClientConfig struct {
 
 type BattleClientConfig struct {
 	PokemonsPerBattle int `json:"pokemons_per_battle"`
+	AcceptProbability float64 `json"accept_probability"`
 }
 
 type RaidConfig struct {

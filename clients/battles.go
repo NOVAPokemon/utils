@@ -149,5 +149,22 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	go MainLoop(c, outChannel, finished)
 
 	return c, &battles.BattleChannels{OutChannel: outChannel, InChannel: inChannel, FinishChannel: finished}, nil
+}
 
+func (client *BattleLobbyClient) RejectChallenge(authToken, battleId, serverHostname string) error {
+	addr := fmt.Sprintf("%s:%d/%s", serverHostname, utils.BattlesPort, battleId)
+
+	req, err := BuildRequest("POST", addr, api.RejectChallengeRoute, nil)
+	if err != nil {
+		return errors.WrapRejectBattleChallengeError(err)
+	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
+
+	_, err = DoRequest(&http.Client{}, req, nil)
+	if err != nil {
+		return errors.WrapRejectBattleChallengeError(err)
+	}
+
+	return nil
 }

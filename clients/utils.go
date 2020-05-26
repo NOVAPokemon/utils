@@ -65,14 +65,19 @@ func Read(conn *websocket.Conn) (*ws.Message, error) {
 	return msg, nil
 }
 
-func WaitForStart(started, finish chan struct{}, requestTimestamp int64) int64 {
+func WaitForStart(started, rejected, finish chan struct{}, requestTimestamp int64) int64 {
+	var responseTimestamp int64
+
 	select {
 	case <-started:
-		responseTimestamp := ws.MakeTimestamp()
-		return responseTimestamp - requestTimestamp
+		responseTimestamp = ws.MakeTimestamp()
+	case <-rejected:
+		responseTimestamp = ws.MakeTimestamp()
 	case <-finish:
 		return 0
 	}
+
+	return responseTimestamp - requestTimestamp
 }
 
 func MainLoop(conn *websocket.Conn, writeChannel chan ws.GenericMsg, finished chan struct{}) {
@@ -81,7 +86,7 @@ func MainLoop(conn *websocket.Conn, writeChannel chan ws.GenericMsg, finished ch
 
 	_ = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 	conn.SetPingHandler(func(string) error {
-		//log.Warn("Received ping, ponging...")
+		// log.Warn("Received ping, ponging...")
 		writeChannel <- ws.GenericMsg{MsgType: websocket.PongMessage, Data: nil}
 		return conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 	})

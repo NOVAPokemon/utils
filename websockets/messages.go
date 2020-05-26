@@ -82,7 +82,7 @@ func (msg *TrackedMessage) LogReceive(msgType string) {
 	log.Infof("[RECEIVE] %s %s %d", msgType, msg.Id.Hex(), msg.TimeReceived)
 }
 
-func (msg *TrackedMessage) TimeTook() (int64, bool){
+func (msg *TrackedMessage) TimeTook() (int64, bool) {
 	if msg.TimeEmitted == 0 {
 		log.Error(ErrorMsgWasNotEmmitted)
 		return 0, false
@@ -103,6 +103,7 @@ func MakeTimestamp() int64 {
 // Basic messages
 const (
 	Start    = "START"
+	Reject   = "REJECT"
 	SetToken = "SETTOKEN"
 	Finish   = "FINISH"
 	Error    = "ERROR"
@@ -122,6 +123,24 @@ func (sMsg StartMessage) SerializeToWSMessage() *Message {
 
 	return &Message{
 		MsgType: Start,
+		MsgArgs: []string{string(msgJson)},
+	}
+}
+
+type RejectMessage struct {
+	MessageWithId
+}
+
+func (rMsg RejectMessage) SerializeToWSMessage() *Message {
+	msgJson, err := json.Marshal(rMsg)
+	if err != nil {
+		log.Error(WrapSerializeToWSMessageError(err, Reject))
+		log.Error(err)
+		return nil
+	}
+
+	return &Message{
+		MsgType: Reject,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
@@ -194,6 +213,15 @@ func DeserializeMsg(msg *Message) (Serializable, error) {
 		}
 
 		return &startMsg, nil
+	case Reject:
+		var rejectMessage RejectMessage
+
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &rejectMessage)
+		if err != nil {
+			return nil, wrapDeserializeMsgError(err, Reject)
+		}
+
+		return &rejectMessage, nil
 	case Finish:
 		var finishMsg FinishMessage
 
