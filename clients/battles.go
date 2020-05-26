@@ -79,12 +79,20 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 
 	outChannel := make(chan websockets.GenericMsg)
 	inChannel := make(chan *string)
+	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
 	go ReadMessagesToChan(c, inChannel, finished)
 	go MainLoop(c, outChannel, finished)
 
-	return c, &battles.BattleChannels{OutChannel: outChannel, InChannel: inChannel, FinishChannel: finished}, nil
+	battleChannels := battles.BattleChannels{
+		OutChannel:      outChannel,
+		InChannel:       inChannel,
+		RejectedChannel: rejectedChannel,
+		FinishChannel:   finished,
+	}
+
+	return c, &battleChannels, nil
 }
 
 func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, statsToken string,
@@ -111,12 +119,20 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 
 	inChannel := make(chan *string)
 	outChannel := make(chan websockets.GenericMsg)
+	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
 	go ReadMessagesToChan(c, inChannel, finished)
 	go MainLoop(c, outChannel, finished)
 
-	return c, &battles.BattleChannels{OutChannel: outChannel, InChannel: inChannel, FinishChannel: finished}, nil
+	battleChannels := battles.BattleChannels{
+		OutChannel:      outChannel,
+		InChannel:       inChannel,
+		RejectedChannel: rejectedChannel,
+		FinishChannel:   finished,
+	}
+
+	return c, &battleChannels, nil
 }
 
 func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string,
@@ -143,18 +159,26 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 
 	outChannel := make(chan websockets.GenericMsg)
 	inChannel := make(chan *string)
+	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
 	go ReadMessagesToChan(c, inChannel, finished)
 	go MainLoop(c, outChannel, finished)
 
-	return c, &battles.BattleChannels{OutChannel: outChannel, InChannel: inChannel, FinishChannel: finished}, nil
+	battleChannels := battles.BattleChannels{
+		OutChannel: outChannel,
+		InChannel: inChannel,
+		RejectedChannel: rejectedChannel,
+		FinishChannel: finished,
+	}
+
+	return c, &battleChannels, nil
 }
 
 func (client *BattleLobbyClient) RejectChallenge(authToken, battleId, serverHostname string) error {
-	addr := fmt.Sprintf("%s:%d/%s", serverHostname, utils.BattlesPort, battleId)
+	addr := fmt.Sprintf("%s:%d", serverHostname, utils.BattlesPort)
 
-	req, err := BuildRequest("POST", addr, api.RejectChallengeRoute, nil)
+	req, err := BuildRequest("POST", addr, fmt.Sprintf(api.RejectChallengePath, battleId), nil)
 	if err != nil {
 		return errors.WrapRejectBattleChallengeError(err)
 	}

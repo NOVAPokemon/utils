@@ -147,9 +147,11 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	totalTimeTookStart += timeTook
 	log.Infof("average time starting: %f ms", float64(totalTimeTookStart)/float64(numberMeasuresStart))
 
-	if _, ok := <-rejected; !ok {
+	select {
+	case <-rejected:
 		log.Infof("trade was rejected")
 		return nil, nil
+	default:
 	}
 
 	go client.autoTrader(itemIds, writeChannel, finished)
@@ -163,9 +165,9 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 
 func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostname, authToken,
 	itemsToken string) error {
-	addr := fmt.Sprintf("%s:%d/%s", serverHostname, utils.TradesPort, lobbyId.Hex())
+	addr := fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort)
 
-	req, err := BuildRequest("POST", addr, api.RejectTradePath, nil)
+	req, err := BuildRequest("POST", addr, fmt.Sprintf(api.RejectTradePath, lobbyId.Hex()), nil)
 	if err != nil {
 		return errors.WrapRejectTradeLobbyError(err)
 	}
@@ -196,6 +198,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			close(started)
 		case ws.Reject:
 			close(rejected)
+			return nil
 		case trades.Update:
 			desMsg, err := trades.DeserializeTradeMessage(msg)
 			if err != nil {
