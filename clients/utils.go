@@ -27,7 +27,14 @@ func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished cha
 			_, message, err := conn.ReadMessage()
 
 			if err != nil {
-				close(finished)
+				select {
+				case _, ok := <-finished:
+					if ok {
+						close(finished)
+					}
+				default:
+					close(finished)
+				}
 				return
 			}
 

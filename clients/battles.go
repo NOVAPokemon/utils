@@ -96,7 +96,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 }
 
 func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, statsToken string,
-	itemsToken string, targetPlayer string) (*websocket.Conn, *battles.BattleChannels, error) {
+	itemsToken string, targetPlayer string) (*websocket.Conn, *battles.BattleChannels, int64, error) {
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.ChallengeToBattlePath, targetPlayer)}
 	log.Infof("Connecting to: %s", u.String())
 
@@ -111,10 +111,11 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 		HandshakeTimeout: 45 * time.Second,
 	}
 
+	requestTimestamp := websockets.MakeTimestamp()
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
 		err = errors.WrapChallengeForBattleError(websockets.WrapDialingError(err, u.String()))
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 
 	inChannel := make(chan *string)
@@ -132,7 +133,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 		FinishChannel:   finished,
 	}
 
-	return c, &battleChannels, nil
+	return c, &battleChannels, requestTimestamp, nil
 }
 
 func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string,
@@ -166,10 +167,10 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	go MainLoop(c, outChannel, finished)
 
 	battleChannels := battles.BattleChannels{
-		OutChannel: outChannel,
-		InChannel: inChannel,
+		OutChannel:      outChannel,
+		InChannel:       inChannel,
 		RejectedChannel: rejectedChannel,
-		FinishChannel: finished,
+		FinishChannel:   finished,
 	}
 
 	return c, &battleChannels, nil
