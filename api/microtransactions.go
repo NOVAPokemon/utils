@@ -2,9 +2,9 @@ package api
 
 import "fmt"
 
-const GetTransactionOffersPath = "microtransactions/offers/"
-const GetPerformedTransactionsPath = "microtransactions/transactions/"
-const MakeTransactionPath = "microtransactions/transactions/%s"
+const GetTransactionOffersPath = "/microtransactions/offers/"
+const GetPerformedTransactionsPath = "/microtransactions/transactions/"
+const MakeTransactionPath = "/microtransactions/transactions/%s"
 
 const OfferIdPathVar = "transactionId"
 
