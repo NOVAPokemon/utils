@@ -2,8 +2,6 @@ package location
 
 import (
 	"github.com/NOVAPokemon/utils"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var mockupUserLocation = utils.UserLocation{
@@ -14,7 +12,7 @@ var mockupUserLocation = utils.UserLocation{
 	},
 }
 
-func TestUpdateRegion(t *testing.T) {
+/*func TestUpdateRegion(t *testing.T) {
 	_, err := UpdateIfAbsentAddUserLocation(mockupUserLocation)
 	if err != nil {
 		t.Error(err)
@@ -31,4 +29,4 @@ func TestUpdateRegion(t *testing.T) {
 	assert.Equal(t, mockupUserLocation.Location.Latitude, userLocation.Location.Latitude)
 
 	_ = DeleteUserLocation(mockupUserLocation.Username)
-}
+}*/
