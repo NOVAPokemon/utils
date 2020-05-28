@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	errorGetServerConfig    = "error updating server %s configs"
-	errorInsertServerConfig = "error updating server %s configs"
+	errorGetServerConfig    = "error getting server %s configs"
+	errorInsertServerConfig = "error inserting server %s configs"
 	errorUpdateServerConfig = "error updating server %s configs"
 )
 
