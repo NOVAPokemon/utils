@@ -145,7 +145,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 
 	numberMeasuresStart++
 	totalTimeTookStart += timeTook
-	log.Infof("average time starting: %f ms", float64(totalTimeTookStart)/float64(numberMeasuresStart))
+	log.Infof("average time starting trades: %f ms", float64(totalTimeTookStart)/float64(numberMeasuresStart))
 
 	select {
 	case <-rejected:
