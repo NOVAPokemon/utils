@@ -12,10 +12,10 @@ const (
 	errorGetLocation    = "error getting user %s location"
 	errorDeleteLocation = "error deleting user %s location"
 
-	errorGetServerConfig       = "error updating server %s configs"
-	errorInsertServerConfig    = "error updating server %s configs"
+	errorGetServerConfig       = "error getting server %s configs"
+	errorInsertServerConfig    = "error inserting server %s configs"
 	errorUpdateServerConfig    = "error updating server %s configs"
-	errorGetGlobalServerConfig = "error fetching global server configs"
+	errorGetGlobalServerConfig = "error getting global server configs"
 )
 
 func wrapAddGymError(err error) error {
