@@ -36,7 +36,7 @@ func (ulMsg UpdateLocationMessage) SerializeToWSMessage() *ws.Message {
 }
 
 type GymsMessage struct {
-	Gyms []utils.Gym
+	Gyms []utils.GymWithServer
 	ws.MessageWithId
 }
 

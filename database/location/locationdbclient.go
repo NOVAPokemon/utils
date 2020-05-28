@@ -63,10 +63,11 @@ func init() {
 	dbClient = databaseUtils.DBClientMultipleCollections{Client: client, Ctx: &ctx, Collections: collections}
 }
 
-func AddGym(gym utils.Gym) error {
+func AddGym(gymWithSrv utils.GymWithServer) error {
+	gym := gymWithSrv.Gym
 	ctx := dbClient.Ctx
 	collection := dbClient.Collections[gymsLocationCollectionName]
-	_, err := collection.InsertOne(*ctx, gym)
+	_, err := collection.InsertOne(*ctx, gymWithSrv)
 	if err != nil {
 		return wrapAddGymError(err)
 	}
@@ -76,7 +77,7 @@ func AddGym(gym utils.Gym) error {
 	return nil
 }
 
-func GetGyms() ([]utils.Gym, error) {
+func GetGyms() ([]utils.GymWithServer, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collections[gymsLocationCollectionName]
 
@@ -85,19 +86,12 @@ func GetGyms() ([]utils.Gym, error) {
 		return nil, wrapGetGymsError(err)
 	}
 
-	var gyms []utils.Gym
-
-	defer databaseUtils.CloseCursor(cur, ctx)
-	for cur.Next(*ctx) {
-		var gym utils.Gym
-		err := cur.Decode(&gym)
-		if err != nil {
-			return nil, wrapGetGymsError(err)
-		} else {
-			gyms = append(gyms, gym)
-		}
+	var gymsWithSrv []utils.GymWithServer
+	err = cur.All(*ctx, gymsWithSrv)
+	if err != nil {
+		return nil, wrapGetGymsError(err)
 	}
-	return gyms, nil
+	return gymsWithSrv, nil
 }
 
 func UpdateIfAbsentAddUserLocation(userLocation utils.UserLocation) (*utils.UserLocation, error) {
