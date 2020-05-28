@@ -36,33 +36,39 @@ func init() {
 	dbClient = databaseUtils.DBClient{Client: client, Ctx: &ctx, Collection: gymsLocationCollection}
 }
 
-func GetGymsForServer(serverName string) (*utils.GymsForServer, error) {
+func GetGymsForServer(serverName string) ([]utils.Gym, error) {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
 	var filter = bson.D{{"servername", serverName}}
-	res := collection.FindOne(*ctx, filter)
-	if res.Err() != nil {
-		return nil, wrapGetServerConfig(res.Err(), serverName)
+	cursor, err := collection.Find(*ctx, filter)
+	if err != nil {
+		return nil, wrapGetServerConfig(err, serverName)
 	}
-	var serverConfig = &utils.GymsForServer{}
-	if err := res.Decode(serverConfig); err != nil {
-		return nil, wrapGetServerConfig(res.Err(), serverName)
+
+	var gymsForServer []utils.Gym
+	defer log.Error(cursor.Close(*ctx))
+	for cursor.Next(*ctx) {
+		var elem utils.Gym
+		err := cursor.Decode(&elem)
+		if err != nil {
+			log.Fatal(wrapGetServerConfig(err, serverName))
+		}
+		gymsForServer = append(gymsForServer, elem)
 	}
-	return serverConfig, nil
+	return gymsForServer, nil
 }
 
-func UpsertGymsForServer(serverName string, config utils.GymsForServer) error {
+func UpsertGymWithServer(gym utils.GymWithServer) error {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
-	var filter = bson.D{{"ServerName:", serverName}}
+	var filter = bson.D{{"ServerName:", gym.ServerName}}
 	upsert := true
 	updateOptions := options.ReplaceOptions{
 		Upsert: &upsert,
 	}
-	config.ServerName = serverName
-	_, err := collection.ReplaceOne(*ctx, filter, config, &updateOptions)
+	_, err := collection.ReplaceOne(*ctx, filter, gym, &updateOptions)
 	if err != nil {
-		return wrapUpdateServerConfig(err, serverName)
+		return wrapUpdateServerConfig(err, gym.ServerName)
 	}
 
 	return nil

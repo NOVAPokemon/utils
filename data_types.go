@@ -92,7 +92,7 @@ type LocationServerBoundary struct {
 	ServerName     string
 }
 
-type GymsForServer struct {
-	Gyms       []Gym
+type GymWithServer struct {
+	Gym        Gym
 	ServerName string
 }

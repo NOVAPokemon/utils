@@ -37,8 +37,8 @@ func NewGymClient(httpClient *http.Client) *GymClient {
 	}
 }
 
-func (g *GymClient) GetGymInfo(gymName string) (*utils.Gym, error) {
-	req, err := BuildRequest("GET", g.GymAddr, fmt.Sprintf(api.GetGymInfoPath, gymName), nil)
+func (g *GymClient) GetGymInfo(serverHostname string, gymName string) (*utils.Gym, error) {
+	req, err := BuildRequest("GET", fmt.Sprintf("%s:%d", serverHostname, utils.GymPort), fmt.Sprintf(api.GetGymInfoPath, gymName), nil)
 	if err != nil {
 		return nil, errors.WrapGetGymInfoError(err)
 	}
@@ -59,8 +59,8 @@ func (g *GymClient) CreateGym(toCreate utils.Gym) (*utils.Gym, error) {
 	return createdGym, errors.WrapCreateGymError(err)
 }
 
-func (g *GymClient) CreateRaid(gymName string) error {
-	req, err := BuildRequest("POST", g.GymAddr, fmt.Sprintf(api.CreateRaidPath, gymName), nil)
+func (g *GymClient) CreateRaid(serverHostname string, gymName string) error {
+	req, err := BuildRequest("POST", fmt.Sprintf("%s:%d", serverHostname, utils.GymPort), fmt.Sprintf(api.CreateRaidPath, gymName), nil)
 	if err != nil {
 		return errors.WrapCreateRaidError(err)
 	}
@@ -72,12 +72,9 @@ func (g *GymClient) CreateRaid(gymName string) error {
 }
 
 func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsToken string, itemsToken string,
-	gymId string) (*websocket.Conn, *battles.BattleChannels, error) {
-
-	log.Infof("Dialing: %s %s", g.GymAddr, fmt.Sprintf(api.GetGymInfoPath, gymId))
-	u := url.URL{Scheme: "ws", Host: g.GymAddr, Path: fmt.Sprintf(api.JoinRaidPath, gymId)}
+	gymId string, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.GymPort), Path: fmt.Sprintf(api.JoinRaidPath, gymId)}
 	log.Infof("Connecting to: %s", u.String())
-
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.StatsTokenHeaderName, statsToken)

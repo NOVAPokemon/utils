@@ -31,7 +31,7 @@ type LocationClient struct {
 	config       utils.LocationClientConfig
 	HttpClient   *http.Client
 
-	Gyms     []utils.Gym
+	Gyms     []utils.GymWithServer
 	Pokemons []utils.WildPokemon
 
 	CurrentLocation     utils.Location
@@ -63,7 +63,7 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 		LocationAddr: locationURL,
 		config:       config,
 
-		Gyms:                []utils.Gym{},
+		Gyms:                []utils.GymWithServer{},
 		HttpClient:          &http.Client{},
 		CurrentLocation:     config.Parameters.StartingLocation,
 		LocationParameters:  config.Parameters,
@@ -110,7 +110,6 @@ func (c *LocationClient) StartLocationUpdates(authToken string, trainersCLient *
 				if err != nil {
 					return errors2.WrapStartLocationUpdatesError(err)
 				}
-
 				c.Gyms = desMsg.(*location.GymsMessage).Gyms
 			case location.Pokemon:
 				desMsg, err := location.DeserializeLocationMsg(msg)
@@ -259,9 +258,9 @@ func (c *LocationClient) move(timePassed int) utils.Location {
 	return gps.CalcLocationPlusDistanceTraveled(c.CurrentLocation, dLat, dLong)
 }
 
-func (c *LocationClient) AddGymLocation(gym utils.Gym) error {
+func (c *LocationClient) AddGymLocation(gym utils.GymWithServer) error {
 
-	serverUrl, err := c.GetServerForLocation(gym.Location)
+	serverUrl, err := c.GetServerForLocation(gym.Gym.Location)
 	if err != nil {
 		return errors2.WrapAddGymLocationError(err)
 	}
