@@ -87,7 +87,7 @@ func GetGyms() ([]utils.GymWithServer, error) {
 	}
 
 	var gymsWithSrv []utils.GymWithServer
-	err = cur.All(*ctx, gymsWithSrv)
+	err = cur.All(*ctx, &gymsWithSrv)
 	if err != nil {
 		return nil, wrapGetGymsError(err)
 	}

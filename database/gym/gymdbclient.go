@@ -39,7 +39,7 @@ func init() {
 func GetGymsForServer(serverName string) ([]utils.Gym, error) {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
-	var filter = bson.D{{"servername", serverName}}
+	var filter = bson.D{{"ServerName", serverName}}
 	cursor, err := collection.Find(*ctx, filter)
 	if err != nil {
 		return nil, wrapGetServerConfig(err, serverName)
@@ -61,7 +61,7 @@ func GetGymsForServer(serverName string) ([]utils.Gym, error) {
 func UpsertGymWithServer(gym utils.GymWithServer) error {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
-	var filter = bson.D{{"ServerName:", gym.ServerName}}
+	var filter = bson.D{{"ServerName", gym.ServerName}}
 	upsert := true
 	updateOptions := options.ReplaceOptions{
 		Upsert: &upsert,
