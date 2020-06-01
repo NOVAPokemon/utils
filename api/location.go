@@ -6,7 +6,6 @@ import (
 
 const UserLocationPath = "/location/user_location"
 const GymLocationPath = "/location/gym_location"
-const CatchWildPokemonPath = "/location/catch"
 
 const GetAllConfigsPath = "/location/configs"
 const SetServerConfigPath = "/location/configs/%s"
