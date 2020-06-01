@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/NOVAPokemon/utils/websockets"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"net/http"
@@ -50,10 +51,9 @@ const (
 
 func StartServer(serviceName, host string, port int, routes Routes) {
 	rand.Seed(time.Now().UnixNano())
-
 	addr := fmt.Sprintf("%s:%d", host, port)
 	r := NewRouter(routes)
-
+	http.Handle("/metrics", promhttp.Handler())
 	log.Infof("Starting %s server in port %d...\n", serviceName, port)
 	log.Fatal(http.ListenAndServe(addr, r))
 }
