@@ -3,13 +3,14 @@ package utils
 import (
 	"flag"
 	"fmt"
-	"github.com/NOVAPokemon/utils/websockets"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/NOVAPokemon/utils/websockets"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

@@ -2,6 +2,8 @@ package notification
 
 import (
 	"context"
+	"os"
+
 	"github.com/NOVAPokemon/utils"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
 	log "github.com/sirupsen/logrus"
@@ -9,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"os"
 )
 
 const databaseName = "NOVAPokemonDB"

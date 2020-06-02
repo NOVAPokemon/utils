@@ -2,6 +2,10 @@ package clients
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"strings"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
@@ -9,9 +13,6 @@ import (
 	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/NOVAPokemon/utils/tokens"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"strings"
 )
 
 type TrainersClient struct {

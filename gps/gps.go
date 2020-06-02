@@ -1,8 +1,9 @@
 package gps
 
 import (
-	"github.com/NOVAPokemon/utils"
 	"math"
+
+	"github.com/NOVAPokemon/utils"
 )
 
 // Earth radius in meters

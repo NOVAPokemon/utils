@@ -2,14 +2,15 @@ package tokens
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"testing"
+
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"os"
-	"testing"
 )
 
 const username = "test_trainer"

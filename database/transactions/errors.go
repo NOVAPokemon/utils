@@ -2,6 +2,7 @@ package transactions
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 

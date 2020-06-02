@@ -2,6 +2,8 @@ package trainer
 
 import (
 	"context"
+	"os"
+
 	"github.com/NOVAPokemon/utils"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
 	"github.com/NOVAPokemon/utils/experience"
@@ -12,7 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"os"
 )
 
 const databaseName = "NOVAPokemonDB"

@@ -2,13 +2,14 @@ package clients
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"os"
 )
 
 type AuthClient struct {

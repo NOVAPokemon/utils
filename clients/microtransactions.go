@@ -2,14 +2,15 @@ package clients
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"os"
 )
 
 type MicrotransactionsClient struct {

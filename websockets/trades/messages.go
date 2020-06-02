@@ -2,6 +2,7 @@ package trades
 
 import (
 	"encoding/json"
+
 	ws "github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"

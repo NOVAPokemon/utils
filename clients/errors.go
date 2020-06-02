@@ -2,6 +2,7 @@ package clients
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 

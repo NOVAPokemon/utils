@@ -4,6 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"math/rand"
+	"net/http"
+	"net/url"
+	"os"
+	"time"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	errors2 "github.com/NOVAPokemon/utils/clients/errors"
@@ -14,12 +21,6 @@ import (
 	"github.com/NOVAPokemon/utils/websockets/location"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"math"
-	"math/rand"
-	"net/http"
-	"net/url"
-	"os"
-	"time"
 )
 
 type CaughtPokemonMessage struct {

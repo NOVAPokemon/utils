@@ -2,6 +2,11 @@ package clients
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
+	"os"
+	"time"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
@@ -10,10 +15,6 @@ import (
 	"github.com/NOVAPokemon/utils/websockets/battles"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"net/url"
-	"os"
-	"time"
 )
 
 type GymClient struct {

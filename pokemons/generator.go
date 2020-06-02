@@ -1,9 +1,10 @@
 package pokemons
 
 import (
+	"math/rand"
+
 	"github.com/NOVAPokemon/utils/experience"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"math/rand"
 )
 
 func GetOneWildPokemon(maxLevel float64, stdHPDeviation float64, maxHP float64, stdDamageDeviation float64,

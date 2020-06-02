@@ -2,11 +2,12 @@ package user
 
 import (
 	"crypto/rand"
+	"os"
+	"testing"
+
 	"github.com/NOVAPokemon/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 var userMockup = utils.User{

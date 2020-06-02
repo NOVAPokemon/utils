@@ -3,12 +3,13 @@ package clients
 import (
 	"bytes"
 	"encoding/json"
-	ws "github.com/NOVAPokemon/utils/websockets"
-	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 	"time"
+
+	ws "github.com/NOVAPokemon/utils/websockets"
+	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
 func Send(conn *websocket.Conn, msg *string) error {

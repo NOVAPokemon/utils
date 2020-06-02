@@ -2,6 +2,7 @@ package websockets
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 

@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"encoding/json"
+
 	"github.com/NOVAPokemon/utils"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"

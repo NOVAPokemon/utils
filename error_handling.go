@@ -1,9 +1,10 @@
 package utils
 
 import (
+	"net/http"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 const (

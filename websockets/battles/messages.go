@@ -2,6 +2,7 @@ package battles
 
 import (
 	"encoding/json"
+
 	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"

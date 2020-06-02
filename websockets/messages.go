@@ -2,9 +2,10 @@ package websockets
 
 import (
 	"encoding/json"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
 type Serializable interface {

@@ -2,10 +2,11 @@ package websockets
 
 import (
 	"encoding/json"
-	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 	"strings"
 	"time"
+
+	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
 const PongWait = 2 * time.Second

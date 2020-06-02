@@ -3,13 +3,14 @@ package tokens
 import (
 	"crypto/md5"
 	"encoding/json"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/dgrijalva/jwt-go"
-	"net/http"
-	"strings"
-	"time"
 )
 
 const (

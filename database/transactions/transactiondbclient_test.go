@@ -1,10 +1,11 @@
 package transactions
 
 import (
-	"github.com/NOVAPokemon/utils"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/NOVAPokemon/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 var transactionOfferMockup = utils.TransactionTemplate{

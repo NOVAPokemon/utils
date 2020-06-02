@@ -1,9 +1,10 @@
 package location
 
 import (
+	"testing"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var mockupUserLocation = utils.UserLocation{

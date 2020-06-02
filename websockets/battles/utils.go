@@ -2,11 +2,12 @@ package battles
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/NOVAPokemon/utils/pokemons"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, issuerChan chan ws.GenericMsg,

@@ -2,8 +2,9 @@ package api
 
 import (
 	"fmt"
-	"github.com/NOVAPokemon/utils"
 	"net/http"
+
+	"github.com/NOVAPokemon/utils"
 )
 
 const (

@@ -1,11 +1,12 @@
 package battles
 
 import (
+	"time"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/NOVAPokemon/utils/websockets"
-	"time"
 )
 
 var (

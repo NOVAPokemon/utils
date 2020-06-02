@@ -1,14 +1,15 @@
 package trainer
 
 import (
+	"os"
+	"testing"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"os"
-	"testing"
 )
 
 var trainerMockup = utils.Trainer{

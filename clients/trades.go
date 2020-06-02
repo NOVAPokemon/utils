@@ -2,6 +2,12 @@ package clients
 
 import (
 	"fmt"
+	"math/rand"
+	"net/http"
+	"net/url"
+	"os"
+	"time"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
@@ -11,11 +17,6 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"math/rand"
-	"net/http"
-	"net/url"
-	"os"
-	"time"
 )
 
 type TradeLobbyClient struct {

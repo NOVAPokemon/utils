@@ -2,6 +2,7 @@ package notification
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
