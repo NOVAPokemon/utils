@@ -49,7 +49,7 @@ func (c *StoreClient) GetItems(authToken string) ([]*items.StoreItem, error) {
 func (c *StoreClient) BuyItem(itemName, authToken, statsToken string) (string, string, error) {
 	req, err := BuildRequest("POST", c.StoreAddr, fmt.Sprintf(api.BuyItemPath, itemName), nil)
 	if err != nil {
-		return "","", errors.WrapBuyItemError(err)
+		return "", "", errors.WrapBuyItemError(err)
 	}
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)

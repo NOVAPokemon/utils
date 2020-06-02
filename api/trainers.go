@@ -60,4 +60,3 @@ var GenerateAllTokensRoute = fmt.Sprintf(GenerateAllTokensPath, UsernameRouteVar
 var GenerateTrainerStatsTokenRoute = fmt.Sprintf(GenerateTrainerStatsTokenPath, UsernameRouteVar)
 var GenerateItemsTokenRoute = fmt.Sprintf(GenerateItemsTokenPath, UsernameRouteVar)
 var GeneratePokemonsTokenRoute = fmt.Sprintf(GeneratePokemonsTokenPath, UsernameRouteVar)
-

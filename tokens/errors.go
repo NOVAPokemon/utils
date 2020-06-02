@@ -11,7 +11,7 @@ const (
 	errorExtractPokemonToken       = "error extracting pokemon token"
 	errorExtractItemsToken         = "error extracting items token"
 
-	errorParsingToken              = "error parsing token"
+	errorParsingToken = "error parsing token"
 )
 
 var (

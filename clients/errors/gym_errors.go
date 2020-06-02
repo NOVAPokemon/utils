@@ -24,4 +24,3 @@ func WrapCreateRaidError(err error) error {
 func WrapEnterRaidError(err error) error {
 	return errors.Wrap(err, errorEnterRaid)
 }
-

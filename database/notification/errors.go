@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	errorAddNotificationFormat = "error adding notification to user %s"
+	errorAddNotificationFormat    = "error adding notification to user %s"
 	errorRemoveNotificationFormat = "error removing notification %s"
 )
 

@@ -9,7 +9,7 @@ const (
 	errorRemoveAllTransactions = "error removeing all transactions"
 
 	errorGetUserTransactionsFormat = "error getting user %s transactions"
-	errorAddTransactionFormat = "error getting user %s transactions"
+	errorAddTransactionFormat      = "error getting user %s transactions"
 )
 
 func wrapGetUserTransactionsError(err error, username string) error {

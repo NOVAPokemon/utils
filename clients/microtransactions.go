@@ -62,7 +62,7 @@ func (c *MicrotransactionsClient) GetTransactionRecords(authToken string) ([]uti
 func (c *MicrotransactionsClient) PerformTransaction(offerName, authToken, statsToken string) (*primitive.ObjectID,
 	string, error) {
 	req, err := BuildRequest("POST", c.MicrotransactionsAddr,
-		fmt.Sprintf(api.MakeTransactionPath, offerName),nil)
+		fmt.Sprintf(api.MakeTransactionPath, offerName), nil)
 	if err != nil {
 		return nil, "", errors.WrapPerformTransactionError(err)
 	}

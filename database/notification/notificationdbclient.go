@@ -12,7 +12,6 @@ import (
 	"os"
 )
 
-
 const databaseName = "NOVAPokemonDB"
 const collectionName = "Notifications"
 

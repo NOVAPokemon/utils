@@ -20,8 +20,8 @@ const (
 	errorRemoveItemFromTrainerFormat  = "error remove item from trainer %s"
 	errorRemoveItemsFromTrainerFormat = "error remove items from trainer %s"
 
-	errorAddPokemonToTrainerFormat = "error add pokemon to trainer %s"
-	errorUpdateTrainerPokemonsFormat = "error update trainer %s pokemons"
+	errorAddPokemonToTrainerFormat      = "error add pokemon to trainer %s"
+	errorUpdateTrainerPokemonsFormat    = "error update trainer %s pokemons"
 	errorRemovePokemonFromTrainerFormat = "error removing pokemon from trainer %s"
 )
 
