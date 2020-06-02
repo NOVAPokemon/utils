@@ -7,7 +7,6 @@ import (
 
 const (
 	errorGetServerConfig    = "error getting server %s configs"
-	errorInsertServerConfig = "error inserting server %s configs"
 	errorUpdateServerConfig = "error updating server %s configs"
 )
 
@@ -17,8 +16,4 @@ func wrapUpdateServerConfig(err error, serverName string) error {
 
 func wrapGetServerConfig(err error, serverName string) error {
 	return errors.Wrap(err, fmt.Sprintf(errorGetServerConfig, serverName))
-}
-
-func wrapInsertServerConfig(err error, serverName string) error {
-	return errors.Wrap(err, fmt.Sprintf(errorInsertServerConfig, serverName))
 }

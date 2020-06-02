@@ -51,21 +51,6 @@ func init() {
 	dbClient = databaseUtils.DBClient{Client: client, Ctx: &ctx, Collection: collection}
 }
 
-func GetNotificationsByUsername(username string) (*utils.Notification, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
-	var result utils.Notification
-
-	filter := bson.M{"username": username}
-	err := collection.FindOne(*ctx, filter).Decode(&result)
-
-	if err != nil {
-		return nil, wrapGetNotificationError(err, username)
-	}
-
-	return &result, nil
-}
-
 func AddNotification(notification utils.Notification) error {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection

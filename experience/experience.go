@@ -28,7 +28,7 @@ func GetPokemonExperienceGainFromBattle(winner bool) float64 {
 }
 
 func GetPokemonExperienceGainFromRaid(winner bool) float64 {
-	xp := MinExperiencePerBattle
+	xp := MinExperiencePerRaid
 	if winner {
 		xp += rand.Intn(MaxBonusExperience)
 	}

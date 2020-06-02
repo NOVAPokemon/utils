@@ -28,14 +28,14 @@ func HandleSend(conn *websocket.Conn, outChannel chan GenericMsg, endConnection 
 
 	pingTicker := time.NewTicker(PingPeriod)
 	conn.SetPongHandler(func(_ string) error {
-		//log.Info("Received pong")
+		// log.Info("Received pong")
 		return conn.SetReadDeadline(time.Now().Add(PongWait))
 	})
 
 	for {
 		select {
 		case <-pingTicker.C:
-			//log.Warn("Pinging")
+			// log.Warn("Pinging")
 			if err := conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
 				closeConnectionThroughChannel(conn, endConnection)
 				return wrapHandleSendError(err)

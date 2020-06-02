@@ -24,4 +24,5 @@ var ForceLoadConfigRoute = ForceLoadConfigPath
 
 var UserLocationRoute = UserLocationPath
 var GymLocationRoute = GymLocationPath
-//var CatchWildPokemonRoute = CatchWildPokemonPath
+
+// var CatchWildPokemonRoute = CatchWildPokemonPath

@@ -6,12 +6,13 @@ import (
 	"net/http"
 )
 
-const StatusPath = "/"
-const StatusName = "STATUS"
+const (
+	StatusName = "STATUS"
 
-const GET = "GET"
+	GET = "GET"
 
-const StatusOnline = "online"
+	StatusOnline = "online"
+)
 
 // Indicates if the server is online.
 func Status(w http.ResponseWriter, _ *http.Request) {

@@ -16,7 +16,7 @@ func GetOneWildPokemon(maxLevel float64, stdHPDeviation float64, maxHP float64, 
 		(maxHP * (float64(level) / maxLevel))
 	hp = int(randNormal)
 
-	//safeguards
+	// safeguards
 	if hp < 1 {
 		hp = 1
 	}
@@ -27,7 +27,7 @@ func GetOneWildPokemon(maxLevel float64, stdHPDeviation float64, maxHP float64, 
 
 	damage = int(randNormal)
 
-	//safeguards
+	// safeguards
 	if damage < 1 {
 		damage = 1
 	}

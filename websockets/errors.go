@@ -31,7 +31,6 @@ var (
 	ErrorTooEarlyToLogReceive = errors.New("tried logging before setting received timestamp")
 
 	ErrorMsgWasNotEmmitted = errors.New("msg was not emmitted")
-	ErrorMsgWasNotReceived = errors.New("msg was not received")
 )
 
 // Wrappers

@@ -1,9 +1,6 @@
 package location
 
-import (
-	"github.com/NOVAPokemon/utils"
-)
-
+/*
 var mockupUserLocation = utils.UserLocation{
 	Username: "trainer1",
 	Location: utils.Location{
@@ -12,7 +9,7 @@ var mockupUserLocation = utils.UserLocation{
 	},
 }
 
-/*func TestUpdateRegion(t *testing.T) {
+func TestUpdateRegion(t *testing.T) {
 	_, err := UpdateIfAbsentAddUserLocation(mockupUserLocation)
 	if err != nil {
 		t.Error(err)
@@ -29,4 +26,5 @@ var mockupUserLocation = utils.UserLocation{
 	assert.Equal(t, mockupUserLocation.Location.Latitude, userLocation.Location.Latitude)
 
 	_ = DeleteUserLocation(mockupUserLocation.Username)
-}*/
+}
+*/
