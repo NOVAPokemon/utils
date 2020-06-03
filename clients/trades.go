@@ -139,6 +139,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	go func() {
 		if err := client.HandleReceivedMessages(conn, started, rejected, finished, setItemsToken); err != nil {
 			log.Error(err)
+			close(finished)
 		}
 	}()
 
@@ -150,15 +151,20 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	}
 
 	timeTook := WaitForStart(started, rejected, finished, requestTimestamp)
-	log.Infof(logTimeTookStartTrade, timeTook)
+	if timeTook != -1 {
+		log.Infof(logTimeTookStartTrade, timeTook)
 
-	numberMeasuresStart++
-	totalTimeTookStart += timeTook
-	log.Infof(logAverageTimeStartTrade, float64(totalTimeTookStart)/float64(numberMeasuresStart))
+		numberMeasuresStart++
+		totalTimeTookStart += timeTook
+		log.Infof(logAverageTimeStartTrade, float64(totalTimeTookStart)/float64(numberMeasuresStart))
+	}
 
 	select {
 	case <-rejected:
 		log.Infof("trade was rejected")
+		return nil, nil
+	case <-finished:
+		log.Warn("session finished before starting")
 		return nil, nil
 	default:
 	}
