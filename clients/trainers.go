@@ -46,7 +46,7 @@ func NewTrainersClient(client *http.Client) *TrainersClient {
 	return &TrainersClient{
 		TrainersAddr: trainersURL,
 		HttpClient:   client,
-		claimsLock:   sync.RWMutex{},
+		ClaimsLock:   sync.RWMutex{},
 	}
 }
 
