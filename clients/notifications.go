@@ -2,6 +2,7 @@ package clients
 
 import (
 	"fmt"
+	"github.com/NOVAPokemon/utils/clients/metrics"
 	"net/http"
 	"net/url"
 	"os"
@@ -25,7 +26,7 @@ type NotificationClient struct {
 }
 
 const (
-	logTimeTookNotificationMsg = "time notification: %d ms"
+	logTimeTookNotificationMsg    = "time notification: %d ms"
 	logAverageTimeNotificationMsg = "average notification: %f ms"
 )
 
@@ -168,7 +169,7 @@ func (client *NotificationClient) parseToNotification(msg *ws.Message) {
 	if ok {
 		totalTimeTookNotificationMsgs += timeTook
 		numberMeasuresNotificationMsgs++
-
+		metrics.EmitNotificationMessageDuration(float64(timeTook))
 		log.Infof(logTimeTookNotificationMsg, timeTook)
 		log.Infof(logAverageTimeNotificationMsg,
 			float64(totalTimeTookNotificationMsgs)/float64(numberMeasuresNotificationMsgs))

@@ -2,6 +2,7 @@ package clients
 
 import (
 	"fmt"
+	"github.com/NOVAPokemon/utils/clients/metrics"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -26,10 +27,10 @@ type TradeLobbyClient struct {
 }
 
 const (
-	logTimeTookStartTrade = "time start trade: %d ms"
+	logTimeTookStartTrade    = "time start trade: %d ms"
 	logAverageTimeStartTrade = "average start trade: %f ms"
 
-	logTimeTookTradeMsg = "time trade: %d ms"
+	logTimeTookTradeMsg    = "time trade: %d ms"
 	logAverageTimeTradeMsg = "average trade: %f ms"
 )
 
@@ -222,7 +223,7 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			if ok {
 				totalTimeTookTradeMsgs += timeTook
 				numberMeasuresTradeMsgs++
-
+				metrics.EmittradeMessageDuration(float64(timeTook))
 				log.Infof(logTimeTookTradeMsg, timeTook)
 				log.Infof(logAverageTimeTradeMsg,
 					float64(totalTimeTookTradeMsgs)/float64(numberMeasuresTradeMsgs))
