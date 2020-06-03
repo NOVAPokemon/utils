@@ -25,6 +25,14 @@ type TradeLobbyClient struct {
 	conn       *websocket.Conn
 }
 
+const (
+	logTimeTookStartTrade = "time start trade: %d ms"
+	logAverageTimeStartTrade = "average start trade: %f ms"
+
+	logTimeTookTradeMsg = "time trade: %d ms"
+	logAverageTimeTradeMsg = "average trade: %f ms"
+)
+
 var (
 	defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
 
@@ -142,11 +150,11 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	}
 
 	timeTook := WaitForStart(started, rejected, finished, requestTimestamp)
-	log.Infof("time took to initiate interaction: %d ms", timeTook)
+	log.Infof(logTimeTookStartTrade, timeTook)
 
 	numberMeasuresStart++
 	totalTimeTookStart += timeTook
-	log.Infof("average time starting trades: %f ms", float64(totalTimeTookStart)/float64(numberMeasuresStart))
+	log.Infof(logAverageTimeStartTrade, float64(totalTimeTookStart)/float64(numberMeasuresStart))
 
 	select {
 	case <-rejected:
@@ -215,8 +223,8 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 				totalTimeTookTradeMsgs += timeTook
 				numberMeasuresTradeMsgs++
 
-				log.Infof("time took: %d ms", timeTook)
-				log.Infof("average time for trade msgs: %f ms",
+				log.Infof(logTimeTookTradeMsg, timeTook)
+				log.Infof(logAverageTimeTradeMsg,
 					float64(totalTimeTookTradeMsgs)/float64(numberMeasuresTradeMsgs))
 			}
 

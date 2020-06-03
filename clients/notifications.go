@@ -24,6 +24,11 @@ type NotificationClient struct {
 	readChannel          chan *string
 }
 
+const (
+	logTimeTookNotificationMsg = "time notification: %d ms"
+	logAverageTimeNotificationMsg = "average notification: %f ms"
+)
+
 var (
 	defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
 
@@ -164,8 +169,8 @@ func (client *NotificationClient) parseToNotification(msg *ws.Message) {
 		totalTimeTookNotificationMsgs += timeTook
 		numberMeasuresNotificationMsgs++
 
-		log.Infof("time took: %d ms", timeTook)
-		log.Infof("average time for notification msgs: %f ms",
+		log.Infof(logTimeTookNotificationMsg, timeTook)
+		log.Infof(logAverageTimeNotificationMsg,
 			float64(totalTimeTookNotificationMsgs)/float64(numberMeasuresNotificationMsgs))
 	}
 
