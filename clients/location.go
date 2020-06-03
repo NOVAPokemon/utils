@@ -167,7 +167,7 @@ func (c *LocationClient) connect(outChan chan websockets.GenericMsg, authToken s
 	if err != nil {
 		return nil, errors2.WrapConnectError(err)
 	}
-	u := url.URL{Scheme: "ws", Host: *serverUrl, Path: api.UserLocationPath}
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", *serverUrl, utils.LocationPort), Path: api.UserLocationPath}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
