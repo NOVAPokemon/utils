@@ -223,7 +223,6 @@ func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, sta
 			if ok {
 				totalTimeTookTradeMsgs += timeTook
 				numberMeasuresTradeMsgs++
-				metrics.EmittradeMessageDuration(float64(timeTook))
 				log.Infof(logTimeTookTradeMsg, timeTook)
 				log.Infof(logAverageTimeTradeMsg,
 					float64(totalTimeTookTradeMsgs)/float64(numberMeasuresTradeMsgs))
