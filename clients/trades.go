@@ -2,7 +2,6 @@ package clients
 
 import (
 	"fmt"
-	"github.com/NOVAPokemon/utils/clients/metrics"
 	"math/rand"
 	"net/http"
 	"net/url"
