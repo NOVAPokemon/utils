@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -27,6 +28,7 @@ type TrainersClient struct {
 	TrainerStatsClaims *tokens.TrainerStatsToken
 	ItemsClaims        *tokens.ItemsToken
 	PokemonClaims      map[string]tokens.PokemonToken
+	ClaimsLock         sync.RWMutex
 }
 
 var defaultTrainersURL = fmt.Sprintf("%s:%d", utils.Host, utils.TrainersPort)
@@ -44,6 +46,7 @@ func NewTrainersClient(client *http.Client) *TrainersClient {
 	return &TrainersClient{
 		TrainersAddr: trainersURL,
 		HttpClient:   client,
+		claimsLock:   sync.RWMutex{},
 	}
 }
 
@@ -364,12 +367,16 @@ func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
 	}
 	log.Infof("Trainer has %d pokemons", added)
 	c.PokemonTokens = auxTkns
+
+	c.ClaimsLock.Lock()
 	c.PokemonClaims = auxClaims
+	c.ClaimsLock.Unlock()
 
 	return nil
 }
 
 func (c *TrainersClient) AppendPokemonTokens(tkns []string) error {
+	c.ClaimsLock.Lock()
 
 	i := 0
 	added := 0
@@ -390,6 +397,8 @@ func (c *TrainersClient) AppendPokemonTokens(tkns []string) error {
 
 		added++
 	}
+
+	c.ClaimsLock.Unlock()
 
 	log.Infof("Added %d pokemons to trainer", added)
 	return nil
