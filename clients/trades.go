@@ -139,7 +139,11 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	go func() {
 		if err := client.HandleReceivedMessages(conn, started, rejected, finished, setItemsToken); err != nil {
 			log.Error(err)
-			close(finished)
+			select {
+			case <-finished:
+			default:
+				close(finished)
+			}
 		}
 	}()
 
@@ -291,7 +295,13 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 			tradeMsg.LogEmit(trades.Trade)
 			msg := tradeMsg.SerializeToWSMessage()
 			s := (*msg).Serialize()
-			writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
+
+			select {
+			case <-writeChannel:
+				return
+			default:
+				writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
+			}
 
 			log.Infof("adding %s to trade", availableItems[randomItemIdx])
 
@@ -311,7 +321,14 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 		acceptMsg.LogEmit(trades.Accept)
 		msg := acceptMsg.SerializeToWSMessage()
 		s := (*msg).Serialize()
-		writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
+
+		select {
+		case <-writeChannel:
+			return
+		default:
+			writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
+		}
+
 		<-finished
 	}
 }
