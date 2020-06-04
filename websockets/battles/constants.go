@@ -14,7 +14,7 @@ var (
 )
 
 type BattleChannels struct {
-	OutChannel      chan websockets.GenericMsg
+	OutChannel      *websockets.SyncChannel
 	InChannel       chan *string
 	RejectedChannel chan struct{}
 	FinishChannel   chan struct{}

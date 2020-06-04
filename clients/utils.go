@@ -90,14 +90,14 @@ func WaitForStart(started, rejected, finish chan struct{}, requestTimestamp int6
 	return responseTimestamp - requestTimestamp
 }
 
-func MainLoop(conn *websocket.Conn, writeChannel chan ws.GenericMsg, finished chan struct{}) {
+func MainLoop(conn *websocket.Conn, writeChannel *ws.SyncChannel, finished chan struct{}) {
 	defer log.Info("Closed out channel")
-	defer close(writeChannel)
+	defer writeChannel.Close()
 
 	_ = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 	conn.SetPingHandler(func(string) error {
 		// log.Warn("Received ping, ponging...")
-		writeChannel <- ws.GenericMsg{MsgType: websocket.PongMessage, Data: nil}
+		_ = writeChannel.Write(ws.GenericMsg{MsgType: websocket.PongMessage, Data: nil})
 		return conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 	})
 
@@ -105,7 +105,7 @@ func MainLoop(conn *websocket.Conn, writeChannel chan ws.GenericMsg, finished ch
 		select {
 		case <-finished:
 			return
-		case msg := <-writeChannel:
+		case msg := <-writeChannel.Channel:
 			if err := conn.WriteMessage(msg.MsgType, msg.Data); err != nil {
 				log.Error(wrapMainLoopError(err))
 				return

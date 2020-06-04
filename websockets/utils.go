@@ -3,14 +3,51 @@ package websockets
 import (
 	"encoding/json"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
-const PongWait = 2 * time.Second
-const PingPeriod = (PongWait * 9) / 10
+type SyncChannel struct {
+	Channel chan GenericMsg
+	lock    sync.RWMutex
+	closed  bool
+}
+
+func NewSyncChannel(channel chan GenericMsg) *SyncChannel {
+	return &SyncChannel{
+		Channel: channel,
+		lock:    sync.RWMutex{},
+		closed:  false,
+	}
+}
+
+func (sc *SyncChannel) Write(value GenericMsg) error {
+	sc.lock.RLock()
+	defer sc.lock.RUnlock()
+
+	if !sc.closed {
+		sc.Channel <- value
+		return nil
+	}
+
+	return ErrorChannelAlreadyClosed
+}
+
+func (sc *SyncChannel) Close() {
+	sc.lock.Lock()
+	defer sc.lock.Unlock()
+
+	sc.closed = true
+	close(sc.Channel)
+}
+
+const (
+	PongWait   = 2 * time.Second
+	PingPeriod = (PongWait * 9) / 10
+)
 
 func ParseMessage(msg *string) (*Message, error) {
 	if msg == nil {
@@ -23,8 +60,8 @@ func ParseMessage(msg *string) (*Message, error) {
 	return toReturn, nil
 }
 
-func HandleSend(conn *websocket.Conn, outChannel chan GenericMsg, endConnection chan struct{}) error {
-	defer close(outChannel)
+func HandleSend(conn *websocket.Conn, outChannel *SyncChannel, endConnection chan struct{}) error {
+	defer outChannel.Close()
 	defer log.Warn("Closing send routine")
 
 	pingTicker := time.NewTicker(PingPeriod)
@@ -41,7 +78,7 @@ func HandleSend(conn *websocket.Conn, outChannel chan GenericMsg, endConnection 
 				closeConnectionThroughChannel(conn, endConnection)
 				return wrapHandleSendError(err)
 			}
-		case msg := <-outChannel:
+		case msg := <-outChannel.Channel:
 			err := conn.WriteMessage(msg.MsgType, msg.Data)
 			if err != nil {
 				closeConnectionThroughChannel(conn, endConnection)

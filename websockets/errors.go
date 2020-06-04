@@ -31,6 +31,8 @@ var (
 	ErrorTooEarlyToLogReceive = errors.New("tried logging before setting received timestamp")
 
 	ErrorMsgWasNotEmmitted = errors.New("msg was not emmitted")
+
+	ErrorChannelAlreadyClosed = errors.New("channel was already closed")
 )
 
 // Wrappers

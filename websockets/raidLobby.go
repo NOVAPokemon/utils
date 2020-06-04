@@ -11,7 +11,7 @@ type RaidLobby struct {
 	TrainersJoined     int
 	TrainerUsernames   []string
 	TrainerInChannels  []*chan *string
-	TrainerOutChannels []*chan GenericMsg
+	TrainerOutChannels []*SyncChannel
 
 	trainerConnections    []*websocket.Conn
 	EndConnectionChannels []chan struct{}
@@ -27,7 +27,7 @@ func NewRaidLobby(id primitive.ObjectID, expectedCapacity int) *RaidLobby {
 		TrainerUsernames:      make([]string, 0, expectedCapacity),
 		trainerConnections:    make([]*websocket.Conn, 0, expectedCapacity),
 		TrainerInChannels:     make([]*chan *string, 0, expectedCapacity),
-		TrainerOutChannels:    make([]*chan GenericMsg, 0, expectedCapacity),
+		TrainerOutChannels:    make([]*SyncChannel, 0, expectedCapacity),
 		EndConnectionChannels: make([]chan struct{}, 0, expectedCapacity),
 		ActiveConnections:     0,
 		Started:               false,
@@ -38,12 +38,12 @@ func NewRaidLobby(id primitive.ObjectID, expectedCapacity int) *RaidLobby {
 func (lobby *RaidLobby) AddTrainer(username string, trainerConn *websocket.Conn) {
 
 	trainerChanIn := make(chan *string)
-	trainerChanOut := make(chan GenericMsg)
+	trainerChanOut := NewSyncChannel(make(chan GenericMsg))
 	endChan := make(chan struct{})
 
 	lobby.TrainerUsernames = append(lobby.TrainerUsernames, username)
 	lobby.TrainerInChannels = append(lobby.TrainerInChannels, &trainerChanIn)
-	lobby.TrainerOutChannels = append(lobby.TrainerOutChannels, &trainerChanOut)
+	lobby.TrainerOutChannels = append(lobby.TrainerOutChannels, trainerChanOut)
 	lobby.trainerConnections = append(lobby.trainerConnections, trainerConn)
 	lobby.EndConnectionChannels = append(lobby.EndConnectionChannels, endChan)
 
