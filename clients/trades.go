@@ -285,7 +285,13 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 			maxItemsToTrade = client.config.MaxItemsToTrade
 		}
 
-		numItemsToAdd := rand.Intn(maxItemsToTrade)
+		var numItemsToAdd int
+		if maxItemsToTrade == 0 {
+			numItemsToAdd = 0
+		} else {
+			numItemsToAdd = rand.Intn(maxItemsToTrade)
+		}
+		
 		log.Infof("will trade %d items", numItemsToAdd)
 
 		for i := 0; i < numItemsToAdd; i++ {
