@@ -291,7 +291,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 		} else {
 			numItemsToAdd = rand.Intn(maxItemsToTrade)
 		}
-		
+
 		log.Infof("will trade %d items", numItemsToAdd)
 
 		for i := 0; i < numItemsToAdd; i++ {
