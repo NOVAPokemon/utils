@@ -2,6 +2,7 @@ package location
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"github.com/NOVAPokemon/utils"
@@ -37,40 +38,42 @@ func init() {
 	dbClient = databaseUtils.DBClient{Client: client, Ctx: &ctx, Collection: gymsLocationCollection}
 }
 
-func GetGymsForServer(serverName string) ([]utils.Gym, error) {
+func GetGymsForServer(serverName string) ([]utils.GymWithServer, error) {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
-	var filter = bson.D{{"ServerName", serverName}}
+	var filter = bson.D{{"servername", serverName}}
 	cursor, err := collection.Find(*ctx, filter)
 	if err != nil {
 		return nil, wrapGetServerConfig(err, serverName)
 	}
 
-	var gymsForServer []utils.Gym
-	defer log.Error(cursor.Close(*ctx))
-	for cursor.Next(*ctx) {
-		var elem utils.Gym
-		err := cursor.Decode(&elem)
-		if err != nil {
-			log.Fatal(wrapGetServerConfig(err, serverName))
+	var gymsForServer []utils.GymWithServer
+	defer func() {
+		if err := cursor.Close(*ctx); err != nil {
+			log.Error(err)
 		}
-		gymsForServer = append(gymsForServer, elem)
+	}()
+	if err := cursor.All(*ctx, &gymsForServer); err != nil {
+		return nil, wrapGetServerConfig(err, serverName)
+	}
+	if len(gymsForServer) == 0 {
+		return nil, wrapGetServerConfig(errors.New("no gyms found"), serverName)
 	}
 	return gymsForServer, nil
 }
 
-func UpsertGymWithServer(gym utils.GymWithServer) error {
+func AddGymWithServer(gym utils.GymWithServer) error {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
-	var filter = bson.D{{"ServerName", gym.ServerName}}
+	filter := bson.M{"gym.name": gym.Gym.Name}
 	upsert := true
-	updateOptions := options.ReplaceOptions{
+	updateOptions := &options.ReplaceOptions{
 		Upsert: &upsert,
 	}
-	_, err := collection.ReplaceOne(*ctx, filter, gym, &updateOptions)
+	_, err := collection.ReplaceOne(*ctx, filter, gym, updateOptions)
+
 	if err != nil {
 		return wrapUpdateServerConfig(err, gym.ServerName)
 	}
-
 	return nil
 }

@@ -41,34 +41,27 @@ func init() {
 	gymsLocationCollection := client.Database(databaseName).Collection(gymsLocationCollectionName)
 	wildPokemonsCollection := client.Database(databaseName).Collection(wildPokemonCollectionName)
 	globalConfigCollection := client.Database(databaseName).Collection(globalConfigCollectionName)
-
-	op := options.Index()
-	op.SetUnique(true)
-	index := mongo.IndexModel{
-		Keys:    bson.M{"name": 1},
-		Options: op,
-	}
-	_, err = gymsLocationCollection.Indexes().CreateOne(ctx, index)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
 	collections := map[string]*mongo.Collection{
 		usersLocationCollectionName: usersLocationCollection,
 		gymsLocationCollectionName:  gymsLocationCollection,
 		wildPokemonCollectionName:   wildPokemonsCollection,
 		globalConfigCollectionName:  globalConfigCollection,
 	}
-
 	dbClient = databaseUtils.DBClientMultipleCollections{Client: client, Ctx: &ctx, Collections: collections}
 }
 
-func AddGym(gymWithSrv utils.GymWithServer) error {
+func UpdateIfAbsentAddGym(gymWithSrv utils.GymWithServer) error {
 	gym := gymWithSrv.Gym
 	ctx := dbClient.Ctx
 	collection := dbClient.Collections[gymsLocationCollectionName]
-	_, err := collection.InsertOne(*ctx, gymWithSrv)
+
+	filter := bson.M{"gym.name": gymWithSrv.Gym.Name}
+	upsert := true
+	updateOptions := &options.ReplaceOptions{
+		Upsert: &upsert,
+	}
+
+	_, err := collection.ReplaceOne(*ctx, filter, gymWithSrv, updateOptions)
 	if err != nil {
 		return wrapAddGymError(err)
 	}
@@ -148,7 +141,7 @@ func DeleteUserLocation(username string) error {
 func UpdateServerConfig(serverName string, config utils.LocationServerBoundary) error {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collections[globalConfigCollectionName]
-	var filter = bson.D{{"ServerName:", serverName}}
+	var filter = bson.D{{"servername:", serverName}}
 	upsert := true
 	updateOptions := options.ReplaceOptions{
 		Upsert: &upsert,
