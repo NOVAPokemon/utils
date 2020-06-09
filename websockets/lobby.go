@@ -1,8 +1,6 @@
 package websockets
 
 import (
-	"sync/atomic"
-
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -50,7 +48,8 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) int6
 	lobby.TrainerInChannels[lobby.TrainersJoined] = &trainerChanIn
 	lobby.TrainerOutChannels[lobby.TrainersJoined] = trainerChanOut
 	lobby.trainerConnections[lobby.TrainersJoined] = trainerConn
-	return atomic.AddInt64(&lobby.TrainersJoined, 1)
+	lobby.TrainersJoined++
+	return lobby.TrainersJoined
 }
 
 func HandleReceiveLobby(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{}, finished *bool) {
