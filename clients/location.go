@@ -126,9 +126,8 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 				if err != nil {
 					return errors2.WrapStartLocationUpdatesError(err)
 				}
-
 				cwpMsg := desMsg.(*location.CatchWildPokemonMessageResponse)
-				catchPokemonResponses<-cwpMsg
+				catchPokemonResponses <- cwpMsg
 			case websockets.Error:
 				desMsg, err := websockets.DeserializeMsg(msg)
 				if err != nil {
@@ -312,11 +311,16 @@ func (c *LocationClient) CatchWildPokemon(trainersClient *TrainersClient) error 
 		Data:    []byte(catchPokemonMsg.SerializeToWSMessage().Serialize()),
 	}
 	outChan <- genericMsg
-
 	catchResponse := <-catchPokemonResponses
+
+	if catchResponse.Error != nil {
+		log.Error(catchResponse.Error)
+		return nil
+	}
 
 	if !catchResponse.Caught {
 		log.Info("pokemon got away")
+		return nil
 	}
 
 	return trainersClient.AppendPokemonTokens(catchResponse.PokemonTokens)
