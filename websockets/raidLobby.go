@@ -3,12 +3,13 @@ package websockets
 import (
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"sync/atomic"
 )
 
 type RaidLobby struct {
 	Id primitive.ObjectID
 
-	TrainersJoined     int
+	TrainersJoined     int64
 	TrainerUsernames   []string
 	TrainerInChannels  []*chan *string
 	TrainerOutChannels []*SyncChannel
@@ -35,7 +36,7 @@ func NewRaidLobby(id primitive.ObjectID, expectedCapacity int) *RaidLobby {
 	}
 }
 
-func (lobby *RaidLobby) AddTrainer(username string, trainerConn *websocket.Conn) {
+func (lobby *RaidLobby) AddTrainer(username string, trainerConn *websocket.Conn) int64 {
 
 	trainerChanIn := make(chan *string)
 	trainerChanOut := NewSyncChannel(make(chan GenericMsg))
@@ -49,9 +50,8 @@ func (lobby *RaidLobby) AddTrainer(username string, trainerConn *websocket.Conn)
 
 	go HandleReceiveLobby(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
 	go HandleSendLobby(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
-
-	lobby.TrainersJoined++
 	lobby.ActiveConnections++
+	return atomic.AddInt64(&lobby.TrainersJoined, 1)
 }
 
 func (lobby *RaidLobby) Close() {
