@@ -1,13 +1,14 @@
 package clients
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
-	"github.com/NOVAPokemon/utils/clients/errors"
+	errors2 "github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
 	log "github.com/sirupsen/logrus"
 )
@@ -40,7 +41,7 @@ func (client *AuthClient) LoginWithUsernameAndPassword(username, password string
 
 	resp, err := DoRequest(client.httpClient, req, nil)
 	if err != nil {
-		return errors.WrapLoginError(err)
+		return errors2.WrapLoginError(err)
 	}
 
 	client.AuthToken = resp.Header.Get(tokens.AuthTokenHeaderName)
@@ -54,10 +55,25 @@ func (client *AuthClient) Register(username string, password string) error {
 
 	resp, err := DoRequest(client.httpClient, req, nil)
 	if err != nil {
-		return errors.WrapRegisterError(err)
+		return errors2.WrapRegisterError(err)
 	}
 
 	client.AuthToken = resp.Header.Get(tokens.AuthTokenHeaderName)
 
+	return nil
+}
+
+func (client *AuthClient) RefreshAuthToken() error {
+	req, err := BuildRequest("GET", client.AuthAddr, api.RefreshPath, nil)
+	resp, err := DoRequest(client.httpClient, req, nil)
+	if err != nil {
+		return errors2.WrapRefreshAuthTokenError(err)
+	}
+
+	if resp.Header.Get(tokens.AuthTokenHeaderName) == "" {
+		return errors2.WrapRefreshAuthTokenError(errors.New("auth token is an empty string"))
+	}
+
+	client.AuthToken = resp.Header.Get(tokens.AuthTokenHeaderName)
 	return nil
 }
