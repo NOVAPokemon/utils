@@ -45,9 +45,10 @@ const (
 )
 
 var (
-	timeoutInDuration  time.Duration
-	defaultLocationURL = fmt.Sprintf("%s:%d", utils.Host, utils.LocationPort)
-	outChan            chan websockets.GenericMsg
+	timeoutInDuration     time.Duration
+	defaultLocationURL    = fmt.Sprintf("%s:%d", utils.Host, utils.LocationPort)
+	outChan               chan websockets.GenericMsg
+	catchPokemonResponses chan *location.CatchWildPokemonMessageResponse
 )
 
 func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
@@ -72,9 +73,10 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 	}
 }
 
-func (c *LocationClient) StartLocationUpdates(authToken string, trainersCLient *TrainersClient) error {
+func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	inChan := make(chan *string)
 	outChan = make(chan websockets.GenericMsg, bufferSize)
+	catchPokemonResponses := make(chan *location.CatchWildPokemonMessageResponse)
 	finish := make(chan struct{})
 
 	conn, err := c.connect(outChan, authToken)
@@ -126,12 +128,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string, trainersCLient *
 				}
 
 				cwpMsg := desMsg.(*location.CatchWildPokemonMessageResponse)
-
-				if !cwpMsg.Caught {
-					log.Info("pokemon got away")
-				}
-
-				err = trainersCLient.AppendPokemonTokens(cwpMsg.PokemonTokens)
+				catchPokemonResponses<-cwpMsg
 			case websockets.Error:
 				desMsg, err := websockets.DeserializeMsg(msg)
 				if err != nil {
@@ -283,8 +280,8 @@ func (c *LocationClient) GetServerForLocation(loc utils.Location) (*string, erro
 	return &servername, nil
 }
 
-func (c *LocationClient) CatchWildPokemon(itemsTokenString string) error {
-
+func (c *LocationClient) CatchWildPokemon(trainersClient *TrainersClient) error {
+	itemsTokenString := trainersClient.ItemsToken
 	itemsToken, err := tokens.ExtractItemsToken(itemsTokenString)
 	if err != nil {
 		return errors2.WrapCatchWildPokemonError(err)
@@ -316,7 +313,13 @@ func (c *LocationClient) CatchWildPokemon(itemsTokenString string) error {
 	}
 	outChan <- genericMsg
 
-	return nil
+	catchResponse := <-catchPokemonResponses
+
+	if !catchResponse.Caught {
+		log.Info("pokemon got away")
+	}
+
+	return trainersClient.AppendPokemonTokens(catchResponse.PokemonTokens)
 }
 
 func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error) {
