@@ -19,7 +19,7 @@ type Lobby struct {
 	EndConnectionChannels [2]chan struct{}
 
 	Started  bool
-	Finished bool
+	Finished chan struct{}
 }
 
 func NewLobby(id primitive.ObjectID) *Lobby {
@@ -33,7 +33,7 @@ func NewLobby(id primitive.ObjectID) *Lobby {
 		EndConnectionChannels: [2]chan struct{}{make(chan struct{}), make(chan struct{})},
 
 		Started:  false,
-		Finished: false,
+		Finished: make(chan struct{}),
 	}
 }
 
@@ -41,8 +41,8 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) int6
 	trainerChanIn := make(chan *string)
 	trainerChanOut := NewSyncChannel(make(chan GenericMsg))
 
-	go HandleReceiveLobby(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
-	go HandleSendLobby(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
+	go HandleReceiveLobby(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], lobby.Finished)
+	go HandleSendLobby(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], lobby.Finished)
 
 	lobby.TrainerUsernames[lobby.TrainersJoined] = username
 	lobby.TrainerInChannels[lobby.TrainersJoined] = &trainerChanIn
@@ -52,13 +52,15 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) int6
 	return lobby.TrainersJoined
 }
 
-func HandleReceiveLobby(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{}, finished *bool) {
+func HandleReceiveLobby(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{},
+	finished chan struct{}) {
 	err := HandleRecv(conn, outChannel, endConnection)
 
 	if err != nil {
-		if *finished {
+		select {
+		case <-finished:
 			log.Info("lobby read routine finished properly")
-		} else {
+		default:
 			log.Warn(err)
 			log.Warn("closed lobby because could not read")
 		}
@@ -66,13 +68,14 @@ func HandleReceiveLobby(conn *websocket.Conn, outChannel chan *string, endConnec
 }
 
 // server side
-func HandleSendLobby(conn *websocket.Conn, inChannel *SyncChannel, endConnection chan struct{}, finished *bool) {
+func HandleSendLobby(conn *websocket.Conn, inChannel *SyncChannel, endConnection chan struct{}, finished chan struct{}) {
 	err := HandleSend(conn, inChannel, endConnection)
 
 	if err != nil {
-		if *finished {
+		select {
+		case <-finished:
 			log.Info("lobby write routine finished properly")
-		} else {
+		default:
 			log.Warn(err)
 			log.Warn("closed lobby because could not write")
 		}
@@ -80,7 +83,6 @@ func HandleSendLobby(conn *websocket.Conn, inChannel *SyncChannel, endConnection
 }
 
 func CloseLobby(lobby *Lobby) {
-	lobby.Finished = true
 	closeConnectionThroughChannel(lobby.trainerConnections[0], lobby.EndConnectionChannels[0])
 	closeConnectionThroughChannel(lobby.trainerConnections[1], lobby.EndConnectionChannels[1])
 }

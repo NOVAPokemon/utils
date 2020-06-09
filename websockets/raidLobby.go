@@ -18,7 +18,7 @@ type RaidLobby struct {
 	EndConnectionChannels []chan struct{}
 	ActiveConnections     int
 	Started               bool
-	Finished              bool
+	Finished              chan struct{}
 }
 
 func NewRaidLobby(id primitive.ObjectID, expectedCapacity int) *RaidLobby {
@@ -32,7 +32,7 @@ func NewRaidLobby(id primitive.ObjectID, expectedCapacity int) *RaidLobby {
 		EndConnectionChannels: make([]chan struct{}, 0, expectedCapacity),
 		ActiveConnections:     0,
 		Started:               false,
-		Finished:              false,
+		Finished:              make(chan struct{}),
 	}
 }
 
@@ -48,14 +48,13 @@ func (lobby *RaidLobby) AddTrainer(username string, trainerConn *websocket.Conn)
 	lobby.trainerConnections = append(lobby.trainerConnections, trainerConn)
 	lobby.EndConnectionChannels = append(lobby.EndConnectionChannels, endChan)
 
-	go HandleReceiveLobby(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
-	go HandleSendLobby(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], &lobby.Finished)
+	go HandleReceiveLobby(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], lobby.Finished)
+	go HandleSendLobby(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], lobby.Finished)
 	lobby.ActiveConnections++
 	return atomic.AddInt64(&lobby.TrainersJoined, 1)
 }
 
 func (lobby *RaidLobby) Close() {
-	lobby.Finished = true
 	for i := 0; i < len(lobby.EndConnectionChannels); i++ {
 		closeConnectionThroughChannel(lobby.trainerConnections[i], lobby.EndConnectionChannels[i])
 	}
