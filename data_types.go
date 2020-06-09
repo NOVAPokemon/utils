@@ -75,7 +75,7 @@ type UserLocation struct {
 }
 
 type Gym struct {
-	Name        string
+	Name        string `json:"name" bson:"name,omitempty"`
 	Location    Location
 	RaidForming bool
 	RaidBoss    *pokemons.Pokemon
@@ -93,6 +93,6 @@ type LocationServerBoundary struct {
 }
 
 type GymWithServer struct {
-	Gym        Gym
-	ServerName string
+	Gym        Gym    `json:"gym" bson:"gym,omitempty"`
+	ServerName string `json:"servername" bson:"servername,omitempty"`
 }

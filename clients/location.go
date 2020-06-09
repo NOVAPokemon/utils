@@ -1,7 +1,6 @@
 package clients
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -260,17 +259,10 @@ func (c *LocationClient) move(timePassed int) utils.Location {
 }
 
 func (c *LocationClient) AddGymLocation(gym utils.GymWithServer) error {
-
-	serverUrl, err := c.GetServerForLocation(gym.Gym.Location)
+	req, err := BuildRequest("POST", c.LocationAddr, api.GymLocationRoute, gym)
 	if err != nil {
 		return errors2.WrapAddGymLocationError(err)
 	}
-
-	req, err := BuildRequest("POST", fmt.Sprintf("%s.%s", *serverUrl, c.LocationAddr), api.GymLocationRoute, gym)
-	if err != nil {
-		return errors2.WrapAddGymLocationError(err)
-	}
-
 	_, err = DoRequest(c.HttpClient, req, nil)
 	return errors2.WrapAddGymLocationError(err)
 }
@@ -283,13 +275,8 @@ func (c *LocationClient) GetServerForLocation(loc utils.Location) (*string, erro
 	u.RawQuery = q.Encode()
 	log.Info(u.String())
 	req, err := http.NewRequest("GET", u.String(), nil)
-	resp, err := c.HttpClient.Do(req)
-	if err != nil {
-		return nil, errors2.WrapGetServerForLocation(err)
-	}
-
 	var servername string
-	err = json.NewDecoder(resp.Body).Decode(&servername)
+	_, err = DoRequest(http.DefaultClient, req, &servername)
 	if err != nil {
 		return nil, errors2.WrapGetServerForLocation(err)
 	}
