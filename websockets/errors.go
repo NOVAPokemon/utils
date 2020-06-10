@@ -20,6 +20,8 @@ const (
 
 	errorDeserializeMessageFormat = "error deserializing message type %s"
 	errorSerializeMessageFormat   = "error serializing message type %s"
+	errorLobbyFull                = "lobby %s is full"
+	errorLobbyStarted             = "lobby %s already started"
 )
 
 var (
@@ -79,4 +81,12 @@ func wrapHandleSendError(err error) error {
 // Error builders
 func NewInvalidMsgTypeError(msgType string) error {
 	return errors.New(fmt.Sprintf(errorInvalidMsgTypeFormat, msgType))
+}
+
+func NewLobbyIsFullError(lobbyId string) error {
+	return errors.New(fmt.Sprintf(errorLobbyFull, lobbyId))
+}
+
+func NewLobbyStartedError(lobbyId string) error {
+	return errors.New(fmt.Sprintf(errorLobbyStarted, lobbyId))
 }

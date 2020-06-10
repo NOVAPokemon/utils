@@ -4,52 +4,66 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"sync"
 )
 
 // Lobby maintains the connections from both trainers and the status of the battle
 type Lobby struct {
 	Id primitive.ObjectID
 
-	TrainersJoined     int64
-	TrainerUsernames   [2]string
-	TrainerInChannels  [2]*chan *string
-	TrainerOutChannels [2]*SyncChannel
+	TrainersJoined     int
+	TrainerUsernames   []string
+	TrainerInChannels  []*chan *string
+	TrainerOutChannels []*SyncChannel
 
-	trainerConnections    [2]*websocket.Conn
-	EndConnectionChannels [2]chan struct{}
-
-	Started  bool
-	Finished chan struct{}
+	trainerConnections    []*websocket.Conn
+	EndConnectionChannels []chan struct{}
+	joinLock              *sync.Mutex
+	Started               chan struct{}
+	Finished              chan struct{}
+	capacity              int
 }
 
-func NewLobby(id primitive.ObjectID) *Lobby {
+func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 	return &Lobby{
+		capacity:              capacity,
 		Id:                    id,
 		TrainersJoined:        0,
-		TrainerUsernames:      [2]string{},
-		trainerConnections:    [2]*websocket.Conn{},
-		TrainerInChannels:     [2]*chan *string{},
-		TrainerOutChannels:    [2]*SyncChannel{},
-		EndConnectionChannels: [2]chan struct{}{make(chan struct{}), make(chan struct{})},
-
-		Started:  false,
-		Finished: make(chan struct{}),
+		TrainerUsernames:      make([]string, capacity),
+		trainerConnections:    make([]*websocket.Conn, capacity),
+		TrainerInChannels:     make([]*chan *string, capacity),
+		TrainerOutChannels:    make([]*SyncChannel, capacity),
+		EndConnectionChannels: make([]chan struct{}, capacity),
+		Started:               make(chan struct{}),
+		Finished:              make(chan struct{}),
+		joinLock:              &sync.Mutex{},
 	}
 }
 
-func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) int64 {
-	trainerChanIn := make(chan *string)
-	trainerChanOut := NewSyncChannel(make(chan GenericMsg))
+func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) (int, error) {
+	lobby.joinLock.Lock()
+	defer lobby.joinLock.Unlock()
 
-	go HandleReceiveLobby(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], lobby.Finished)
-	go HandleSendLobby(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], lobby.Finished)
+	if lobby.TrainersJoined >= lobby.capacity {
+		return -1, NewLobbyIsFullError(lobby.Id.Hex())
+	}
 
-	lobby.TrainerUsernames[lobby.TrainersJoined] = username
-	lobby.TrainerInChannels[lobby.TrainersJoined] = &trainerChanIn
-	lobby.TrainerOutChannels[lobby.TrainersJoined] = trainerChanOut
-	lobby.trainerConnections[lobby.TrainersJoined] = trainerConn
-	lobby.TrainersJoined++
-	return lobby.TrainersJoined
+	select {
+	case <-lobby.Started:
+		return - 1, NewLobbyStartedError(lobby.Id.Hex())
+	default:
+		trainerChanIn := make(chan *string)
+		trainerChanOut := NewSyncChannel(make(chan GenericMsg))
+		lobby.TrainerUsernames[lobby.TrainersJoined] = username
+		lobby.TrainerInChannels[lobby.TrainersJoined] = &trainerChanIn
+		lobby.TrainerOutChannels[lobby.TrainersJoined] = trainerChanOut
+		lobby.trainerConnections[lobby.TrainersJoined] = trainerConn
+		lobby.EndConnectionChannels[lobby.TrainersJoined] = make(chan struct{})
+		go HandleReceiveLobby(trainerConn, trainerChanIn, lobby.EndConnectionChannels[lobby.TrainersJoined], lobby.Finished)
+		go HandleSendLobby(trainerConn, trainerChanOut, lobby.EndConnectionChannels[lobby.TrainersJoined], lobby.Finished)
+		lobby.TrainersJoined++
+		return lobby.TrainersJoined, nil
+	}
 }
 
 func HandleReceiveLobby(conn *websocket.Conn, outChannel chan *string, endConnection chan struct{},
@@ -82,7 +96,12 @@ func HandleSendLobby(conn *websocket.Conn, inChannel *SyncChannel, endConnection
 	}
 }
 
+func StartLobby(lobby *Lobby) {
+	close(lobby.Started)
+}
+
 func CloseLobby(lobby *Lobby) {
-	closeConnectionThroughChannel(lobby.trainerConnections[0], lobby.EndConnectionChannels[0])
-	closeConnectionThroughChannel(lobby.trainerConnections[1], lobby.EndConnectionChannels[1])
+	for i := 0; i < len(lobby.EndConnectionChannels); i++ {
+		closeConnectionThroughChannel(lobby.trainerConnections[i], lobby.EndConnectionChannels[i])
+	}
 }
