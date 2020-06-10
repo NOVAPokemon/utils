@@ -76,7 +76,7 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	inChan := make(chan *string)
 	outChan = make(chan websockets.GenericMsg, bufferSize)
-	catchPokemonResponses := make(chan *location.CatchWildPokemonMessageResponse)
+	catchPokemonResponses = make(chan *location.CatchWildPokemonMessageResponse)
 	finish := make(chan struct{})
 
 	conn, err := c.connect(outChan, authToken)
@@ -313,7 +313,7 @@ func (c *LocationClient) CatchWildPokemon(trainersClient *TrainersClient) error 
 	outChan <- genericMsg
 	catchResponse := <-catchPokemonResponses
 
-	if catchResponse.Error != nil {
+	if catchResponse.Error != "" {
 		log.Error(catchResponse.Error)
 		return nil
 	}

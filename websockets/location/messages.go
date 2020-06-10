@@ -94,7 +94,7 @@ func (catchPokemonMsg CatchWildPokemonMessage) SerializeToWSMessage() *ws.Messag
 type CatchWildPokemonMessageResponse struct {
 	Caught        bool
 	PokemonTokens []string
-	Error         error
+	Error         string
 	ws.MessageWithId
 }
 
