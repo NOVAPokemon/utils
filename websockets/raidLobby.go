@@ -1,9 +1,11 @@
 package websockets
 
 import (
+	"sync"
+	"sync/atomic"
+
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"sync/atomic"
 )
 
 type RaidLobby struct {
@@ -19,6 +21,7 @@ type RaidLobby struct {
 	ActiveConnections     int
 	Started               bool
 	Finished              chan struct{}
+	FinishChannelOnce     sync.Once
 }
 
 func NewRaidLobby(id primitive.ObjectID, expectedCapacity int) *RaidLobby {
@@ -33,6 +36,7 @@ func NewRaidLobby(id primitive.ObjectID, expectedCapacity int) *RaidLobby {
 		ActiveConnections:     0,
 		Started:               false,
 		Finished:              make(chan struct{}),
+		FinishChannelOnce:     sync.Once{},
 	}
 }
 
