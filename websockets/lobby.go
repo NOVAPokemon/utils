@@ -1,10 +1,11 @@
 package websockets
 
 import (
+	"sync"
+
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"sync"
 )
 
 // Lobby maintains the connections from both trainers and the status of the battle

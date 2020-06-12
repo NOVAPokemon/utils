@@ -16,7 +16,7 @@ func Send(conn *websocket.Conn, msg *string) error {
 	return ws.WrapWritingMessageError(conn.WriteMessage(websocket.TextMessage, []byte(*msg)))
 }
 
-func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished chan struct{}) {
+func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *string, finished chan struct{}) {
 	defer log.Info("Closed in channel")
 	defer close(msgChan)
 
@@ -56,6 +56,31 @@ func ReadMessagesToChan(conn *websocket.Conn, msgChan chan *string, finished cha
 	}
 }
 
+func WriteMessagesFromChanToConn(conn *websocket.Conn, writeChannel chan ws.GenericMsg, finished chan struct{}) {
+	defer log.Info("Closed out channel")
+
+	for {
+		select {
+		case <-finished:
+			return
+		case msg := <-writeChannel:
+			if err := conn.WriteMessage(msg.MsgType, msg.Data); err != nil {
+				log.Error(wrapMainLoopError(err))
+				return
+			}
+		}
+	}
+}
+
+func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan ws.GenericMsg) {
+	_ = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+	conn.SetPingHandler(func(string) error {
+		// log.Warn("Received ping, ponging...")
+		writeChannel <- ws.GenericMsg{MsgType: websocket.PongMessage, Data: nil}
+		return conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+	})
+}
+
 func Read(conn *websocket.Conn) (*ws.Message, error) {
 	_, msgBytes, err := conn.ReadMessage()
 	if err != nil {
@@ -71,47 +96,6 @@ func Read(conn *websocket.Conn) (*ws.Message, error) {
 	}
 
 	return msg, nil
-}
-
-func WaitForStart(started, rejected, finish chan struct{}, requestTimestamp int64) int64 {
-	var responseTimestamp int64
-
-	log.Info("waiting for start...")
-
-	select {
-	case <-started:
-		responseTimestamp = ws.MakeTimestamp()
-	case <-rejected:
-		responseTimestamp = ws.MakeTimestamp()
-	case <-finish:
-		return -1
-	}
-
-	return responseTimestamp - requestTimestamp
-}
-
-func MainLoop(conn *websocket.Conn, writeChannel *ws.SyncChannel, finished chan struct{}) {
-	defer log.Info("Closed out channel")
-	defer writeChannel.Close()
-
-	_ = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
-	conn.SetPingHandler(func(string) error {
-		// log.Warn("Received ping, ponging...")
-		_ = writeChannel.Write(ws.GenericMsg{MsgType: websocket.PongMessage, Data: nil})
-		return conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
-	})
-
-	for {
-		select {
-		case <-finished:
-			return
-		case msg := <-writeChannel.Channel:
-			if err := conn.WriteMessage(msg.MsgType, msg.Data); err != nil {
-				log.Error(wrapMainLoopError(err))
-				return
-			}
-		}
-	}
 }
 
 // REQUESTS

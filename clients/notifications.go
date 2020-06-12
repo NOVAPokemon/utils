@@ -72,6 +72,11 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 		return err
 	}
 
+	conn.SetPingHandler(func(string) error {
+		// log.Warn("Received ping from notifications, sending pong")
+		return conn.WriteMessage(websocket.PongMessage, nil)
+	})
+
 	go func() {
 		if err := ws.HandleRecv(conn, client.readChannel, nil); err != nil {
 			log.Error(errors.WrapListeningNotificationsError(err))
@@ -79,10 +84,6 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 		}
 	}()
 
-	conn.SetPingHandler(func(string) error {
-		// log.Warn("Received ping from notifications, sending pong")
-		return conn.WriteMessage(websocket.PongMessage, nil)
-	})
 
 Loop:
 	for {

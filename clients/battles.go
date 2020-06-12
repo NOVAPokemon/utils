@@ -83,8 +83,8 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
-	go ReadMessagesToChan(c, inChannel, finished)
-	go MainLoop(c, outChannel, finished)
+	go ReadMessagesFromConnToChan(c, inChannel, finished)
+	go WriteMessagesFromChanToConn(c, outChannel, finished)
 
 	battleChannels := battles.BattleChannels{
 		OutChannel:      outChannel,
@@ -124,8 +124,8 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
-	go ReadMessagesToChan(c, inChannel, finished)
-	go MainLoop(c, outChannel, finished)
+	go ReadMessagesFromConnToChan(c, inChannel, finished)
+	go WriteMessagesFromChanToConn(c, outChannel, finished)
 
 	battleChannels := battles.BattleChannels{
 		OutChannel:      outChannel,
@@ -164,8 +164,8 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
-	go ReadMessagesToChan(c, inChannel, finished)
-	go MainLoop(c, outChannel, finished)
+	go ReadMessagesFromConnToChan(c, inChannel, finished)
+	go WriteMessagesFromChanToConn(c, outChannel, finished)
 
 	battleChannels := battles.BattleChannels{
 		OutChannel:      outChannel,

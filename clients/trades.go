@@ -20,9 +20,14 @@ import (
 )
 
 type TradeLobbyClient struct {
-	TradesAddr string
-	config     utils.TradesClientConfig
-	conn       *websocket.Conn
+	TradesAddr   string
+	config       utils.TradesClientConfig
+	conn         *websocket.Conn
+	started      chan struct{}
+	rejected     chan struct{}
+	finished     chan struct{}
+	readChannel  chan *string
+	writeChannel chan ws.GenericMsg
 }
 
 const (
@@ -52,8 +57,13 @@ func NewTradesClient(config utils.TradesClientConfig) *TradeLobbyClient {
 	}
 
 	return &TradeLobbyClient{
-		TradesAddr: tradesURL,
-		config:     config,
+		TradesAddr:   tradesURL,
+		config:       config,
+		started:      make(chan struct{}),
+		rejected:     make(chan struct{}),
+		finished:     make(chan struct{}),
+		readChannel:  make(chan *string),
+		writeChannel: make(chan ws.GenericMsg),
 	}
 }
 
@@ -130,22 +140,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 		return nil, errors.WrapJoinTradeLobbyError(err)
 	}
 
-	started := make(chan struct{})
-	rejected := make(chan struct{})
-	finished := make(chan struct{})
-	setItemsToken := make(chan *string)
-	writeChannel := ws.NewSyncChannel(make(chan ws.GenericMsg))
-
-	go func() {
-		if err := client.HandleReceivedMessages(conn, started, rejected, finished, setItemsToken); err != nil {
-			log.Error(err)
-			select {
-			case <-finished:
-			default:
-				close(finished)
-			}
-		}
-	}()
+	go ReadMessagesFromConnToChan(conn, client.readChannel, client.finished)
 
 	itemIds := make([]string, len(items.Items))
 	i := 0
@@ -154,7 +149,8 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 		i++
 	}
 
-	timeTook := WaitForStart(started, rejected, finished, requestTimestamp)
+	timeTook := client.WaitForStart(client.started, client.rejected, client.finished, client.readChannel,
+		requestTimestamp)
 	if timeTook != -1 {
 		log.Infof(logTimeTookStartTrade, timeTook)
 
@@ -164,22 +160,52 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	}
 
 	select {
-	case <-rejected:
+	case <-client.rejected:
 		log.Infof("trade was rejected")
 		return nil, nil
-	case <-finished:
+	case <-client.finished:
 		log.Warn("session finished before starting")
 		return nil, nil
 	default:
+		break
 	}
 
-	go client.autoTrader(itemIds, writeChannel, finished)
+	go WriteMessagesFromChanToConn(conn, client.writeChannel, client.finished)
 
-	MainLoop(conn, writeChannel, finished)
+	itemTokens, err := client.autoTrader(itemIds)
 
 	log.Info("Finishing trade...")
 
-	return <-setItemsToken, nil
+	return itemTokens, errors.WrapJoinTradeLobbyError(err)
+}
+
+func (client *TradeLobbyClient) WaitForStart(started, rejected, finished chan struct{}, readChannel chan *string,
+	requestTimestamp int64) int64 {
+	var responseTimestamp int64
+
+	log.Info("waiting for start...")
+
+	initialMessage, ok := <-readChannel
+
+	if ok {
+		_, err := client.HandleReceivedMessage(initialMessage)
+		if err != nil {
+			close(finished)
+		}
+	} else {
+		close(finished)
+	}
+
+	select {
+	case <-started:
+		responseTimestamp = ws.MakeTimestamp()
+	case <-rejected:
+		responseTimestamp = ws.MakeTimestamp()
+	case <-finished:
+		return -1
+	}
+
+	return responseTimestamp - requestTimestamp
 }
 
 func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostname, authToken,
@@ -202,107 +228,117 @@ func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverH
 	return nil
 }
 
-func (client *TradeLobbyClient) HandleReceivedMessages(conn *websocket.Conn, started, rejected, finished chan struct{},
-	setItemsToken chan *string) error {
-	var itemsToken *string
+func (client *TradeLobbyClient) HandleReceivedMessage(msgString *string) (*string, error) {
 
-	for {
-		msg, err := Read(conn)
-		if err != nil {
-			return errors.WrapHandleMessagesTradeError(err)
-		}
-
-		switch msg.MsgType {
-		case ws.Start:
-			close(started)
-		case ws.Reject:
-			close(rejected)
-			return nil
-		case trades.Update:
-			desMsg, err := trades.DeserializeTradeMessage(msg)
-			if err != nil {
-				log.Error(errors.WrapHandleMessagesTradeError(err))
-				continue
-			}
-
-			updateMsg := desMsg.(*trades.UpdateMessage)
-			updateMsg.Receive(ws.MakeTimestamp())
-
-			timeTook, ok := updateMsg.TimeTook()
-			if ok {
-				totalTimeTookTradeMsgs += timeTook
-				numberMeasuresTradeMsgs++
-				log.Infof(logTimeTookTradeMsg, timeTook)
-				log.Infof(logAverageTimeTradeMsg,
-					float64(totalTimeTookTradeMsgs)/float64(numberMeasuresTradeMsgs))
-			}
-
-			updateMsg.LogReceive(trades.Update)
-		case ws.SetToken:
-			desMsg, err := trades.DeserializeTradeMessage(msg)
-			if err != nil {
-				log.Error(errors.WrapHandleMessagesTradeError(err))
-				continue
-			}
-
-			tokenMessage := desMsg.(*ws.SetTokenMessage)
-			token, err := tokens.ExtractItemsToken(tokenMessage.TokensString[0])
-			if err != nil {
-				log.Error(errors.WrapHandleMessagesTradeError(err))
-				continue
-			}
-
-			itemsToken = &tokenMessage.TokensString[0]
-			log.Info(token.ItemsHash)
-		case ws.Finish:
-			desMsg, err := trades.DeserializeTradeMessage(msg)
-			if err != nil {
-				log.Error(errors.WrapHandleMessagesTradeError(err))
-				continue
-			}
-
-			finishMsg := desMsg.(*ws.FinishMessage)
-			log.Info("Finished, Success: ", finishMsg.Success)
-			close(finished)
-			setItemsToken <- itemsToken
-			return errors.WrapHandleMessagesTradeError(err)
-		}
+	msg, err := ws.ParseMessage(msgString)
+	if err != nil {
+		return nil, errors.WrapHandleMessagesTradeError(err)
 	}
+
+	switch msg.MsgType {
+	case ws.Start:
+		close(client.started)
+	case ws.Reject:
+		close(client.rejected)
+	case trades.Update:
+		desMsg, err := trades.DeserializeTradeMessage(msg)
+		if err != nil {
+			log.Error(errors.WrapHandleMessagesTradeError(err))
+			break
+		}
+
+		updateMsg := desMsg.(*trades.UpdateMessage)
+		updateMsg.Receive(ws.MakeTimestamp())
+
+		timeTook, ok := updateMsg.TimeTook()
+		if ok {
+			totalTimeTookTradeMsgs += timeTook
+			numberMeasuresTradeMsgs++
+			log.Infof(logTimeTookTradeMsg, timeTook)
+			log.Infof(logAverageTimeTradeMsg,
+				float64(totalTimeTookTradeMsgs)/float64(numberMeasuresTradeMsgs))
+		}
+
+		updateMsg.LogReceive(trades.Update)
+	case ws.SetToken:
+		desMsg, err := trades.DeserializeTradeMessage(msg)
+		if err != nil {
+			log.Error(errors.WrapHandleMessagesTradeError(err))
+			break
+		}
+
+		tokenMessage := desMsg.(*ws.SetTokenMessage)
+		token, err := tokens.ExtractItemsToken(tokenMessage.TokensString[0])
+		if err != nil {
+			log.Error(errors.WrapHandleMessagesTradeError(err))
+
+		}
+
+		log.Info(token.ItemsHash)
+		return &tokenMessage.TokensString[0], nil
+	case ws.Finish:
+		desMsg, err := trades.DeserializeTradeMessage(msg)
+		if err != nil {
+			log.Error(errors.WrapHandleMessagesTradeError(err))
+			break
+		}
+
+		finishMsg := desMsg.(*ws.FinishMessage)
+		log.Info("Finished, Success: ", finishMsg.Success)
+		close(client.finished)
+	}
+
+	return nil, nil
 }
 
-func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel *ws.SyncChannel,
-	finished chan struct{}) {
-	select {
-	case <-finished:
-		return
-	default:
-		numItems := len(availableItems)
+func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, error) {
 
-		var maxItemsToTrade int
-		if client.config.MaxItemsToTrade < 0 || client.config.MaxItemsToTrade > numItems {
-			maxItemsToTrade = numItems
-		} else if client.config.MaxItemsToTrade <= numItems {
-			maxItemsToTrade = client.config.MaxItemsToTrade
-		}
+	var finalItemTokens *string
 
-		var numItemsToAdd int
-		if maxItemsToTrade == 0 {
-			numItemsToAdd = 0
-		} else {
-			numItemsToAdd = rand.Intn(maxItemsToTrade)
-		}
+	numItems := len(availableItems)
 
-		log.Infof("will trade %d items", numItemsToAdd)
+	var maxItemsToTrade int
+	if client.config.MaxItemsToTrade < 0 || client.config.MaxItemsToTrade > numItems {
+		maxItemsToTrade = numItems
+	} else if client.config.MaxItemsToTrade <= numItems {
+		maxItemsToTrade = client.config.MaxItemsToTrade
+	}
 
-		for i := 0; i < numItemsToAdd; i++ {
+	var numItemsToAdd int
+	if maxItemsToTrade == 0 {
+		numItemsToAdd = 0
+	} else {
+		numItemsToAdd = rand.Intn(maxItemsToTrade)
+	}
+
+	log.Infof("will trade %d items", numItemsToAdd)
+
+	itemsTraded := 0
+
+	var timer time.Timer
+	client.setTimerRandSleepTime(&timer)
+
+	for {
+		select {
+		case <-client.finished:
+			return finalItemTokens, nil
+		case msgString := <-client.readChannel:
+			itemTokens, err := client.HandleReceivedMessage(msgString)
+			if err != nil {
+				return nil, err
+			}
+
+			if itemTokens != nil {
+				finalItemTokens = itemTokens
+			}
+		case <-timer.C:
 			randomItemIdx := rand.Intn(len(availableItems))
 			tradeMsg := trades.NewTradeMessage(availableItems[randomItemIdx])
-			// TODO Is it too soon to emit the log?
 			tradeMsg.LogEmit(trades.Trade)
 			msg := tradeMsg.SerializeToWSMessage()
 			s := (*msg).Serialize()
 
-			_ = writeChannel.Write(ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)})
+			client.writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
 
 			log.Infof("adding %s to trade", availableItems[randomItemIdx])
 
@@ -315,16 +351,36 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string, writeChannel
 				log.Infof("sleeping %d milliseconds", randSleep)
 			}
 
+			itemsTraded++
+
+			if itemsTraded < numItemsToAdd {
+				client.setTimerRandSleepTime(&timer)
+			} else {
+				acceptMsg := trades.NewAcceptMessage()
+				acceptMsg.LogEmit(trades.Accept)
+				msg := acceptMsg.SerializeToWSMessage()
+				s := (*msg).Serialize()
+
+				client.writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
+			}
 		}
-
-		acceptMsg := trades.NewAcceptMessage()
-		// TODO Is it too soon to emit the log?
-		acceptMsg.LogEmit(trades.Accept)
-		msg := acceptMsg.SerializeToWSMessage()
-		s := (*msg).Serialize()
-
-		_ = writeChannel.Write(ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)})
-
-		<-finished
 	}
+}
+
+func (client *TradeLobbyClient) setTimerRandSleepTime(timer *time.Timer) *time.Timer {
+	var randSleep int
+	if client.config.MaxSleepTime > 0 {
+		randSleep = rand.Intn(client.config.MaxSleepTime)
+	}
+
+	log.Infof("sleeping %d milliseconds", randSleep)
+
+	if timer == nil {
+		timer = time.NewTimer(time.Duration(randSleep) * time.Millisecond)
+		return timer
+	} else {
+		timer.Reset(time.Duration(randSleep) * time.Millisecond)
+		return nil
+	}
+
 }
