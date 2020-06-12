@@ -1,8 +1,9 @@
 package battles
 
 import (
-	"github.com/NOVAPokemon/utils/websockets"
 	"time"
+
+	"github.com/NOVAPokemon/utils/websockets"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/items"

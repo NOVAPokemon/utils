@@ -84,7 +84,6 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 		}
 	}()
 
-
 Loop:
 	for {
 		select {
