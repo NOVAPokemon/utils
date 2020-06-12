@@ -149,8 +149,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 		i++
 	}
 
-	timeTook := client.WaitForStart(client.started, client.rejected, client.finished, client.readChannel,
-		requestTimestamp)
+	timeTook := client.WaitForStart(requestTimestamp)
 	if timeTook != -1 {
 		log.Infof(logTimeTookStartTrade, timeTook)
 
@@ -179,29 +178,30 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	return itemTokens, errors.WrapJoinTradeLobbyError(err)
 }
 
-func (client *TradeLobbyClient) WaitForStart(started, rejected, finished chan struct{}, readChannel chan *string,
-	requestTimestamp int64) int64 {
+func (client *TradeLobbyClient) WaitForStart(requestTimestamp int64) int64 {
 	var responseTimestamp int64
 
 	log.Info("waiting for start...")
 
-	initialMessage, ok := <-readChannel
+	initialMessage, ok := <-client.readChannel
 
 	if ok {
 		_, err := client.HandleReceivedMessage(initialMessage)
 		if err != nil {
-			close(finished)
+			log.Info("closing finished channel due to error receiving message in start phase")
+			close(client.finished)
 		}
 	} else {
-		close(finished)
+		log.Info("closing finished channel due to read channel being closed")
+		close(client.finished)
 	}
 
 	select {
-	case <-started:
+	case <-client.started:
 		responseTimestamp = ws.MakeTimestamp()
-	case <-rejected:
+	case <-client.rejected:
 		responseTimestamp = ws.MakeTimestamp()
-	case <-finished:
+	case <-client.finished:
 		return -1
 	}
 
@@ -323,8 +323,8 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 			return finalItemTokens, nil
 		case msgString, ok := <-client.readChannel:
 			if !ok {
+				log.Info("closing finished channel due to read closure mid trade")
 				close(client.finished)
-				break
 			}
 
 			itemTokens, err := client.HandleReceivedMessage(msgString)
