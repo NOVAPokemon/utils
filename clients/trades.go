@@ -315,8 +315,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 
 	itemsTraded := 0
 
-	var timer time.Timer
-	client.setTimerRandSleepTime(&timer)
+	timer := client.setTimerRandSleepTime(nil)
 
 	for {
 		select {
@@ -354,7 +353,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 			itemsTraded++
 
 			if itemsTraded < numItemsToAdd {
-				client.setTimerRandSleepTime(&timer)
+				client.setTimerRandSleepTime(timer)
 			} else {
 				acceptMsg := trades.NewAcceptMessage()
 				acceptMsg.LogEmit(trades.Accept)
