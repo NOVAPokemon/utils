@@ -13,12 +13,14 @@ type Lobby struct {
 
 	TrainersJoined     int
 	TrainerUsernames   []string
-	TrainerInChannels  []*chan *string
-	TrainerOutChannels []*SyncChannel
+	TrainerInChannels  []chan *string
+	TrainerOutChannels []chan GenericMsg
 
 	trainerConnections    []*websocket.Conn
 	EndConnectionChannels []chan struct{}
 	joinLock              *sync.Mutex
+	startOnce             sync.Once
+	finishOnce            sync.Once
 	Started               chan struct{}
 	Finished              chan struct{}
 	capacity              int
@@ -31,9 +33,11 @@ func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 		TrainersJoined:        0,
 		TrainerUsernames:      make([]string, capacity),
 		trainerConnections:    make([]*websocket.Conn, capacity),
-		TrainerInChannels:     make([]*chan *string, capacity),
-		TrainerOutChannels:    make([]*SyncChannel, capacity),
+		TrainerInChannels:     make([]chan *string, capacity),
+		TrainerOutChannels:    make([]chan GenericMsg, capacity),
 		EndConnectionChannels: make([]chan struct{}, capacity),
+		finishOnce:            sync.Once{},
+		startOnce:             sync.Once{},
 		Started:               make(chan struct{}),
 		Finished:              make(chan struct{}),
 		joinLock:              &sync.Mutex{},
@@ -53,9 +57,9 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) (int
 		return - 1, NewLobbyStartedError(lobby.Id.Hex())
 	default:
 		trainerChanIn := make(chan *string)
-		trainerChanOut := NewSyncChannel(make(chan GenericMsg))
+		trainerChanOut := make(chan GenericMsg)
 		lobby.TrainerUsernames[lobby.TrainersJoined] = username
-		lobby.TrainerInChannels[lobby.TrainersJoined] = &trainerChanIn
+		lobby.TrainerInChannels[lobby.TrainersJoined] = trainerChanIn
 		lobby.TrainerOutChannels[lobby.TrainersJoined] = trainerChanOut
 		lobby.trainerConnections[lobby.TrainersJoined] = trainerConn
 		lobby.EndConnectionChannels[lobby.TrainersJoined] = make(chan struct{})
@@ -82,7 +86,7 @@ func HandleReceiveLobby(conn *websocket.Conn, outChannel chan *string, endConnec
 }
 
 // server side
-func HandleSendLobby(conn *websocket.Conn, inChannel *SyncChannel, endConnection chan struct{}, finished chan struct{}) {
+func HandleSendLobby(conn *websocket.Conn, inChannel chan GenericMsg, endConnection chan struct{}, finished chan struct{}) {
 	err := HandleSend(conn, inChannel, endConnection)
 
 	if err != nil {
@@ -97,10 +101,18 @@ func HandleSendLobby(conn *websocket.Conn, inChannel *SyncChannel, endConnection
 }
 
 func StartLobby(lobby *Lobby) {
-	close(lobby.Started)
+	lobby.startOnce.Do(func() {
+		close(lobby.Started)
+	})
 }
 
-func CloseLobby(lobby *Lobby) {
+func FinishLobby(lobby *Lobby) {
+	lobby.finishOnce.Do(func() {
+		close(lobby.Finished)
+	})
+}
+
+func CloseLobbyConnections(lobby *Lobby) {
 	for i := 0; i < len(lobby.EndConnectionChannels); i++ {
 		closeConnectionThroughChannel(lobby.trainerConnections[i], lobby.EndConnectionChannels[i])
 	}

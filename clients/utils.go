@@ -90,7 +90,7 @@ func WaitForStart(started, rejected, finish chan struct{}, requestTimestamp int6
 	return responseTimestamp - requestTimestamp
 }
 
-func MainLoop(conn *websocket.Conn, writeChannel *ws.SyncChannel, finished chan struct{}) {
+func MainLoop(conn *websocket.Conn, writeChannel chan ws.GenericMsg, finished chan struct{}) {
 	defer log.Info("Closed out channel")
 	defer writeChannel.Close()
 

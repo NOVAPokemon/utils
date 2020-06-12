@@ -10,16 +10,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, issuerChan *ws.SyncChannel,
+func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, issuerChan chan ws.GenericMsg,
 	cooldownDuration time.Duration) bool {
 	if issuer.Cooldown {
-		_ = issuerChan.Write(ws.GenericMsg{
+		issuerChan <- ws.GenericMsg{
 			MsgType: websocket.TextMessage,
 			Data: []byte(ws.ErrorMessage{
 				Info:  fmt.Sprintf(ErrorCooldown.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage().Serialize()),
-		})
+		}
 
 		return false
 	}
@@ -27,36 +27,36 @@ func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, 
 	itemId := useItemMessage.ItemId
 	item, ok := issuer.TrainerItems[itemId]
 	if !ok {
-		_ = issuerChan.Write(ws.GenericMsg{
+		issuerChan <- ws.GenericMsg{
 			MsgType: websocket.TextMessage,
 			Data: []byte(ws.ErrorMessage{
 				Info:  fmt.Sprintf(ErrorInvalidItemSelected.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage().Serialize()),
-		})
+		}
 
 		return false
 	}
 
 	if !item.Effect.Appliable {
-		_ = issuerChan.Write(ws.GenericMsg{
+		issuerChan <- ws.GenericMsg{
 			MsgType: websocket.TextMessage,
 			Data: []byte(ws.ErrorMessage{
 				Info:  fmt.Sprintf(ErrorItemNotAppliable.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage().Serialize()),
-		})
+		}
 	}
 
 	err := item.Apply(issuer.SelectedPokemon)
 	if err != nil {
-		_ = issuerChan.Write(ws.GenericMsg{
+		issuerChan <- ws.GenericMsg{
 			MsgType: websocket.TextMessage,
 			Data: []byte(ws.ErrorMessage{
 				Info:  fmt.Sprintf(err.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage().Serialize()),
-		})
+		}
 	}
 
 	issuer.CdTimer.Reset(cooldownDuration)
@@ -65,38 +65,38 @@ func HandleUseItem(useItemMessage *UseItemMessage, issuer *TrainerBattleStatus, 
 	issuer.UsedItems[item.Id.Hex()] = item
 	delete(issuer.TrainerItems, item.Id.Hex())
 	UpdateTrainerPokemon(useItemMessage.TrackedMessage, *issuer.SelectedPokemon, issuerChan, true)
-	_ = issuerChan.Write(ws.GenericMsg{
+	issuerChan <- ws.GenericMsg{
 		MsgType: websocket.TextMessage,
 		Data: []byte(RemoveItemMessage{
 			ItemId: itemId,
 		}.SerializeToWSMessage().Serialize()),
-	})
+	}
 	return true
 }
 
 func HandleSelectPokemon(selectedPokemonMsg *SelectPokemonMessage, issuer *TrainerBattleStatus,
-	issuerChan *ws.SyncChannel) bool {
+	issuerChan chan ws.GenericMsg) bool {
 	selectedPokemonId := selectedPokemonMsg.PokemonId
 	pokemon, ok := issuer.TrainerPokemons[selectedPokemonId]
 	if !ok {
-		_ = issuerChan.Write(ws.GenericMsg{
+		issuerChan <- ws.GenericMsg{
 			MsgType: websocket.TextMessage,
 			Data: []byte(ws.ErrorMessage{
 				Info:  fmt.Sprintf(ErrorInvalidPokemonSelected.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage().Serialize()),
-		})
+		}
 		return false
 	}
 
 	if pokemon.HP <= 0 {
-		_ = issuerChan.Write(ws.GenericMsg{
+		issuerChan <- ws.GenericMsg{
 			MsgType: websocket.TextMessage,
 			Data: []byte(ws.ErrorMessage{
 				Info:  fmt.Sprintf(ErrorPokemonNoHP.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage().Serialize()),
-		})
+		}
 		return false
 	}
 	issuer.SelectedPokemon = pokemon
@@ -105,28 +105,28 @@ func HandleSelectPokemon(selectedPokemonMsg *SelectPokemonMessage, issuer *Train
 	return true
 }
 
-func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan *ws.SyncChannel, cooldownDuration time.Duration) {
+func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan chan ws.GenericMsg, cooldownDuration time.Duration) {
 	// if the pokemon is dead, player must select a new pokemon
 	if issuer.SelectedPokemon.HP == 0 {
-		_ = issuerChan.Write(ws.GenericMsg{
+		issuerChan <- ws.GenericMsg{
 			MsgType: websocket.TextMessage,
 			Data: []byte(ws.ErrorMessage{
 				Info:  fmt.Sprintf(ErrorPokemonNoHP.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage().Serialize()),
-		})
+		}
 		return
 	}
 
 	// if player has moved recently and is in Cooldown, discard move
 	if issuer.Cooldown {
-		_ = issuerChan.Write(ws.GenericMsg{
+		issuerChan <- ws.GenericMsg{
 			MsgType: websocket.TextMessage,
 			Data: []byte(ws.ErrorMessage{
 				Info:  fmt.Sprintf(ErrorCooldown.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage().Serialize()),
-		})
+		}
 		return
 	}
 	issuer.CdTimer.Reset(cooldownDuration)
@@ -134,36 +134,36 @@ func HandleDefendMove(issuer *TrainerBattleStatus, issuerChan *ws.SyncChannel, c
 
 	// process Defending move: update both players and setup a Cooldown
 	issuer.Defending = true
-	_ = issuerChan.Write(ws.GenericMsg{
+	issuerChan <- ws.GenericMsg{
 		MsgType: websocket.TextMessage,
 		Data: []byte(StatusMessage{
 			Message: StatusDefended,
 		}.SerializeToWSMessage().Serialize()),
-	})
+	}
 }
 
-func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan *ws.SyncChannel, defending bool,
+func HandleAttackMove(issuer *TrainerBattleStatus, issuerChan chan ws.GenericMsg, defending bool,
 	otherPokemon *pokemons.Pokemon, cooldownDuration time.Duration) bool {
 	if issuer.SelectedPokemon.HP == 0 {
-		_ = issuerChan.Write(ws.GenericMsg{
+		issuerChan <- ws.GenericMsg{
 			MsgType: websocket.TextMessage,
 			Data: []byte(ws.ErrorMessage{
 				Info:  fmt.Sprintf(ErrorPokemonNoHP.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage().Serialize()),
-		})
+		}
 		return false
 	}
 
 	// if player has moved recently and is in Cooldown, discard move
 	if issuer.Cooldown {
-		_ = issuerChan.Write(ws.GenericMsg{
+		issuerChan <- ws.GenericMsg{
 			MsgType: websocket.TextMessage,
 			Data: []byte(ws.ErrorMessage{
 				Info:  fmt.Sprintf(ErrorCooldown.Error()),
 				Fatal: false,
 			}.SerializeToWSMessage().Serialize()),
-		})
+		}
 		return false
 	}
 
@@ -186,13 +186,13 @@ func ApplyAttackMove(issuerPokemon *pokemons.Pokemon, otherPokemon *pokemons.Pok
 	}
 }
 
-func UpdateTrainerPokemon(trackedMsg ws.TrackedMessage, pokemon pokemons.Pokemon, channel *ws.SyncChannel, owner bool) {
-	_ = channel.Write(ws.GenericMsg{
+func UpdateTrainerPokemon(trackedMsg ws.TrackedMessage, pokemon pokemons.Pokemon, channel chan ws.GenericMsg, owner bool) {
+	channel <- ws.GenericMsg{
 		MsgType: websocket.TextMessage,
 		Data: []byte(UpdatePokemonMessage{
 			Owner:          owner,
 			Pokemon:        pokemon,
 			TrackedMessage: trackedMsg,
 		}.SerializeToWSMessage().Serialize()),
-	})
+	}
 }
