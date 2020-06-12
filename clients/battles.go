@@ -78,7 +78,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 		return nil, nil, err
 	}
 
-	outChannel := websockets.NewSyncChannel(make(chan websockets.GenericMsg))
+	outChannel := make(chan websockets.GenericMsg)
 	inChannel := make(chan *string)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
@@ -120,7 +120,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	}
 
 	inChannel := make(chan *string)
-	outChannel := websockets.NewSyncChannel(make(chan websockets.GenericMsg))
+	outChannel := make(chan websockets.GenericMsg)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
@@ -159,7 +159,7 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 		return nil, nil, err
 	}
 
-	outChannel := websockets.NewSyncChannel(make(chan websockets.GenericMsg))
+	outChannel := make(chan websockets.GenericMsg)
 	inChannel := make(chan *string)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
