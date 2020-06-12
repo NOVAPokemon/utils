@@ -321,7 +321,12 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 		select {
 		case <-client.finished:
 			return finalItemTokens, nil
-		case msgString := <-client.readChannel:
+		case msgString, ok := <-client.readChannel:
+			if !ok {
+				close(client.finished)
+				break
+			}
+
 			itemTokens, err := client.HandleReceivedMessage(msgString)
 			if err != nil {
 				return nil, err
