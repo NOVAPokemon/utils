@@ -188,12 +188,8 @@ func (client *TradeLobbyClient) WaitForStart(requestTimestamp int64) int64 {
 	if ok {
 		_, err := client.HandleReceivedMessage(initialMessage)
 		if err != nil {
-			log.Info("closing finished channel due to error receiving message in start phase")
-			close(client.finished)
+			log.Error(err)
 		}
-	} else {
-		log.Info("closing finished channel due to read channel being closed")
-		close(client.finished)
 	}
 
 	select {
