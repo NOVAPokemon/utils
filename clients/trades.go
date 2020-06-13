@@ -320,8 +320,12 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 			return finalItemTokens, nil
 		case msgString, ok := <-client.readChannel:
 			if !ok {
-				log.Info("closing finished channel due to read closure mid trade")
-				continue
+				select {
+				case <-client.finished:
+					return finalItemTokens, nil
+				default:
+					return nil, nil
+				}
 			}
 
 			itemTokens, err := client.HandleReceivedMessage(msgString)
