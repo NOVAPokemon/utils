@@ -26,31 +26,12 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *string, fini
 			return
 		default:
 			_, message, err := conn.ReadMessage()
-
 			if err != nil {
-				select {
-				case _, ok := <-finished:
-					if ok {
-						close(finished)
-					}
-				default:
-					close(finished)
-				}
 				return
 			}
 
 			msg := string(message)
-			battleMsg, err := ws.ParseMessage(&msg)
-			if err != nil {
-				close(finished)
-				return
-			}
 
-			if battleMsg.MsgType == ws.Finish {
-				log.Info("Received finish message")
-				close(finished)
-				return
-			}
 			msgChan <- &msg
 		}
 	}

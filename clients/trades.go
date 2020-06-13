@@ -57,13 +57,8 @@ func NewTradesClient(config utils.TradesClientConfig) *TradeLobbyClient {
 	}
 
 	return &TradeLobbyClient{
-		TradesAddr:   tradesURL,
-		config:       config,
-		started:      make(chan struct{}),
-		rejected:     make(chan struct{}),
-		finished:     make(chan struct{}),
-		readChannel:  make(chan *string),
-		writeChannel: make(chan ws.GenericMsg),
+		TradesAddr: tradesURL,
+		config:     config,
 	}
 }
 
@@ -139,6 +134,12 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	if err != nil {
 		return nil, errors.WrapJoinTradeLobbyError(err)
 	}
+
+	client.started = make(chan struct{})
+	client.rejected = make(chan struct{})
+	client.finished = make(chan struct{})
+	client.readChannel = make(chan *string)
+	client.writeChannel = make(chan ws.GenericMsg)
 
 	go ReadMessagesFromConnToChan(conn, client.readChannel, client.finished)
 
@@ -270,7 +271,7 @@ func (client *TradeLobbyClient) HandleReceivedMessage(msgString *string) (*strin
 
 		}
 
-		log.Info(token.ItemsHash)
+		log.Info("got new tokens %v", token)
 		return &tokenMessage.TokensString[0], nil
 	case ws.Finish:
 		desMsg, err := trades.DeserializeTradeMessage(msg)
@@ -320,7 +321,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 		case msgString, ok := <-client.readChannel:
 			if !ok {
 				log.Info("closing finished channel due to read closure mid trade")
-				close(client.finished)
+				continue
 			}
 
 			itemTokens, err := client.HandleReceivedMessage(msgString)
