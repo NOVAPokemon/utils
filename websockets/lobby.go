@@ -118,3 +118,9 @@ func CloseLobbyConnections(lobby *Lobby) {
 		closeConnectionThroughChannel(lobby.trainerConnections[i], lobby.EndConnectionChannels[i])
 	}
 }
+
+func GetTrainersJoined(lobby *Lobby) int {
+	lobby.joinLock.Lock()
+	defer lobby.joinLock.Unlock()
+	return lobby.TrainersJoined
+}

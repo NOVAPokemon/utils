@@ -74,9 +74,7 @@ func (aMsg AcceptMessage) SerializeToWSMessage() *ws.Message {
 
 // Update
 type UpdateMessage struct {
-	TradeStarted  bool
-	TradeFinished bool
-	Players       [2]*PlayerInfo
+	Players [2]*PlayerInfo
 	ws.TrackedMessage
 }
 
@@ -98,8 +96,6 @@ func UpdateMessageFromTrade(trade *TradeStatus, trackedMsg ws.TrackedMessage) *U
 	players[0] = PlayerToPlayerInfo(&trade.Players[0])
 	players[1] = PlayerToPlayerInfo(&trade.Players[1])
 	return &UpdateMessage{
-		TradeStarted:   trade.TradeStarted,
-		TradeFinished:  trade.TradeFinished,
 		Players:        players,
 		TrackedMessage: trackedMsg,
 	}
