@@ -6,6 +6,7 @@ import (
 
 type TradeStatus struct {
 	Players [2]Player
+	TradeFinished bool
 }
 
 type Player struct {
