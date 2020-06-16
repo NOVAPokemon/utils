@@ -46,7 +46,6 @@ func WriteMessagesFromChanToConn(conn *websocket.Conn, writeChannel chan ws.Gene
 			return
 		case msg := <-writeChannel:
 			if err := conn.WriteMessage(msg.MsgType, msg.Data); err != nil {
-				log.Error(wrapMainLoopError(err))
 				return
 			}
 		}
