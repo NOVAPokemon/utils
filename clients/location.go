@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/NOVAPokemon/utils"
@@ -31,8 +32,11 @@ type LocationClient struct {
 	config       utils.LocationClientConfig
 	HttpClient   *http.Client
 
-	Gyms     []utils.GymWithServer
-	Pokemons []utils.WildPokemon
+	gymsLock sync.Mutex
+	gyms     []utils.GymWithServer
+
+	pokemonsLock sync.Mutex
+	pokemons     []utils.WildPokemon
 
 	CurrentLocation     utils.Location
 	LocationParameters  utils.LocationParameters
@@ -61,10 +65,11 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 
 	timeoutInDuration = time.Duration(config.Timeout) * time.Second
 	return &LocationClient{
-		LocationAddr: locationURL,
-		config:       config,
-
-		Gyms:                []utils.GymWithServer{},
+		LocationAddr:        locationURL,
+		config:              config,
+		gymsLock:            sync.Mutex{},
+		pokemonsLock:        sync.Mutex{},
+		gyms:                []utils.GymWithServer{},
 		HttpClient:          &http.Client{},
 		CurrentLocation:     config.Parameters.StartingLocation,
 		LocationParameters:  config.Parameters,
@@ -112,15 +117,13 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 				if err != nil {
 					return errors2.WrapStartLocationUpdatesError(err)
 				}
-				c.Gyms = desMsg.(*location.GymsMessage).Gyms
+				c.SetGyms(desMsg.(*location.GymsMessage).Gyms)
 			case location.Pokemon:
 				desMsg, err := location.DeserializeLocationMsg(msg)
 				if err != nil {
 					return errors2.WrapStartLocationUpdatesError(err)
 				}
-
-				c.Pokemons = desMsg.(*location.PokemonMessage).Pokemon
-
+				c.SetPokemons(desMsg.(*location.PokemonMessage).Pokemon)
 			case location.CatchPokemonResponse:
 				desMsg, err := location.DeserializeLocationMsg(msg)
 				if err != nil {
@@ -291,20 +294,20 @@ func (c *LocationClient) CatchWildPokemon(trainersClient *TrainersClient) error 
 		return errors2.WrapCatchWildPokemonError(err)
 	}
 
-	if len(c.Pokemons) <= 0 {
+	c.pokemonsLock.Lock()
+	if len(c.pokemons) <= 0 {
 		return errors2.WrapCatchWildPokemonError(errors2.ErrorNoPokemonsVinicity)
 	}
 	if outChan == nil {
 		return errors2.WrapCatchWildPokemonError(errors2.ErrorNotConnected)
 	}
-
-	catchingPokemon := c.Pokemons[rand.Intn(len(c.Pokemons))]
-
-	log.Info("will try to catch ", catchingPokemon.Pokemon.Species)
+	toCatch := c.pokemons[rand.Intn(len(c.pokemons))]
+	c.pokemonsLock.Unlock()
+	log.Info("will try to catch ", toCatch.Pokemon.Species)
 
 	catchPokemonMsg := location.CatchWildPokemonMessage{
 		Pokeball: *pokeball,
-		Pokemon:  catchingPokemon.Pokemon.Id.Hex(),
+		Pokemon:  toCatch.Pokemon.Id.Hex(),
 	}
 	genericMsg := websockets.GenericMsg{
 		MsgType: websocket.TextMessage,
@@ -340,4 +343,30 @@ func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error
 	}
 
 	return pokeballs[rand.Intn(len(pokeballs))], nil
+}
+
+func (c *LocationClient) GetWildPokemons() []utils.WildPokemon {
+	c.pokemonsLock.Lock()
+	pokemonsCopy := c.pokemons
+	defer c.pokemonsLock.Unlock()
+	return pokemonsCopy
+}
+
+func (c *LocationClient) SetPokemons(newPokemons []utils.WildPokemon) {
+	c.pokemonsLock.Lock()
+	c.pokemons = newPokemons
+	c.pokemonsLock.Unlock()
+}
+
+func (c *LocationClient) GetGyms() []utils.GymWithServer {
+	c.gymsLock.Lock()
+	gymsCopy := c.gyms
+	defer c.gymsLock.Unlock()
+	return gymsCopy
+}
+
+func (c *LocationClient) SetGyms(newGyms []utils.GymWithServer) {
+	c.gymsLock.Lock()
+	c.gyms = newGyms
+	c.gymsLock.Unlock()
 }
