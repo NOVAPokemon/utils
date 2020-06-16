@@ -153,7 +153,6 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	timeTook := client.WaitForStart(requestTimestamp)
 	if timeTook != -1 {
 		log.Infof(logTimeTookStartTrade, timeTook)
-
 		numberMeasuresStart++
 		totalTimeTookStart += timeTook
 		log.Infof(logAverageTimeStartTrade, float64(totalTimeTookStart)/float64(numberMeasuresStart))
@@ -198,6 +197,12 @@ func (client *TradeLobbyClient) WaitForStart(requestTimestamp int64) int64 {
 		responseTimestamp = ws.MakeTimestamp()
 	case <-client.rejected:
 		responseTimestamp = ws.MakeTimestamp()
+	case <-client.readChannel:
+		close(client.finished)
+		return -1
+	case <-client.writeChannel:
+		close(client.finished)
+		return -1
 	case <-client.finished:
 		return -1
 	}
