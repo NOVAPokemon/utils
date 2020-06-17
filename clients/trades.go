@@ -290,7 +290,7 @@ func (client *TradeLobbyClient) HandleReceivedMessage(msgString *string) (*strin
 
 		finishMsg := desMsg.(*ws.FinishMessage)
 		log.Info("Finished, Success: ", finishMsg.Success)
-		client.finishOnce.Do(func() { close(client.finished)})
+		client.finishOnce.Do(func() { close(client.finished) })
 	}
 
 	return nil, nil
@@ -322,8 +322,9 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 
 	timer := client.setTimerRandSleepTime(nil)
 	if numItemsToAdd == 0 {
-		timer.Stop()
-		<-timer.C
+		if !timer.Stop() {
+			<-timer.C
+		}
 
 		acceptMsg := trades.NewAcceptMessage()
 		acceptMsg.LogEmit(trades.Accept)
