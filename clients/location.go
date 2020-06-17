@@ -305,7 +305,7 @@ func (c *LocationClient) CatchWildPokemon(trainersClient *TrainersClient) error 
 	}
 	toCatch := c.pokemons[rand.Intn(pokemonsLen)]
 	c.pokemonsLock.Unlock()
-	
+
 	log.Info("will try to catch ", toCatch.Pokemon.Species)
 
 	catchPokemonMsg := location.CatchWildPokemonMessage{

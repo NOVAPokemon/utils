@@ -19,7 +19,7 @@ type Lobby struct {
 
 	trainerConnections    []*websocket.Conn
 	EndConnectionChannels []chan struct{}
-	joinLock              *sync.Mutex
+	changeLobbyLock       *sync.Mutex
 	startOnce             sync.Once
 	finishOnce            sync.Once
 	Started               chan struct{}
@@ -41,13 +41,13 @@ func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 		startOnce:             sync.Once{},
 		Started:               make(chan struct{}),
 		Finished:              make(chan struct{}),
-		joinLock:              &sync.Mutex{},
+		changeLobbyLock:       &sync.Mutex{},
 	}
 }
 
 func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) (int, error) {
-	lobby.joinLock.Lock()
-	defer lobby.joinLock.Unlock()
+	lobby.changeLobbyLock.Lock()
+	defer lobby.changeLobbyLock.Unlock()
 
 	if lobby.TrainersJoined >= lobby.capacity {
 		return -1, NewLobbyIsFullError(lobby.Id.Hex())
@@ -114,13 +114,15 @@ func FinishLobby(lobby *Lobby) {
 }
 
 func CloseLobbyConnections(lobby *Lobby) {
+	lobby.changeLobbyLock.Lock()
+	defer lobby.changeLobbyLock.Unlock()
 	for i := 0; i < len(lobby.EndConnectionChannels); i++ {
 		closeConnectionThroughChannel(lobby.trainerConnections[i], lobby.EndConnectionChannels[i])
 	}
 }
 
 func GetTrainersJoined(lobby *Lobby) int {
-	lobby.joinLock.Lock()
-	defer lobby.joinLock.Unlock()
+	lobby.changeLobbyLock.Lock()
+	defer lobby.changeLobbyLock.Unlock()
 	return lobby.TrainersJoined
 }
