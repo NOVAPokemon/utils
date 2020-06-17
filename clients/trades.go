@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/NOVAPokemon/utils"
@@ -26,6 +27,7 @@ type TradeLobbyClient struct {
 	started      chan struct{}
 	rejected     chan struct{}
 	finished     chan struct{}
+	finishOnce   sync.Once
 	readChannel  chan *string
 	writeChannel chan ws.GenericMsg
 }
@@ -138,6 +140,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	client.started = make(chan struct{})
 	client.rejected = make(chan struct{})
 	client.finished = make(chan struct{})
+	client.finishOnce = sync.Once{}
 	client.readChannel = make(chan *string)
 	client.writeChannel = make(chan ws.GenericMsg)
 
@@ -198,10 +201,10 @@ func (client *TradeLobbyClient) WaitForStart(requestTimestamp int64) int64 {
 	case <-client.rejected:
 		responseTimestamp = ws.MakeTimestamp()
 	case <-client.readChannel:
-		close(client.finished)
+		client.finishOnce.Do(func() { close(client.finished) })
 		return -1
 	case <-client.writeChannel:
-		close(client.finished)
+		client.finishOnce.Do(func() { close(client.finished) })
 		return -1
 	case <-client.finished:
 		return -1
@@ -287,7 +290,7 @@ func (client *TradeLobbyClient) HandleReceivedMessage(msgString *string) (*strin
 
 		finishMsg := desMsg.(*ws.FinishMessage)
 		log.Info("Finished, Success: ", finishMsg.Success)
-		close(client.finished)
+		client.finishOnce.Do(func() { close(client.finished)})
 	}
 
 	return nil, nil
