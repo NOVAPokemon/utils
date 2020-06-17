@@ -296,7 +296,6 @@ func (c *LocationClient) CatchWildPokemon(trainersClient *TrainersClient) error 
 
 	c.pokemonsLock.Lock()
 	pokemonsLen := len(c.pokemons)
-	c.pokemonsLock.Unlock()
 
 	if pokemonsLen <= 0 {
 		return errors2.WrapCatchWildPokemonError(errors2.ErrorNoPokemonsVinicity)
@@ -305,6 +304,8 @@ func (c *LocationClient) CatchWildPokemon(trainersClient *TrainersClient) error 
 		return errors2.WrapCatchWildPokemonError(errors2.ErrorNotConnected)
 	}
 	toCatch := c.pokemons[rand.Intn(pokemonsLen)]
+	c.pokemonsLock.Unlock()
+	
 	log.Info("will try to catch ", toCatch.Pokemon.Species)
 
 	catchPokemonMsg := location.CatchWildPokemonMessage{
