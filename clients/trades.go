@@ -318,6 +318,17 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 	itemsTraded := 0
 
 	timer := client.setTimerRandSleepTime(nil)
+	if numItemsToAdd == 0 {
+		timer.Stop()
+		<-timer.C
+
+		acceptMsg := trades.NewAcceptMessage()
+		acceptMsg.LogEmit(trades.Accept)
+		msg := acceptMsg.SerializeToWSMessage()
+		s := (*msg).Serialize()
+
+		client.writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
+	}
 
 	for {
 		select {
