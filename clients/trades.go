@@ -279,7 +279,7 @@ func (client *TradeLobbyClient) HandleReceivedMessage(msgString *string) (*strin
 
 		}
 
-		log.Info("got new tokens %v", token)
+		log.Infof("got new tokens %v", token)
 		return &tokenMessage.TokensString[0], nil
 	case ws.Finish:
 		desMsg, err := trades.DeserializeTradeMessage(msg)
