@@ -273,13 +273,12 @@ func (client *TradeLobbyClient) HandleReceivedMessage(msgString *string) (*strin
 		}
 
 		tokenMessage := desMsg.(*ws.SetTokenMessage)
-		token, err := tokens.ExtractItemsToken(tokenMessage.TokensString[0])
+		_, err = tokens.ExtractItemsToken(tokenMessage.TokensString[0])
 		if err != nil {
 			log.Error(errors.WrapHandleMessagesTradeError(err))
 
 		}
 
-		log.Infof("got new tokens %v", token)
 		return &tokenMessage.TokensString[0], nil
 	case ws.Finish:
 		desMsg, err := trades.DeserializeTradeMessage(msg)
@@ -354,6 +353,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 			}
 
 			if itemTokens != nil {
+				log.Info("updated tokens")
 				finalItemTokens = itemTokens
 			}
 		case <-timer.C:
