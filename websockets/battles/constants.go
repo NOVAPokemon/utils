@@ -35,3 +35,12 @@ type (
 		UsedItems       map[string]items.Item
 	}
 )
+
+func (status *TrainerBattleStatus) AreAllPokemonsDead() bool {
+	for _, pokemon := range status.TrainerPokemons {
+		if pokemon.HP > 0 {
+			return false
+		}
+	}
+	return true
+}
