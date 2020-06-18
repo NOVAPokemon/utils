@@ -47,6 +47,6 @@ func GetOneWildPokemon(maxLevel float64, stdHPDeviation float64, maxHP float64, 
 
 func GenerateRaidBoss(maxLevel float64, stdHPDeviation float64, maxHP float64, stdDamageDeviation float64,
 	maxDamage float64, species string) *Pokemon {
-	generated := GetOneWildPokemon(maxLevel*2, stdHPDeviation, maxHP*3, stdDamageDeviation, maxDamage, species)
+	generated := GetOneWildPokemon(maxLevel*2, stdHPDeviation, maxHP*10, stdDamageDeviation, maxDamage/5, species)
 	return generated
 }
