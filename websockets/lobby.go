@@ -124,6 +124,8 @@ func FinishLobby(lobby *Lobby) {
 }
 
 func CloseLobbyConnections(lobby *Lobby) {
+	lobby.changeLobbyLock.Lock()
+	defer lobby.changeLobbyLock.Unlock()
 	for i := 0; i < len(lobby.EndConnectionChannels); i++ {
 		closeConnectionThroughChannel(lobby.closeChannelsOnce[i], lobby.trainerConnections[i], lobby.EndConnectionChannels[i])
 	}
