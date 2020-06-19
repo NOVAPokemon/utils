@@ -205,8 +205,21 @@ func HandleRecv(conn *websocket.Conn, inChannel chan *string, endConnection chan
 }
 
 func closeConnectionThroughChannel(conn *websocket.Conn, endConnection chan struct{}) {
-	close(endConnection)
+	endChannel(endConnection)
 	closeConnection(conn)
+}
+
+func endChannel(channel chan struct{}) {
+	if channel == nil {
+		return
+	}
+
+	select {
+	case <-channel:
+		return
+	default:
+		close(channel)
+	}
 }
 
 func closeConnection(conn *websocket.Conn) {
