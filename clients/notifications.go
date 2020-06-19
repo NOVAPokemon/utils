@@ -82,12 +82,7 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 		return conn.WriteMessage(websocket.PongMessage, nil)
 	})
 
-	go func() {
-		if err := ws.HandleRecv(conn, client.readChannel, nil); err != nil {
-			log.Error(errors.WrapListeningNotificationsError(err))
-			return
-		}
-	}()
+	go ReadMessagesFromConnToChan(conn, client.readChannel, receiveFinish)
 
 Loop:
 	for {

@@ -88,11 +88,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	if err != nil {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
-	go func() {
-		if err := websockets.HandleRecv(conn, inChan, finish); err != nil {
-			log.Error(errors2.WrapStartLocationUpdatesError(err))
-		}
-	}()
+	go ReadMessagesFromConnToChan(conn, inChan, finish)
 	go func() {
 		if err := c.updateLocationLoop(conn, outChan); err != nil {
 			log.Error(errors2.WrapStartLocationUpdatesError(err))
