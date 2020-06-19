@@ -17,9 +17,7 @@ func Send(conn *websocket.Conn, msg *string) error {
 }
 
 func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *string, finished chan struct{}) {
-	defer log.Info("Closed in channel")
 	defer close(msgChan)
-
 	for {
 		select {
 		case <-finished:
@@ -29,17 +27,13 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *string, fini
 			if err != nil {
 				return
 			}
-
 			msg := string(message)
-
 			msgChan <- &msg
 		}
 	}
 }
 
 func WriteMessagesFromChanToConn(conn *websocket.Conn, writeChannel chan ws.GenericMsg, finished chan struct{}) {
-	defer log.Info("Closed out channel")
-
 	for {
 		select {
 		case <-finished:

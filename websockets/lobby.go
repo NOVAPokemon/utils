@@ -18,7 +18,7 @@ type Lobby struct {
 	changeLobbyLock *sync.Mutex
 	TrainersJoined  int
 
-	closeChannelsOnce     []sync.Once
+	closeChannelsOnce     []*sync.Once
 	EndConnectionChannels []chan struct{}
 
 	TrainerUsernames   []string
@@ -26,10 +26,10 @@ type Lobby struct {
 	TrainerOutChannels []chan GenericMsg
 	trainerConnections []*websocket.Conn
 
-	startOnce sync.Once
+	startOnce *sync.Once
 	Started   chan struct{}
 
-	finishOnce sync.Once
+	finishOnce *sync.Once
 	Finished   chan struct{}
 
 	capacity int
@@ -45,9 +45,9 @@ func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 		TrainerInChannels:     make([]chan *string, capacity),
 		TrainerOutChannels:    make([]chan GenericMsg, capacity),
 		EndConnectionChannels: make([]chan struct{}, capacity),
-		closeChannelsOnce:     make([]sync.Once, capacity),
-		finishOnce:            sync.Once{},
-		startOnce:             sync.Once{},
+		closeChannelsOnce:     make([]*sync.Once, capacity),
+		finishOnce:            &sync.Once{},
+		startOnce:             &sync.Once{},
 		Started:               make(chan struct{}),
 		Finished:              make(chan struct{}),
 		changeLobbyLock:       &sync.Mutex{},
@@ -74,7 +74,7 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) (int
 		lobby.TrainerOutChannels[trainerNum] = trainerChanOut
 		lobby.trainerConnections[trainerNum] = trainerConn
 		lobby.EndConnectionChannels[trainerNum] = make(chan struct{})
-		lobby.closeChannelsOnce[trainerNum] = sync.Once{}
+		lobby.closeChannelsOnce[trainerNum] = &sync.Once{}
 		go HandleReceiveLobby(lobby, trainerNum)
 		go HandleSendLobby(lobby, trainerNum)
 		lobby.TrainersJoined++
@@ -217,7 +217,7 @@ func HandleRecv(lobby *Lobby, trainerNum int) error {
 	}
 }
 
-func closeConnectionThroughChannel(closeOnce sync.Once, conn *websocket.Conn, endConnection chan struct{}) {
+func closeConnectionThroughChannel(closeOnce *sync.Once, conn *websocket.Conn, endConnection chan struct{}) {
 	closeOnce.Do(func() {
 		endChannel(endConnection)
 		closeConnection(conn)
