@@ -63,7 +63,13 @@ func (client *AuthClient) Register(username string, password string) error {
 
 func (client *AuthClient) RefreshAuthToken() error {
 	req, err := BuildRequest("GET", client.AuthAddr, api.RefreshPath, nil)
+	if err != nil {
+		return errors2.WrapRefreshAuthTokenError(err)
+	}
+
+	req.Header.Set(tokens.AuthTokenHeaderName, client.AuthToken)
 	log.Info("Refreshing token....")
+
 	resp, err := DoRequest(client.httpClient, req, nil)
 	if err != nil {
 		return errors2.WrapRefreshAuthTokenError(err)
