@@ -129,7 +129,11 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 
 	requestTimestamp := ws.MakeTimestamp()
 
-	defer ws.CloseConnection(conn)
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
 	client.conn = conn
 
 	items, err := tokens.ExtractItemsToken(itemsToken)

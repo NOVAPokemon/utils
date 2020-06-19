@@ -66,7 +66,12 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	conn, _, err := dialer.Dial(u.String(), header)
-	defer ws.CloseConnection(conn)
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
+
 	if err != nil {
 		err = errors.WrapListeningNotificationsError(ws.WrapDialingError(err, u.String()))
 		return err

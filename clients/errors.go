@@ -15,9 +15,6 @@ const (
 )
 
 // Wrappers
-func wrapMainLoopError(err error) error {
-	return errors.Wrap(err, errorMainLoop)
-}
 
 func wrapBuildRequestError(err error) error {
 	return errors.Wrap(err, errorBuildRequest)

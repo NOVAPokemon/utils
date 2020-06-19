@@ -1,7 +1,10 @@
 package websockets
 
 import (
+	"encoding/json"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -22,6 +25,7 @@ type Lobby struct {
 	changeLobbyLock       *sync.Mutex
 	startOnce             sync.Once
 	finishOnce            sync.Once
+	closeOnce             sync.Once
 	Started               chan struct{}
 	Finished              chan struct{}
 	capacity              int
@@ -39,6 +43,7 @@ func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 		EndConnectionChannels: make([]chan struct{}, capacity),
 		finishOnce:            sync.Once{},
 		startOnce:             sync.Once{},
+		closeOnce:             sync.Once{},
 		Started:               make(chan struct{}),
 		Finished:              make(chan struct{}),
 		changeLobbyLock:       &sync.Mutex{},
@@ -114,15 +119,101 @@ func FinishLobby(lobby *Lobby) {
 }
 
 func CloseLobbyConnections(lobby *Lobby) {
-	lobby.changeLobbyLock.Lock()
-	defer lobby.changeLobbyLock.Unlock()
-	for i := 0; i < len(lobby.EndConnectionChannels); i++ {
-		closeConnectionThroughChannel(lobby.trainerConnections[i], lobby.EndConnectionChannels[i])
-	}
+	lobby.closeOnce.Do(func() {
+		lobby.changeLobbyLock.Lock()
+		defer lobby.changeLobbyLock.Unlock()
+		for i := 0; i < len(lobby.EndConnectionChannels); i++ {
+			closeConnectionThroughChannel(lobby.trainerConnections[i], lobby.EndConnectionChannels[i])
+		}
+	})
 }
 
 func GetTrainersJoined(lobby *Lobby) int {
 	lobby.changeLobbyLock.Lock()
 	defer lobby.changeLobbyLock.Unlock()
 	return lobby.TrainersJoined
+}
+
+const (
+	PongWait   = 2 * time.Second
+	PingPeriod = (PongWait * 9) / 10
+)
+
+func ParseMessage(msg *string) (*Message, error) {
+	if msg == nil {
+		return nil, wrapMsgParsingError(ErrorMessageNil)
+	}
+	toReturn := &Message{}
+	if err := json.Unmarshal([]byte(*msg), toReturn); err != nil {
+		return nil, wrapMsgParsingError(ErrorMessageNil)
+	}
+	return toReturn, nil
+}
+
+func HandleSend(conn *websocket.Conn, outChannel chan GenericMsg, endConnection chan struct{}) error {
+	pingTicker := time.NewTicker(PingPeriod)
+	conn.SetPongHandler(func(_ string) error {
+		// log.Info("Received pong")
+		return conn.SetReadDeadline(time.Now().Add(PongWait))
+	})
+	for {
+		select {
+		case <-pingTicker.C:
+			// log.Warn("Pinging")
+			if err := conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+				closeConnectionThroughChannel(conn, endConnection)
+				return wrapHandleSendError(err)
+			}
+		case msg := <-outChannel:
+			err := conn.WriteMessage(msg.MsgType, msg.Data)
+			if err != nil {
+				closeConnectionThroughChannel(conn, endConnection)
+				return wrapHandleSendError(err)
+			}
+		case <-endConnection:
+			log.Info("Send routine finishing properly")
+			return nil
+		}
+
+	}
+}
+
+func HandleRecv(conn *websocket.Conn, inChannel chan *string, endConnection chan struct{}) error {
+	defer close(inChannel)
+	for {
+		select {
+		case <-endConnection:
+			return nil
+		default:
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				select {
+				case <-endConnection:
+					log.Info("Receive routine finishing properly")
+					return nil
+				default:
+					log.Warn("Closing finish channel and connection")
+					closeConnectionThroughChannel(conn, endConnection)
+					return wrapHandleReceiveError(err)
+				}
+			} else {
+				msg := strings.TrimSpace(string(message))
+				inChannel <- &msg
+			}
+		}
+	}
+}
+
+func closeConnectionThroughChannel(conn *websocket.Conn, endConnection chan struct{}) {
+	close(endConnection)
+	closeConnection(conn)
+}
+
+func closeConnection(conn *websocket.Conn) {
+	if conn == nil {
+		return
+	}
+	if err := conn.Close(); err != nil {
+		log.Error(err)
+	}
 }
