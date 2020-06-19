@@ -84,7 +84,6 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) (int
 
 func HandleReceiveLobby(lobby *Lobby, i int) {
 	err := HandleRecv(lobby, i)
-
 	if err != nil {
 		select {
 		case <-lobby.Finished:
@@ -99,7 +98,6 @@ func HandleReceiveLobby(lobby *Lobby, i int) {
 // server side
 func HandleSendLobby(lobby *Lobby, i int) {
 	err := HandleSend(lobby, i)
-
 	if err != nil {
 		select {
 		case <-lobby.EndConnectionChannels[i]:
@@ -126,7 +124,7 @@ func FinishLobby(lobby *Lobby) {
 func CloseLobbyConnections(lobby *Lobby) {
 	lobby.changeLobbyLock.Lock()
 	defer lobby.changeLobbyLock.Unlock()
-	for i := 0; i < len(lobby.EndConnectionChannels); i++ {
+	for i := 0; i < lobby.TrainersJoined; i++ {
 		closeConnectionThroughChannel(lobby.closeChannelsOnce[i], lobby.trainerConnections[i], lobby.EndConnectionChannels[i])
 	}
 }
