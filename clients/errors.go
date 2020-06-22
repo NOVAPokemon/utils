@@ -7,10 +7,9 @@ import (
 )
 
 const (
-	errorMainLoop     = "error in main loop"
-	errorBuildRequest = "error building request"
-	errorDoRequest    = "error doing request"
-
+	errorMainLoop           = "error in main loop"
+	errorBuildRequest       = "error building request"
+	errorDoRequest          = "error doing request"
 	errorHttpClietNilFormat = "httpclient is nil for: %s"
 )
 

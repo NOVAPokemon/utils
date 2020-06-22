@@ -22,6 +22,7 @@ const (
 	errorSerializeMessageFormat   = "error serializing message type %s"
 	errorLobbyFull                = "lobby %s is full"
 	errorLobbyStarted             = "lobby %s already started"
+	errorLobbyFinished            = "lobby %s already finished"
 )
 
 var (
@@ -87,4 +88,8 @@ func NewLobbyIsFullError(lobbyId string) error {
 
 func NewLobbyStartedError(lobbyId string) error {
 	return errors.New(fmt.Sprintf(errorLobbyStarted, lobbyId))
+}
+
+func NewLobbyFinishedError(lobbyId string) error {
+	return errors.New(fmt.Sprintf(errorLobbyFinished, lobbyId))
 }
