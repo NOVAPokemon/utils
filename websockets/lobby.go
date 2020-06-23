@@ -155,6 +155,11 @@ func FinishLobby(lobby *Lobby) {
 	defer lobby.changeLobbyLock.Unlock()
 	close(lobby.Finished)
 	for i := 0; i < lobby.TrainersJoined; i++ {
+		if err := lobby.trainerConnections[i].Close(); err != nil {
+			log.Error(err)
+		}
+		<-lobby.DoneWritingToConn[i]
+		<-lobby.DoneListeningFromConn[i]
 		close(lobby.TrainerOutChannels[i])
 		close(lobby.TrainerInChannels[i])
 	}

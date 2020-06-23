@@ -73,10 +73,6 @@ func wrapHandleReceiveError(err error) error {
 	return errors.Wrap(err, errorHandleRecv)
 }
 
-func wrapHandleSendError(err error) error {
-	return errors.Wrap(err, errorHandleSend)
-}
-
 // Error builders
 func NewInvalidMsgTypeError(msgType string) error {
 	return errors.New(fmt.Sprintf(errorInvalidMsgTypeFormat, msgType))
