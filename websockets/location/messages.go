@@ -15,6 +15,7 @@ const (
 	Pokemon              = "POKEMON"
 	CatchPokemon         = "CATCH_POKEMON"
 	CatchPokemonResponse = "CATCH_POKEMON_RESPONSE"
+	ConnectToServers     = "CONNECT_TO_SERVERS"
 )
 
 // Location
@@ -73,8 +74,8 @@ func (pokemonMsg PokemonMessage) SerializeToWSMessage() *ws.Message {
 }
 
 type CatchWildPokemonMessage struct {
-	Pokeball items.Item
-	Pokemon  string
+	Pokeball    items.Item
+	WildPokemon utils.WildPokemon
 	ws.MessageWithId
 }
 
@@ -111,6 +112,24 @@ func (catchPokemonMsgResp CatchWildPokemonMessageResponse) SerializeToWSMessage(
 	}
 }
 
+type ConnectToServersMessage struct {
+	Servers []string
+	ws.MessageWithId
+}
+
+func (connectToServersMsg ConnectToServersMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(connectToServersMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
+	return &ws.Message{
+		MsgType: ConnectToServers,
+		MsgArgs: []string{string(msgJson)},
+	}
+}
+
 func DeserializeLocationMsg(msg *ws.Message) (ws.Serializable, error) {
 	switch msg.MsgType {
 	case UpdateLocation:
@@ -141,7 +160,7 @@ func DeserializeLocationMsg(msg *ws.Message) (ws.Serializable, error) {
 		var catchPokemonMsg CatchWildPokemonMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &catchPokemonMsg)
 		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, Gyms)
+			return nil, wrapDeserializeLocationMsgError(err, CatchPokemon)
 		}
 		return &catchPokemonMsg, nil
 
@@ -149,10 +168,17 @@ func DeserializeLocationMsg(msg *ws.Message) (ws.Serializable, error) {
 		var catchPokemonMsgResp CatchWildPokemonMessageResponse
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &catchPokemonMsgResp)
 		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, Gyms)
+			return nil, wrapDeserializeLocationMsgError(err, CatchPokemonResponse)
 		}
 		return &catchPokemonMsgResp, nil
 
+	case ConnectToServers:
+		var connectToServersMsg ConnectToServersMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &connectToServersMsg)
+		if err != nil {
+			return nil, wrapDeserializeLocationMsgError(err, ConnectToServers)
+		}
+		return &connectToServersMsg, nil
 	default:
 		return nil, wrapDeserializeLocationMsgError(ws.ErrorInvalidMessageType, msg.MsgType)
 	}

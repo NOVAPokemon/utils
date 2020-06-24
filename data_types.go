@@ -69,6 +69,11 @@ type Location struct {
 	Longitude float64
 }
 
+type Boundary struct {
+	TopLeft     Location
+	BottomRight Location
+}
+
 type UserLocation struct {
 	Username string `json:"username" bson:"username,omitempty"`
 	Location Location

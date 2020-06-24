@@ -307,8 +307,8 @@ func (c *LocationClient) CatchWildPokemon(trainersClient *TrainersClient) error 
 	log.Info("will try to catch ", toCatch.Pokemon.Species)
 
 	catchPokemonMsg := location.CatchWildPokemonMessage{
-		Pokeball: *pokeball,
-		Pokemon:  toCatch.Pokemon.Id.Hex(),
+		Pokeball:    *pokeball,
+		WildPokemon: toCatch.Pokemon.Id.Hex(),
 	}
 	genericMsg := websockets.GenericMsg{
 		MsgType: websocket.TextMessage,
