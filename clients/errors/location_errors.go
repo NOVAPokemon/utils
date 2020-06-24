@@ -9,12 +9,13 @@ const (
 	errorConnect              = "error connecting"
 	errorUpdateLocation       = "error updating location"
 	errorGetServerForLocation = "error fetching server for current location"
+	errorUpdateConnections    = "error updating connections"
+	errorHandleLocationMsg    = "error handling location message"
 )
 
 var (
 	ErrorNoPokemonsVinicity = errors.New("no pokemons in vicinity")
 	ErrorNoPokeballs        = errors.New("no pokeballs")
-	ErrorNotConnected       = errors.New("not connected to location server")
 )
 
 func WrapStartLocationUpdatesError(err error) error {
@@ -33,10 +34,18 @@ func WrapConnectError(err error) error {
 	return errors.Wrap(err, errorConnect)
 }
 
-func WrapUpdateLocation(err error) error {
+func WrapUpdateLocationError(err error) error {
 	return errors.Wrap(err, errorUpdateLocation)
 }
 
-func WrapGetServerForLocation(err error) error {
+func WrapGetServerForLocationError(err error) error {
 	return errors.Wrap(err, errorGetServerForLocation)
+}
+
+func WrapUpdateConnectionsError(err error) error {
+	return errors.Wrap(err, errorUpdateConnections)
+}
+
+func WrapHandleLocationMsgError(err error) error {
+	return errors.Wrap(err, errorHandleLocationMsg)
 }
