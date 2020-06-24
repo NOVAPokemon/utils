@@ -20,8 +20,8 @@ import (
 type NotificationClient struct {
 	NotificationsAddr    string
 	httpClient           *http.Client
-	NotificationsChannel chan *utils.Notification
-	readChannel          chan *string
+	NotificationsChannel chan utils.Notification
+	readChannel          chan string
 }
 
 const (
@@ -36,7 +36,7 @@ var (
 	numberMeasuresNotificationMsgs       = 0
 )
 
-func NewNotificationClient(notificationsChannel chan *utils.Notification) *NotificationClient {
+func NewNotificationClient(notificationsChannel chan utils.Notification) *NotificationClient {
 	notificationsURL, exists := os.LookupEnv(utils.NotificationsEnvVar)
 
 	if !exists {
@@ -48,7 +48,7 @@ func NewNotificationClient(notificationsChannel chan *utils.Notification) *Notif
 		NotificationsAddr:    notificationsURL,
 		httpClient:           &http.Client{},
 		NotificationsChannel: notificationsChannel,
-		readChannel:          make(chan *string),
+		readChannel:          make(chan string),
 	}
 }
 
@@ -172,9 +172,7 @@ func (client *NotificationClient) parseToNotification(msg *ws.Message) {
 		log.Infof(logAverageTimeNotificationMsg,
 			float64(totalTimeTookNotificationMsgs)/float64(numberMeasuresNotificationMsgs))
 	}
-
 	notificationMsg.LogReceive(notificationMessages.Notification)
-	client.NotificationsChannel <- &notificationMsg.Notification
-
+	client.NotificationsChannel <- notificationMsg.Notification
 	log.Infof("Received %s from the websocket", notificationMsg.Notification.Content)
 }
