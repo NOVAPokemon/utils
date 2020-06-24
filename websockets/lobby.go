@@ -23,7 +23,7 @@ type Lobby struct {
 	TrainersJoined  int
 	Started         chan struct{}
 	Finished        chan struct{}
-	capacity        int
+	Capacity        int
 
 	TrainerUsernames      []string
 	TrainerInChannels     []chan string
@@ -35,7 +35,7 @@ type Lobby struct {
 
 func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 	return &Lobby{
-		capacity:              capacity,
+		Capacity:              capacity,
 		Id:                    id,
 		TrainersJoined:        0,
 		TrainerUsernames:      make([]string, capacity),
@@ -54,7 +54,7 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) (int
 	lobby.changeLobbyLock.Lock()
 	defer lobby.changeLobbyLock.Unlock()
 
-	if lobby.TrainersJoined >= lobby.capacity {
+	if lobby.TrainersJoined >= lobby.Capacity {
 		return -1, NewLobbyIsFullError(lobby.Id.Hex())
 	}
 
@@ -107,7 +107,7 @@ func SendFromChanToConn(lobby *Lobby, trainerNum int) (done chan interface{}) {
 					return
 				}
 			case <-lobby.Finished:
-				log.Info("Send routine finishing properly")
+				log.Info("Send routine finishing")
 				return
 			}
 		}
@@ -124,14 +124,8 @@ func RecvFromConnToChann(lobby *Lobby, trainerNum int) (done chan interface{}) {
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
-				select {
-				case <-lobby.Finished:
-					log.Info("Receive routine finishing properly")
-					return
-				default:
-					log.Error(wrapHandleReceiveError(err))
-					return
-				}
+				log.Info("Receive routine finishing because connection was closed")
+				return
 			}
 			msg := strings.TrimSpace(string(message))
 			select {
