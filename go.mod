@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/golang/geo v0.0.0-20200319012246-673a6f80352d
 	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/websocket v1.4.2
 	github.com/pkg/errors v0.8.1
