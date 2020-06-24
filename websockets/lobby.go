@@ -31,6 +31,7 @@ type Lobby struct {
 	DoneWritingToConn     []chan interface{}
 	TrainerOutChannels    []chan GenericMsg
 	trainerConnections    []*websocket.Conn
+	finishOnce            sync.Once
 }
 
 func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
@@ -47,6 +48,7 @@ func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 		Started:               make(chan struct{}),
 		Finished:              make(chan struct{}),
 		changeLobbyLock:       &sync.Mutex{},
+		finishOnce:            sync.Once{},
 	}
 }
 
@@ -145,18 +147,20 @@ func StartLobby(lobby *Lobby) {
 }
 
 func FinishLobby(lobby *Lobby) {
-	lobby.changeLobbyLock.Lock()
-	defer lobby.changeLobbyLock.Unlock()
-	close(lobby.Finished)
-	for i := 0; i < lobby.TrainersJoined; i++ {
-		if err := lobby.trainerConnections[i].Close(); err != nil {
-			log.Error(err)
+	lobby.finishOnce.Do(func() {
+		lobby.changeLobbyLock.Lock()
+		defer lobby.changeLobbyLock.Unlock()
+		close(lobby.Finished)
+		for i := 0; i < lobby.TrainersJoined; i++ {
+			if err := lobby.trainerConnections[i].Close(); err != nil {
+				log.Error(err)
+			}
+			<-lobby.DoneWritingToConn[i]
+			<-lobby.DoneListeningFromConn[i]
+			close(lobby.TrainerOutChannels[i])
+			close(lobby.TrainerInChannels[i])
 		}
-		<-lobby.DoneWritingToConn[i]
-		<-lobby.DoneListeningFromConn[i]
-		close(lobby.TrainerOutChannels[i])
-		close(lobby.TrainerInChannels[i])
-	}
+	})
 }
 
 func GetTrainersJoined(lobby *Lobby) int {
