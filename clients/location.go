@@ -28,8 +28,10 @@ type (
 		Caught bool
 	}
 
-	toConnChansValueType = chan ws.GenericMsg
-	gymsValueType        = []utils.GymWithServer
+	toConnChansValueType     = chan ws.GenericMsg
+	finishConnChansValueType = chan struct{}
+	connectionsValueType     = *websocket.Conn
+	gymsValueType            = []utils.GymWithServer
 )
 
 type LocationClient struct {
@@ -50,10 +52,15 @@ type LocationClient struct {
 	serversConnected []string
 	fromConnChan     chan *string
 	toConnsChans     sync.Map
-	finishChan       chan struct{}
+	finishConnChans  sync.Map
+	connections      sync.Map
 
 	updateConnectionsLock sync.Mutex
 }
+
+const (
+	bufferSize = 10
+)
 
 var (
 	timeoutInDuration     time.Duration
@@ -81,7 +88,9 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 		DistanceToStartLat:  0.0,
 		DistanceToStartLong: 0.0,
 		serversConnected:    []string{},
-		fromConnChan:        make(chan *string),
+		fromConnChan:        make(chan *string, bufferSize),
+		finishConnChans:     sync.Map{},
+		connections:         sync.Map{},
 		toConnsChans:        sync.Map{},
 	}
 }
@@ -94,44 +103,42 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
 
-	err = c.HandleLocationConnection(*serverUrl, authToken)
+	err = c.handleLocationConnection(*serverUrl, authToken)
 	if err != nil {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
 
+	go c.updateLocationLoop()
+
 	for {
-		select {
-		case msgString, ok := <-c.fromConnChan:
-			if !ok {
-				continue
-			}
-			if err := c.handleLocationMsg(*msgString, authToken); err != nil {
-				return errors2.WrapStartLocationUpdatesError(err)
-			}
-		case <-c.finishChan:
-			log.Warn("Trainer stopped updating location")
-			return nil
+		msgString, ok := <-c.fromConnChan
+		if !ok {
+			break
+		}
+		if err := c.handleLocationMsg(*msgString, authToken); err != nil {
+			return errors2.WrapStartLocationUpdatesError(err)
 		}
 	}
+
+	return errors.New("stopped updating location")
 }
 
-func (c *LocationClient) HandleLocationConnection(serverUrl, authToken string) error {
-	outChan := make(chan ws.GenericMsg)
+func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) error {
+	outChan := make(chan ws.GenericMsg, bufferSize)
 	conn, err := c.connect(serverUrl, outChan, authToken)
 	if err != nil {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
 
+	finishChan := make(chan struct{})
+
 	c.toConnsChans.Store(serverUrl, outChan)
+	c.finishConnChans.Store(serverUrl, finishChan)
+	c.connections.Store(serverUrl, conn)
 	c.serversConnected = append(c.serversConnected, serverUrl)
 
-	go ReadMessagesFromConnToChan(conn, c.fromConnChan, c.finishChan)
-	go func() {
-		if err := c.updateLocationLoop(conn, outChan); err != nil {
-			log.Error(errors2.WrapStartLocationUpdatesError(err))
-		}
-	}()
-	go WriteMessagesFromChanToConn(conn, outChan, c.finishChan)
+	go ReadMessagesFromConnToChan(conn, c.fromConnChan, finishChan)
+	go WriteMessagesFromChanToConn(conn, outChan, finishChan)
 
 	log.Info("handling connection to %s", serverUrl)
 
@@ -167,16 +174,23 @@ func (c *LocationClient) handleLocationMsg(msgString string, authToken string) e
 		}
 		cwpMsg := desMsg.(*location.CatchWildPokemonMessageResponse)
 		catchPokemonResponses <- cwpMsg
-	case location.ConnectToServers:
+	case location.ServersResponse:
 		desMsg, err := location.DeserializeLocationMsg(msg)
 		if err != nil {
 			return errors2.WrapHandleLocationMsgError(err)
 		}
-		connectMsg := desMsg.(*location.ConnectToServersMessage)
-		err = c.updateConnections(connectMsg.Servers, authToken)
+		serversMsg := desMsg.(*location.ServersMessage)
+		err = c.updateConnections(serversMsg.Servers, authToken)
 		if err != nil {
 			return errors2.WrapHandleLocationMsgError(err)
 		}
+	case location.TilesResponse:
+		desMsg, err := location.DeserializeLocationMsg(msg)
+		if err != nil {
+			return errors2.WrapHandleLocationMsgError(err)
+		}
+		tilesMsg := desMsg.(*location.TilesPerServerMessage)
+		c.updateLocationWithTiles(tilesMsg.TilesPerServer, tilesMsg.OriginServer)
 	case ws.Error:
 		desMsg, err := ws.DeserializeMsg(msg)
 		if err != nil {
@@ -204,6 +218,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 		isNewServer bool
 	)
 
+	// Add new connections
 	for i := range servers {
 		isNewServer = true
 
@@ -214,10 +229,29 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 		}
 
 		if isNewServer {
-			err := c.HandleLocationConnection(servers[i], authToken)
+			err := c.handleLocationConnection(servers[i], authToken)
 			if err != nil {
 				return errors2.WrapUpdateConnectionsError(err)
 			}
+		}
+	}
+
+	// Remove unused connections
+	remove := true
+	for i := range c.serversConnected {
+		remove = true
+		for j := range servers {
+			if c.serversConnected[i] == servers[j] {
+				remove = false
+			}
+		}
+
+		if remove {
+			finishChanValue, ok := c.finishConnChans.Load(c.serversConnected[i])
+			if !ok {
+				return errors.New("tried to finish location connection without a finish chan")
+			}
+			close(finishChanValue.(finishConnChansValueType))
 		}
 	}
 
@@ -253,49 +287,85 @@ func (c *LocationClient) connect(serverUrl string, outChan chan ws.GenericMsg,
 	return conn, errors2.WrapConnectError(err)
 }
 
-func (c *LocationClient) updateLocationLoop(conn *websocket.Conn, outChan chan ws.GenericMsg) error {
-	err := c.updateLocation(conn, outChan)
-	if err != nil {
-		return err
-	}
-
+func (c *LocationClient) updateLocationLoop() {
+	c.updateLocation()
 	updateTicker := time.NewTicker(time.Duration(c.config.UpdateInterval) * time.Second)
 
 	for {
 		select {
 		case <-updateTicker.C:
-			err = c.updateLocation(conn, outChan)
-			if err != nil {
-				return err
-			}
+			c.updateLocation()
 		}
 	}
 }
 
-func (c *LocationClient) updateLocation(conn *websocket.Conn, outChan chan ws.GenericMsg) error {
+func (c *LocationClient) updateLocation() {
 	locationMsg := location.UpdateLocationMessage{
 		Location: c.CurrentLocation,
 	}
-	wsMsg := locationMsg.SerializeToWSMessage()
-	genericMsg := ws.GenericMsg{
+	genericLocationMsg := ws.GenericMsg{
 		MsgType: websocket.TextMessage,
-		Data:    []byte(wsMsg.Serialize()),
+		Data:    []byte(locationMsg.SerializeToWSMessage().Serialize()),
 	}
 
 	log.Info("updating location: ", c.CurrentLocation)
 
-	outChan <- genericMsg
+	// Only runs once
+	c.toConnsChans.Range(func(serverUrl, toConnChanValue interface{}) bool {
+		toConnChan := toConnChanValue.(toConnChansValueType)
+		toConnChan <- genericLocationMsg
 
-	err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
-	if err != nil {
-		return errors2.WrapUpdateLocationError(err)
+		connValue, ok := c.connections.Load(serverUrl)
+		if !ok {
+			panic("tried to write to a connection that is not in the map")
+		}
+
+		conn := connValue.(connectionsValueType)
+		err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+		if err != nil {
+			panic("error setting deadline")
+		}
+
+		return false
+	})
+}
+
+func (c *LocationClient) updateLocationWithTiles(tilesPerServer map[string][]int, excludeServer string) {
+	locationMsg := location.UpdateLocationWithTilesMessage{
+		TilesPerServer: tilesPerServer,
 	}
+	genericLocationMsg := ws.GenericMsg{
+		MsgType: websocket.TextMessage,
+		Data:    []byte(locationMsg.SerializeToWSMessage().Serialize()),
+	}
+
+	log.Info("updating location with tiles: ", c.CurrentLocation)
+
+	c.toConnsChans.Range(func(serverUrl, toConnChanValue interface{}) bool {
+		if serverUrl == excludeServer {
+			return true
+		}
+
+		toConnChan := toConnChanValue.(toConnChansValueType)
+		toConnChan <- genericLocationMsg
+
+		connValue, ok := c.connections.Load(serverUrl)
+		if !ok {
+			panic("tried to write to a connection that is not in the map")
+		}
+
+		conn := connValue.(connectionsValueType)
+		err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+		if err != nil {
+			panic("error setting deadline")
+		}
+
+		return true
+	})
 
 	if rand.Float64() <= c.LocationParameters.MovingProbability {
 		c.CurrentLocation = c.move(c.config.UpdateInterval)
 	}
-
-	return nil
 }
 
 func (c *LocationClient) move(timePassed int) utils.Location {

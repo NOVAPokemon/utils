@@ -7,7 +7,6 @@ const (
 	errorAddGymLocation       = "error adding gym location"
 	errorCatchWildPokemon     = "error catching wild pokemon"
 	errorConnect              = "error connecting"
-	errorUpdateLocation       = "error updating location"
 	errorGetServerForLocation = "error fetching server for current location"
 	errorUpdateConnections    = "error updating connections"
 	errorHandleLocationMsg    = "error handling location message"
@@ -32,10 +31,6 @@ func WrapCatchWildPokemonError(err error) error {
 
 func WrapConnectError(err error) error {
 	return errors.Wrap(err, errorConnect)
-}
-
-func WrapUpdateLocationError(err error) error {
-	return errors.Wrap(err, errorUpdateLocation)
 }
 
 func WrapGetServerForLocationError(err error) error {

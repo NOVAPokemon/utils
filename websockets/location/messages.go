@@ -10,12 +10,14 @@ import (
 )
 
 const (
-	UpdateLocation       = "UPDATE_LOCATION"
-	Gyms                 = "GYMS"
-	Pokemon              = "POKEMON"
-	CatchPokemon         = "CATCH_POKEMON"
-	CatchPokemonResponse = "CATCH_POKEMON_RESPONSE"
-	ConnectToServers     = "CONNECT_TO_SERVERS"
+	UpdateLocation          = "UPDATE_LOCATION"
+	UpdateLocationWithTiles = "UPDATE_LOCATION_WITH_TILES"
+	Gyms                    = "GYMS"
+	Pokemon                 = "POKEMON"
+	CatchPokemon            = "CATCH_POKEMON"
+	CatchPokemonResponse    = "CATCH_POKEMON_RESPONSE"
+	ServersResponse         = "SERVERS_RESPONSE"
+	TilesResponse           = "TILES_RESPONSE"
 )
 
 // Location
@@ -33,6 +35,61 @@ func (ulMsg UpdateLocationMessage) SerializeToWSMessage() *ws.Message {
 
 	return &ws.Message{
 		MsgType: UpdateLocation,
+		MsgArgs: []string{string(msgJson)},
+	}
+}
+
+type UpdateLocationWithTilesMessage struct {
+	TilesPerServer map[string][]int
+	ws.MessageWithId
+}
+
+func (ulwtMsg UpdateLocationWithTilesMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(ulwtMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
+	return &ws.Message{
+		MsgType: UpdateLocationWithTiles,
+		MsgArgs: []string{string(msgJson)},
+	}
+}
+
+type ServersMessage struct {
+	Servers []string
+	ws.MessageWithId
+}
+
+func (getResponseMsg ServersMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(getResponseMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
+	return &ws.Message{
+		MsgType: ServersResponse,
+		MsgArgs: []string{string(msgJson)},
+	}
+}
+
+type TilesPerServerMessage struct {
+	TilesPerServer map[string][]int
+	OriginServer string
+	ws.MessageWithId
+}
+
+func (tilesMsg TilesPerServerMessage) SerializeToWSMessage() *ws.Message {
+	msgJson, err := json.Marshal(tilesMsg)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+
+	return &ws.Message{
+		MsgType: TilesResponse,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
@@ -112,24 +169,6 @@ func (catchPokemonMsgResp CatchWildPokemonMessageResponse) SerializeToWSMessage(
 	}
 }
 
-type ConnectToServersMessage struct {
-	Servers []string
-	ws.MessageWithId
-}
-
-func (connectToServersMsg ConnectToServersMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(connectToServersMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: ConnectToServers,
-		MsgArgs: []string{string(msgJson)},
-	}
-}
-
 func DeserializeLocationMsg(msg *ws.Message) (ws.Serializable, error) {
 	switch msg.MsgType {
 	case UpdateLocation:
@@ -139,6 +178,15 @@ func DeserializeLocationMsg(msg *ws.Message) (ws.Serializable, error) {
 			return nil, wrapDeserializeLocationMsgError(err, UpdateLocation)
 		}
 		return &locationMsg, nil
+
+	case UpdateLocationWithTiles:
+		var locationWithTilesMsg UpdateLocationWithTilesMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &locationWithTilesMsg)
+		if err != nil {
+			return nil, wrapDeserializeLocationMsgError(err, UpdateLocationWithTiles)
+		}
+		return &locationWithTilesMsg, nil
+
 	case Gyms:
 		var gymsMsg GymsMessage
 		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &gymsMsg)
@@ -172,13 +220,22 @@ func DeserializeLocationMsg(msg *ws.Message) (ws.Serializable, error) {
 		}
 		return &catchPokemonMsgResp, nil
 
-	case ConnectToServers:
-		var connectToServersMsg ConnectToServersMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &connectToServersMsg)
+	case ServersResponse:
+		var serversMessage ServersMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &serversMessage)
 		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, ConnectToServers)
+			return nil, wrapDeserializeLocationMsgError(err, ServersResponse)
 		}
-		return &connectToServersMsg, nil
+		return &serversMessage, nil
+
+	case TilesResponse:
+		var tilesMsg TilesPerServerMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &tilesMsg)
+		if err != nil {
+			return nil, wrapDeserializeLocationMsgError(err, TilesResponse)
+		}
+		return &tilesMsg, nil
+
 	default:
 		return nil, wrapDeserializeLocationMsgError(ws.ErrorInvalidMessageType, msg.MsgType)
 	}
