@@ -56,7 +56,7 @@ func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
 }
 
 type PokemonMessage struct {
-	Pokemon []utils.WildPokemon
+	Pokemon []utils.WildPokemonWithServer
 	ws.MessageWithId
 }
 
@@ -75,7 +75,7 @@ func (pokemonMsg PokemonMessage) SerializeToWSMessage() *ws.Message {
 
 type CatchWildPokemonMessage struct {
 	Pokeball    items.Item
-	WildPokemon utils.WildPokemon
+	WildPokemon utils.WildPokemonWithServer
 	ws.MessageWithId
 }
 

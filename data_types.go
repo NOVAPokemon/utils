@@ -86,9 +86,10 @@ type Gym struct {
 	RaidBoss    *pokemons.Pokemon
 }
 
-type WildPokemon struct {
+type WildPokemonWithServer struct {
 	Pokemon  pokemons.Pokemon
 	Location Location
+	Server string
 }
 
 type LocationServerBoundary struct {

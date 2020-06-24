@@ -17,6 +17,7 @@ func Send(conn *websocket.Conn, msg *string) error {
 }
 
 func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *string, finished chan struct{}) {
+	// TODO remove closing channel
 	defer func () {
 		log.Info("closing read routine")
 		close(msgChan)
@@ -36,7 +37,7 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *string, fini
 	}
 }
 
-func WriteMessagesFromChanToConn(conn *websocket.Conn, writeChannel chan ws.GenericMsg, finished chan struct{}) {
+func WriteMessagesFromChanToConn(conn *websocket.Conn, writeChannel <-chan ws.GenericMsg, finished chan struct{}) {
 	defer log.Info("closing write routine")
 
 	for {

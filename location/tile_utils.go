@@ -2,6 +2,7 @@ package location
 
 import (
 	"github.com/NOVAPokemon/utils"
+	"github.com/golang/geo/r2"
 )
 
 func IsWithinBounds(location utils.Location, topLeft utils.Location, botRight utils.Location) bool {
@@ -14,26 +15,15 @@ func IsWithinBounds(location utils.Location, topLeft utils.Location, botRight ut
 	return true
 }
 
-func GetTileBoundsFromTileNr(tileNr, lineSize int, tileSideLength float64) (topLeft utils.Location,
-	botRight utils.Location) {
-	topLeft = utils.Location{
-		Longitude: (float64(tileNr%lineSize))*tileSideLength - 180.0,
-		Latitude:  180 - float64(tileNr)/float64(lineSize)*tileSideLength,
+func BoundaryToRect(boundary utils.Boundary) r2.Rect {
+	topLeftPoint := r2.Point{
+		X: boundary.TopLeft.Longitude,
+		Y: boundary.TopLeft.Latitude,
+	}
+	bottomRightPoint := r2.Point{
+		X: boundary.BottomRight.Longitude,
+		Y: boundary.BottomRight.Latitude,
 	}
 
-	botRight = utils.Location{
-		Latitude:  topLeft.Latitude - tileSideLength,
-		Longitude: topLeft.Longitude + tileSideLength,
-	}
-
-	return topLeft, botRight
-}
-
-func GetTileCenterLocationFromTileNr(tileNr, lineSize int, tileSideLength float64) utils.Location {
-	topLeft, _ := GetTileBoundsFromTileNr(tileNr, lineSize, tileSideLength)
-
-	return utils.Location{
-		Latitude:  topLeft.Latitude - (tileSideLength / 2),
-		Longitude: topLeft.Longitude + (tileSideLength / 2),
-	}
+	return r2.RectFromPoints(topLeftPoint, bottomRightPoint)
 }
