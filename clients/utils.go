@@ -16,9 +16,8 @@ func Send(conn *websocket.Conn, msg *string) error {
 	return ws.WrapWritingMessageError(conn.WriteMessage(websocket.TextMessage, []byte(*msg)))
 }
 
-func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *string, finished chan struct{}) {
-	// TODO remove closing channel
-	defer func () {
+func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finished chan struct{}) {
+	defer func() {
 		log.Info("closing read routine")
 		close(msgChan)
 	}()
@@ -31,8 +30,7 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *string, fini
 			if err != nil {
 				return
 			}
-			msg := string(message)
-			msgChan <- &msg
+			msgChan <- string(message)
 		}
 	}
 }
@@ -67,15 +65,13 @@ func Read(conn *websocket.Conn) (*ws.Message, error) {
 		return nil, ws.WrapReadingMessageError(err)
 	}
 
-	msgString := string(msgBytes)
-	log.Debugf("Received %s from the websocket", msgString)
-
-	msg, err := ws.ParseMessage(&msgString)
+	msgStr := string(msgBytes)
+	log.Debugf("Received %s from the websocket", msgStr)
+	msgParsed, err := ws.ParseMessage(msgStr)
 	if err != nil {
 		return nil, ws.WrapReadingMessageError(err)
 	}
-
-	return msg, nil
+	return msgParsed, nil
 }
 
 // REQUESTS

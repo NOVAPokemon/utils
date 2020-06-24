@@ -28,7 +28,7 @@ type TradeLobbyClient struct {
 	rejected     chan struct{}
 	finished     chan struct{}
 	finishOnce   sync.Once
-	readChannel  chan *string
+	readChannel  chan string
 	writeChannel chan ws.GenericMsg
 }
 
@@ -145,7 +145,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	client.rejected = make(chan struct{})
 	client.finished = make(chan struct{})
 	client.finishOnce = sync.Once{}
-	client.readChannel = make(chan *string)
+	client.readChannel = make(chan string)
 	client.writeChannel = make(chan ws.GenericMsg)
 
 	go ReadMessagesFromConnToChan(conn, client.readChannel, client.finished)
@@ -237,8 +237,7 @@ func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverH
 	return nil
 }
 
-func (client *TradeLobbyClient) HandleReceivedMessage(msgString *string) (*string, error) {
-
+func (client *TradeLobbyClient) HandleReceivedMessage(msgString string) (*string, error) {
 	msg, err := ws.ParseMessage(msgString)
 	if err != nil {
 		return nil, errors.WrapHandleMessagesTradeError(err)
