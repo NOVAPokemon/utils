@@ -137,7 +137,7 @@ func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) e
 	c.connections.Store(serverUrl, conn)
 	c.serversConnected = append(c.serversConnected, serverUrl)
 
-	go ReadMessagesFromConnToChan(conn, c.fromConnChan, finishChan)
+	go ReadMessagesFromConnToChanWithoutClosing(conn, c.fromConnChan, finishChan)
 	go WriteMessagesFromChanToConn(conn, outChan, finishChan)
 
 	log.Info("handling connection to %s", serverUrl)

@@ -50,6 +50,21 @@ func WriteMessagesFromChanToConn(conn *websocket.Conn, writeChannel <-chan ws.Ge
 	}
 }
 
+func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan string, finished chan struct{}) {
+	for {
+		select {
+		case <-finished:
+			return
+		default:
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				return
+			}
+			msgChan <- string(message)
+		}
+	}
+}
+
 func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan ws.GenericMsg) {
 	_ = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 	conn.SetPingHandler(func(string) error {
