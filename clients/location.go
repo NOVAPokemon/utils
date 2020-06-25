@@ -50,7 +50,7 @@ type LocationClient struct {
 	DistanceToStartLong float64
 
 	serversConnected []string
-	fromConnChan     chan *string
+	fromConnChan     chan string
 	toConnsChans     sync.Map
 	finishConnChans  sync.Map
 	connections      sync.Map
@@ -88,7 +88,7 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 		DistanceToStartLat:  0.0,
 		DistanceToStartLong: 0.0,
 		serversConnected:    []string{},
-		fromConnChan:        make(chan *string, bufferSize),
+		fromConnChan:        make(chan string, bufferSize),
 		finishConnChans:     sync.Map{},
 		connections:         sync.Map{},
 		toConnsChans:        sync.Map{},
@@ -115,7 +115,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 		if !ok {
 			break
 		}
-		if err := c.handleLocationMsg(*msgString, authToken); err != nil {
+		if err := c.handleLocationMsg(msgString, authToken); err != nil {
 			return errors2.WrapStartLocationUpdatesError(err)
 		}
 	}
@@ -147,7 +147,7 @@ func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) e
 
 func (c *LocationClient) handleLocationMsg(msgString string, authToken string) error {
 	// log.Infof("Received message: %s", *msgString)
-	msg, err := ws.ParseMessage(&msgString)
+	msg, err := ws.ParseMessage(msgString)
 	if err != nil {
 		return errors2.WrapHandleLocationMsgError(err)
 	}
