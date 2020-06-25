@@ -12,8 +12,6 @@ const (
 	errorWritingMessage    = "error writing message"
 	errorReadingMessage    = "error reading message"
 	errorParsingMessage    = "error parsing message from websocket"
-	errorHandleRecv        = "error in receive routine"
-	errorHandleSend        = "error in sending routine"
 
 	errorInvalidMsgTypeFormat = "error unsupported msg type %s"
 	errorDialingMessageFormat = "error dialing %s"
@@ -67,10 +65,6 @@ func wrapDeserializeMsgError(err error, msgType string) error {
 
 func wrapMsgParsingError(err error) error {
 	return errors.Wrap(err, errorParsingMessage)
-}
-
-func wrapHandleReceiveError(err error) error {
-	return errors.Wrap(err, errorHandleRecv)
 }
 
 // Error builders
