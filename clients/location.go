@@ -137,6 +137,8 @@ func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) e
 	c.connections.Store(serverUrl, conn)
 	c.serversConnected = append(c.serversConnected, serverUrl)
 
+	SetDefaultPingHandler(conn, outChan)
+
 	go ReadMessagesFromConnToChanWithoutClosing(conn, c.fromConnChan, finishChan)
 	go WriteMessagesFromChanToConn(conn, outChan, finishChan)
 
