@@ -15,14 +15,14 @@ func IsWithinBounds(location utils.Location, topLeft utils.Location, botRight ut
 	return true
 }
 
-func BoundaryToRect(boundary utils.Boundary) r2.Rect {
+func LocationsToRect(topLeft, botRight utils.Location) r2.Rect {
 	topLeftPoint := r2.Point{
-		X: boundary.TopLeft.Longitude,
-		Y: boundary.TopLeft.Latitude,
+		X: topLeft.Longitude,
+		Y: topLeft.Latitude,
 	}
 	bottomRightPoint := r2.Point{
-		X: boundary.BottomRight.Longitude,
-		Y: boundary.BottomRight.Latitude,
+		X: botRight.Longitude,
+		Y: botRight.Latitude,
 	}
 
 	return r2.RectFromPoints(topLeftPoint, bottomRightPoint)
