@@ -297,6 +297,10 @@ func (c *LocationClient) updateLocationLoop() {
 		select {
 		case <-updateTicker.C:
 			c.updateLocation()
+
+			if rand.Float64() <= c.LocationParameters.MovingProbability {
+				c.CurrentLocation = c.move(c.config.UpdateInterval)
+			}
 		}
 	}
 }
@@ -364,10 +368,6 @@ func (c *LocationClient) updateLocationWithTiles(tilesPerServer map[string][]int
 
 		return true
 	})
-
-	if rand.Float64() <= c.LocationParameters.MovingProbability {
-		c.CurrentLocation = c.move(c.config.UpdateInterval)
-	}
 }
 
 func (c *LocationClient) move(timePassed int) utils.Location {
