@@ -159,8 +159,10 @@ func (c *LocationClient) handleLocationMsg(msgString string, authToken string) e
 			return errors2.WrapHandleLocationMsgError(err)
 		}
 		gyms := desMsg.(*location.GymsMessage).Gyms
-		server := gyms[0].ServerName
-		c.SetGyms(server, gyms)
+		if len(gyms) > 0 {
+			server := gyms[0].ServerName
+			c.SetGyms(server, gyms)
+		}
 	case location.Pokemon:
 		desMsg, err := location.DeserializeLocationMsg(msg)
 		if err != nil {
