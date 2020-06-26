@@ -142,7 +142,7 @@ func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) e
 	go ReadMessagesFromConnToChanWithoutClosing(conn, c.fromConnChan, finishChan)
 	go WriteMessagesFromChanToConn(conn, outChan, finishChan)
 
-	log.Info("handling connection to %s", serverUrl)
+	log.Info("handling connection to ", serverUrl)
 
 	return nil
 }
@@ -184,6 +184,7 @@ func (c *LocationClient) handleLocationMsg(msgString string, authToken string) e
 			return errors2.WrapHandleLocationMsgError(err)
 		}
 		serversMsg := desMsg.(*location.ServersMessage)
+		log.Info("received servers %s", serversMsg.Servers)
 		err = c.updateConnections(serversMsg.Servers, authToken)
 		if err != nil {
 			return errors2.WrapHandleLocationMsgError(err)
@@ -255,6 +256,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 			if !ok {
 				return errors.New("tried to finish location connection without a finish chan")
 			}
+			log.Info("finishing connection to ", c.serversConnected[i])
 			close(finishChanValue.(finishConnChansValueType))
 		}
 	}
