@@ -184,7 +184,7 @@ func (c *LocationClient) handleLocationMsg(msgString string, authToken string) e
 			return errors2.WrapHandleLocationMsgError(err)
 		}
 		serversMsg := desMsg.(*location.ServersMessage)
-		log.Info("received servers %s", serversMsg.Servers)
+		log.Info("received servers ", serversMsg.Servers)
 		err = c.updateConnections(serversMsg.Servers, authToken)
 		if err != nil {
 			return errors2.WrapHandleLocationMsgError(err)
