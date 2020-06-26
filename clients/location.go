@@ -322,6 +322,8 @@ func (c *LocationClient) updateLocation() {
 
 	// Only runs once
 	c.toConnsChans.Range(func(serverUrl, toConnChanValue interface{}) bool {
+		log.Info("updating location to ", serverUrl)
+
 		toConnChan := toConnChanValue.(toConnChansValueType)
 		toConnChan <- genericLocationMsg
 
@@ -349,7 +351,7 @@ func (c *LocationClient) updateLocationWithTiles(tilesPerServer map[string][]int
 		Data:    []byte(locationMsg.SerializeToWSMessage().Serialize()),
 	}
 
-	log.Info("updating location with tiles: ", c.CurrentLocation)
+	log.Infof("updating location with tiles %v", tilesPerServer)
 
 	c.toConnsChans.Range(func(serverUrl, toConnChanValue interface{}) bool {
 		if serverUrl == excludeServer {
@@ -363,6 +365,8 @@ func (c *LocationClient) updateLocationWithTiles(tilesPerServer map[string][]int
 		if !ok {
 			panic("tried to write to a connection that is not in the map")
 		}
+
+		log.Info("sending precomputed tiles to ", serverUrl)
 
 		conn := connValue.(connectionsValueType)
 		err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
