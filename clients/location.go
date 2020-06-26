@@ -223,6 +223,9 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 		isNewServer bool
 	)
 
+	var toRemove []string
+	var newServers []string
+
 	// Add new connections
 	for i := range servers {
 		isNewServer = true
@@ -238,6 +241,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 			if err != nil {
 				return errors2.WrapUpdateConnectionsError(err)
 			}
+			newServers = append(newServers, c.serversConnected[i])
 		}
 	}
 
@@ -248,6 +252,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 		for j := range servers {
 			if c.serversConnected[i] == servers[j] {
 				remove = false
+				break
 			}
 		}
 
@@ -258,8 +263,26 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 			}
 			log.Info("finishing connection to ", c.serversConnected[i])
 			close(finishChanValue.(finishConnChansValueType))
+			c.toConnsChans.Delete(c.serversConnected[i])
+			toRemove = append(toRemove, c.serversConnected[i])
 		}
 	}
+
+	var add bool
+	for i := range c.serversConnected {
+		add = true
+		for j := range toRemove {
+			if c.serversConnected[i] == toRemove[j] {
+				add = false
+			}
+		}
+
+		if add {
+			newServers = append(newServers, c.serversConnected[i])
+		}
+	}
+
+	c.serversConnected = newServers
 
 	return nil
 }
