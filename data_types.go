@@ -79,8 +79,8 @@ type WildPokemonWithServer struct {
 }
 
 type LocationServerCells struct {
-	Cells      s2.CellUnion
-	ServerName string
+	CellIdsStrings []string
+	ServerName     string
 }
 
 type GymWithServer struct {
