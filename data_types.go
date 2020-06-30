@@ -79,7 +79,7 @@ type WildPokemonWithServer struct {
 }
 
 type LocationServerCells struct {
-	CellIdsStrings []string
+	CellIdsStrings []string `json:"cells"`
 	ServerName     string
 }
 
