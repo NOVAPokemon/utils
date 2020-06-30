@@ -2,6 +2,7 @@ package location
 
 import (
 	"encoding/json"
+	"github.com/golang/geo/s2"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/items"
@@ -22,7 +23,7 @@ const (
 
 // Location
 type UpdateLocationMessage struct {
-	Location utils.Location
+	Location s2.LatLng
 	ws.MessageWithId
 }
 
@@ -75,13 +76,13 @@ func (getResponseMsg ServersMessage) SerializeToWSMessage() *ws.Message {
 	}
 }
 
-type TilesPerServerMessage struct {
-	TilesPerServer map[string][]int
-	OriginServer string
+type CellsPerServerMessage struct {
+	CellsPerServer map[string]s2.CellUnion
+	OriginServer   string
 	ws.MessageWithId
 }
 
-func (tilesMsg TilesPerServerMessage) SerializeToWSMessage() *ws.Message {
+func (tilesMsg CellsPerServerMessage) SerializeToWSMessage() *ws.Message {
 	msgJson, err := json.Marshal(tilesMsg)
 	if err != nil {
 		log.Error(err)

@@ -66,7 +66,7 @@ func UpdateIfAbsentAddGym(gymWithSrv utils.GymWithServer) error {
 		return wrapAddGymError(err)
 	}
 
-	log.Infof("Added gym %s at %f %f", gym.Name, gym.Location.Latitude, gym.Location.Longitude)
+	log.Infof("Added gym %s at %f %f", gym.Name, gym.Location.Lat, gym.Location.Lng)
 
 	return nil
 }
@@ -88,57 +88,7 @@ func GetGyms() ([]utils.GymWithServer, error) {
 	return gymsWithSrv, nil
 }
 
-func UpdateIfAbsentAddUserLocation(userLocation utils.UserLocation) (*utils.UserLocation, error) {
-	ctx := dbClient.Ctx
-	collection := dbClient.Collections[usersLocationCollectionName]
-
-	filter := bson.M{"username": userLocation.Username}
-	changes := bson.M{"$set": bson.M{"location": userLocation.Location}}
-
-	upsert := true
-	updateOptions := options.UpdateOptions{
-		Upsert: &upsert,
-	}
-
-	res, err := collection.UpdateOne(*ctx, filter, changes, &updateOptions)
-	if err != nil {
-		return nil, wrapUpdateLocation(err, userLocation.Username)
-	}
-
-	if res.MatchedCount > 0 {
-		log.Infof("Updated Trainer %s location", userLocation.Username)
-	} else {
-		log.Info("Started tracking ", userLocation.Username)
-	}
-
-	return &userLocation, nil
-}
-
-func GetUserLocation(username string) (*utils.UserLocation, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[usersLocationCollectionName]
-	var result utils.UserLocation
-
-	filter := bson.M{"username": username}
-	err := collection.FindOne(*ctx, filter).Decode(&result)
-	if err != nil {
-		return nil, wrapGetLocation(err, username)
-	}
-
-	return &result, nil
-}
-
-func DeleteUserLocation(username string) error {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[usersLocationCollectionName]
-	filter := bson.M{"username": username}
-
-	_, err := collection.DeleteOne(*ctx, filter)
-
-	return wrapDeleteLocation(err, username)
-}
-
-func UpdateServerConfig(serverName string, config utils.LocationServerBoundary) error {
+func UpdateServerConfig(serverName string, config utils.LocationServerCells) error {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collections[globalConfigCollectionName]
 	var filter = bson.D{{"servername:", serverName}}
@@ -155,7 +105,7 @@ func UpdateServerConfig(serverName string, config utils.LocationServerBoundary) 
 	return nil
 }
 
-func GetServerConfig(serverName string) (*utils.LocationServerBoundary, error) {
+func GetServerConfig(serverName string) (*utils.LocationServerCells, error) {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collections[globalConfigCollectionName]
 	var filter = bson.D{{"servername", serverName}}
@@ -166,14 +116,14 @@ func GetServerConfig(serverName string) (*utils.LocationServerBoundary, error) {
 		return nil, wrapGetServerConfig(res.Err(), serverName)
 	}
 
-	var regionConfig = &utils.LocationServerBoundary{}
+	var regionConfig = &utils.LocationServerCells{}
 	if err := res.Decode(regionConfig); err != nil {
 		return nil, wrapGetServerConfig(res.Err(), serverName)
 	}
 	return regionConfig, nil
 }
 
-func GetAllServerConfigs() (map[string]utils.LocationServerBoundary, error) {
+func GetAllServerConfigs() (map[string]utils.LocationServerCells, error) {
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collections[globalConfigCollectionName]
 	var filter = bson.M{}
@@ -184,13 +134,13 @@ func GetAllServerConfigs() (map[string]utils.LocationServerBoundary, error) {
 		return nil, wrapGetGlobalServerConfigs(err)
 	}
 
-	var out = make(map[string]utils.LocationServerBoundary, 0)
+	var out = make(map[string]utils.LocationServerCells, 0)
 	for cursor.Next(*ctx) {
-		var regionCfg utils.LocationServerBoundary
-		if err = cursor.Decode(&regionCfg); err != nil {
+		var serverCells utils.LocationServerCells
+		if err = cursor.Decode(&serverCells); err != nil {
 			log.Fatal(err)
 		}
-		out[regionCfg.ServerName] = regionCfg
+		out[serverCells.ServerName] = serverCells
 	}
 	return out, nil
 }

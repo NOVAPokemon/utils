@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
+	"github.com/golang/geo/s2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -64,38 +65,22 @@ type Notification struct {
 	Content  []byte
 }
 
-type Location struct {
-	Latitude  float64
-	Longitude float64
-}
-
-type Boundary struct {
-	TopLeft     Location
-	BottomRight Location
-}
-
-type UserLocation struct {
-	Username string `json:"username" bson:"username,omitempty"`
-	Location Location
-}
-
 type Gym struct {
 	Name        string `json:"name" bson:"name,omitempty"`
-	Location    Location
+	Location    s2.LatLng
 	RaidForming bool
 	RaidBoss    *pokemons.Pokemon
 }
 
 type WildPokemonWithServer struct {
 	Pokemon  pokemons.Pokemon
-	Location Location
-	Server string
+	Location s2.LatLng
+	Server   string
 }
 
-type LocationServerBoundary struct {
-	TopLeftCorner  Location
-	BotRightCorner Location
-	ServerName     string
+type LocationServerCells struct {
+	Cells      s2.CellUnion
+	ServerName string
 }
 
 type GymWithServer struct {
