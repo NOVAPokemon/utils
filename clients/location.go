@@ -438,8 +438,8 @@ func (c *LocationClient) AddGymLocation(gym utils.GymWithServer) error {
 func (c *LocationClient) GetServerForLocation(loc s2.LatLng) (*string, error) {
 	u := url.URL{Scheme: "http", Host: c.LocationAddr, Path: fmt.Sprintf(api.GetServerForLocationPath)}
 	q := u.Query()
-	q.Set(api.LatitudeQueryParam, fmt.Sprintf("%f", loc.Lat.Radians()))
-	q.Set(api.LongitudeQueryParam, fmt.Sprintf("%f", loc.Lng.Radians()))
+	q.Set(api.LatitudeQueryParam, fmt.Sprintf("%f", loc.Lat.Degrees()))
+	q.Set(api.LongitudeQueryParam, fmt.Sprintf("%f", loc.Lng.Degrees()))
 	u.RawQuery = q.Encode()
 	log.Info(u.String())
 	req, err := http.NewRequest("GET", u.String(), nil)
