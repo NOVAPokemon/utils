@@ -19,6 +19,7 @@ import (
 	"github.com/NOVAPokemon/utils/tokens"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/location"
+	"github.com/golang/geo/s2"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
@@ -44,7 +45,7 @@ type LocationClient struct {
 	pokemonsLock sync.Mutex
 	pokemons     []utils.WildPokemonWithServer
 
-	CurrentLocation     utils.Location
+	CurrentLocation     s2.LatLng
 	LocationParameters  utils.LocationParameters
 	DistanceToStartLat  float64
 	DistanceToStartLong float64
@@ -77,13 +78,17 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 	}
 
 	timeoutInDuration = time.Duration(config.Timeout) * time.Second
+
+	startingLocation := s2.LatLngFromDegrees(config.Parameters.StartingLocationLat,
+		config.Parameters.StartingLocationLon)
+
 	return &LocationClient{
 		LocationAddr:        locationURL,
 		config:              config,
 		pokemonsLock:        sync.Mutex{},
 		gyms:                sync.Map{},
 		HttpClient:          &http.Client{},
-		CurrentLocation:     config.Parameters.StartingLocation,
+		CurrentLocation:     startingLocation,
 		LocationParameters:  config.Parameters,
 		DistanceToStartLat:  0.0,
 		DistanceToStartLong: 0.0,
@@ -189,13 +194,13 @@ func (c *LocationClient) handleLocationMsg(msgString string, authToken string) e
 		if err != nil {
 			return errors2.WrapHandleLocationMsgError(err)
 		}
-	case location.TilesResponse:
+	case location.CellsResponse:
 		desMsg, err := location.DeserializeLocationMsg(msg)
 		if err != nil {
 			return errors2.WrapHandleLocationMsgError(err)
 		}
-		tilesMsg := desMsg.(*location.TilesPerServerMessage)
-		c.updateLocationWithTiles(tilesMsg.TilesPerServer, tilesMsg.OriginServer)
+		cellsMsg := desMsg.(*location.CellsPerServerMessage)
+		c.updateLocationWithCells(cellsMsg.CellsPerServer, cellsMsg.OriginServer)
 	case ws.Error:
 		desMsg, err := ws.DeserializeMsg(msg)
 		if err != nil {
@@ -365,9 +370,9 @@ func (c *LocationClient) updateLocation() {
 	})
 }
 
-func (c *LocationClient) updateLocationWithTiles(tilesPerServer map[string][]int, excludeServer string) {
+func (c *LocationClient) updateLocationWithCells(tilesPerServer map[string]s2.CellUnion, excludeServer string) {
 	locationMsg := location.UpdateLocationWithTilesMessage{
-		TilesPerServer: tilesPerServer,
+		CellsPerServer: tilesPerServer,
 	}
 	genericLocationMsg := ws.GenericMsg{
 		MsgType: websocket.TextMessage,
@@ -401,7 +406,7 @@ func (c *LocationClient) updateLocationWithTiles(tilesPerServer map[string][]int
 	})
 }
 
-func (c *LocationClient) move(timePassed int) utils.Location {
+func (c *LocationClient) move(timePassed int) s2.LatLng {
 	randAngle := rand.Float64() * 2 * math.Pi
 	distanceTraveled := rand.Float64() * c.LocationParameters.MaxMovingSpeed * float64(timePassed)
 
@@ -430,11 +435,11 @@ func (c *LocationClient) AddGymLocation(gym utils.GymWithServer) error {
 	return errors2.WrapAddGymLocationError(err)
 }
 
-func (c *LocationClient) GetServerForLocation(loc utils.Location) (*string, error) {
+func (c *LocationClient) GetServerForLocation(loc s2.LatLng) (*string, error) {
 	u := url.URL{Scheme: "http", Host: c.LocationAddr, Path: fmt.Sprintf(api.GetServerForLocationPath)}
 	q := u.Query()
-	q.Set(api.LatitudeQueryParam, fmt.Sprintf("%f", loc.Latitude))
-	q.Set(api.LongitudeQueryParam, fmt.Sprintf("%f", loc.Longitude))
+	q.Set(api.LatitudeQueryParam, fmt.Sprintf("%f", loc.Lat.Radians()))
+	q.Set(api.LongitudeQueryParam, fmt.Sprintf("%f", loc.Lng.Radians()))
 	u.RawQuery = q.Encode()
 	log.Info(u.String())
 	req, err := http.NewRequest("GET", u.String(), nil)

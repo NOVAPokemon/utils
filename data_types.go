@@ -19,7 +19,7 @@ type Trainer struct {
 	Pokemons map[string]pokemons.Pokemon
 	Items    map[string]items.Item
 	Stats    TrainerStats
-	Location Location
+	Location s2.LatLng
 }
 
 type TransactionTemplate struct {

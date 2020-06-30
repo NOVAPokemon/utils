@@ -2,6 +2,7 @@ package location
 
 import (
 	"encoding/json"
+
 	"github.com/golang/geo/s2"
 
 	"github.com/NOVAPokemon/utils"
@@ -18,7 +19,7 @@ const (
 	CatchPokemon            = "CATCH_POKEMON"
 	CatchPokemonResponse    = "CATCH_POKEMON_RESPONSE"
 	ServersResponse         = "SERVERS_RESPONSE"
-	TilesResponse           = "TILES_RESPONSE"
+	CellsResponse           = "TILES_RESPONSE"
 )
 
 // Location
@@ -41,7 +42,7 @@ func (ulMsg UpdateLocationMessage) SerializeToWSMessage() *ws.Message {
 }
 
 type UpdateLocationWithTilesMessage struct {
-	TilesPerServer map[string][]int
+	CellsPerServer map[string]s2.CellUnion
 	ws.MessageWithId
 }
 
@@ -90,7 +91,7 @@ func (tilesMsg CellsPerServerMessage) SerializeToWSMessage() *ws.Message {
 	}
 
 	return &ws.Message{
-		MsgType: TilesResponse,
+		MsgType: CellsResponse,
 		MsgArgs: []string{string(msgJson)},
 	}
 }
@@ -229,13 +230,13 @@ func DeserializeLocationMsg(msg *ws.Message) (ws.Serializable, error) {
 		}
 		return &serversMessage, nil
 
-	case TilesResponse:
-		var tilesMsg TilesPerServerMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &tilesMsg)
+	case CellsResponse:
+		var cellsMsg CellsPerServerMessage
+		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &cellsMsg)
 		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, TilesResponse)
+			return nil, wrapDeserializeLocationMsgError(err, CellsResponse)
 		}
-		return &tilesMsg, nil
+		return &cellsMsg, nil
 
 	default:
 		return nil, wrapDeserializeLocationMsgError(ws.ErrorInvalidMessageType, msg.MsgType)

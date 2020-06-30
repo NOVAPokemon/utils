@@ -9,9 +9,6 @@ import (
 const (
 	errorAddGym         = "error adding gym"
 	errorGetGyms        = "error getting gyms"
-	errorUpdateLocation = "error updating user %s location"
-	errorGetLocation    = "error getting user %s location"
-	errorDeleteLocation = "error deleting user %s location"
 
 	errorGetServerConfig       = "error getting server %s configs"
 	errorUpdateServerConfig    = "error updating server %s configs"
@@ -24,18 +21,6 @@ func wrapAddGymError(err error) error {
 
 func wrapGetGymsError(err error) error {
 	return errors.Wrap(err, errorGetGyms)
-}
-
-func wrapUpdateLocation(err error, username string) error {
-	return errors.Wrap(err, fmt.Sprintf(errorUpdateLocation, username))
-}
-
-func wrapGetLocation(err error, username string) error {
-	return errors.Wrap(err, fmt.Sprintf(errorGetLocation, username))
-}
-
-func wrapDeleteLocation(err error, username string) error {
-	return errors.Wrap(err, fmt.Sprintf(errorDeleteLocation, username))
 }
 
 func wrapUpdateServerConfig(err error, serverName string) error {
