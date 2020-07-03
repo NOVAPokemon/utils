@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -223,6 +224,10 @@ func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverH
 
 	req, err := BuildRequest("POST", addr, fmt.Sprintf(api.RejectTradePath, lobbyId.Hex()), nil)
 	if err != nil {
+		if strings.Contains(err.Error(), fmt.Sprintf("got status code %d", http.StatusNotFound)) {
+			log.Warn(errors.WrapRejectTradeLobbyError(err))
+			return nil
+		}
 		return errors.WrapRejectTradeLobbyError(err)
 	}
 
