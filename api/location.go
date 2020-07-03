@@ -11,7 +11,7 @@ const GetAllConfigsPath = "/location/configs"
 const SetServerConfigPath = "/location/configs/%s"
 const ForceLoadConfigPath = "/location/config/reload"
 const GetServerForLocationPath = "/location/server"
-const GetActiveTiles = "/location/active"
+const GetActiveCells = "/location/active"
 
 const ServerNamePathVar = "serverName"
 const LatitudeQueryParam = "latitude"
@@ -21,7 +21,7 @@ var GetAllConfigsRoute = GetAllConfigsPath
 var SetServerConfigRoute = fmt.Sprintf(SetServerConfigPath, ServerNamePathVar)
 var GetServerForLocationRoute = GetServerForLocationPath
 
-var GetActiveTilesRoute = GetActiveTiles
+var GetActiveCellsRoute = fmt.Sprint(GetActiveCells, ServerNamePathVar)
 
 var ForceLoadConfigRoute = ForceLoadConfigPath
 
