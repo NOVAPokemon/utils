@@ -468,7 +468,8 @@ func (c *LocationClient) CatchWildPokemon(trainersClient *TrainersClient) error 
 
 	if pokemonsLen <= 0 {
 		c.pokemonsLock.Unlock()
-		return errors2.WrapCatchWildPokemonError(errors2.ErrorNoPokemonsVinicity)
+		log.Warn(errors2.WrapCatchWildPokemonError(errors2.ErrorNoPokemonsVinicity))
+		return nil
 	}
 
 	toCatch := c.pokemons[rand.Intn(pokemonsLen)]
