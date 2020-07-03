@@ -183,10 +183,6 @@ func (client *BattleLobbyClient) RejectChallenge(authToken, battleId, serverHost
 
 	req, err := BuildRequest("POST", addr, fmt.Sprintf(api.RejectChallengePath, battleId), nil)
 	if err != nil {
-		if strings.Contains(err.Error(), fmt.Sprintf("got status code %d", http.StatusNotFound)) {
-			log.Warn(errors.WrapRejectBattleChallengeError(err))
-			return nil
-		}
 		return errors.WrapRejectBattleChallengeError(err)
 	}
 
@@ -194,6 +190,10 @@ func (client *BattleLobbyClient) RejectChallenge(authToken, battleId, serverHost
 
 	_, err = DoRequest(&http.Client{}, req, nil)
 	if err != nil {
+		if strings.Contains(err.Error(), fmt.Sprintf("got status code %d", http.StatusNotFound)) {
+			log.Warn(errors.WrapRejectBattleChallengeError(err))
+			return nil
+		}
 		return errors.WrapRejectBattleChallengeError(err)
 	}
 
