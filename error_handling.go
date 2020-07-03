@@ -21,6 +21,11 @@ func LogAndSendHTTPError(w *http.ResponseWriter, err error, httpCode int) {
 	http.Error(*w, err.Error(), httpCode)
 }
 
+func LogWarnAndSendHTTPError(w *http.ResponseWriter, err error, httpCode int) {
+	log.Warn(err)
+	http.Error(*w, err.Error(), httpCode)
+}
+
 func WrapErrorLoadConfigs(err error) error {
 	return errors.Wrap(err, errorLoadingConfigs)
 }
