@@ -18,10 +18,10 @@ const LatitudeQueryParam = "latitude"
 const LongitudeQueryParam = "longitude"
 
 var GetAllConfigsRoute = GetAllConfigsPath
-var SetServerConfigRoute = fmt.Sprintf(SetServerConfigPath, ServerNamePathVar)
+var SetServerConfigRoute = fmt.Sprintf(SetServerConfigPath, fmt.Sprintf("{%s}", ServerNamePathVar))
 var GetServerForLocationRoute = GetServerForLocationPath
 
-var GetActiveCellsRoute = fmt.Sprintf(GetActiveCells, ServerNamePathVar)
+var GetActiveCellsRoute = fmt.Sprintf(GetActiveCells, fmt.Sprintf("{%s}", ServerNamePathVar))
 
 var ForceLoadConfigRoute = ForceLoadConfigPath
 
