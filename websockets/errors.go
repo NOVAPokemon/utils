@@ -32,6 +32,7 @@ var (
 	ErrorTooEarlyToLogReceive = errors.New("tried logging before setting received timestamp")
 
 	ErrorMsgWasNotEmmitted = errors.New("msg was not emmitted")
+	ErrorLobbyIsFull = errors.New("lobby is full")
 )
 
 // Wrappers
@@ -73,7 +74,7 @@ func NewInvalidMsgTypeError(msgType string) error {
 }
 
 func NewLobbyIsFullError(lobbyId string) error {
-	return errors.New(fmt.Sprintf(errorLobbyFull, lobbyId))
+	return errors.WithMessage(ErrorLobbyIsFull, fmt.Sprintf(errorLobbyFull, lobbyId))
 }
 
 func NewLobbyStartedError(lobbyId string) error {

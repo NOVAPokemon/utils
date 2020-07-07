@@ -28,6 +28,7 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finis
 		default:
 			_, message, err := conn.ReadMessage()
 			if err != nil {
+				log.Warn(err)
 				return
 			}
 			msgChan <- string(message)
@@ -44,6 +45,7 @@ func WriteMessagesFromChanToConn(conn *websocket.Conn, writeChannel <-chan ws.Ge
 			return
 		case msg := <-writeChannel:
 			if err := conn.WriteMessage(msg.MsgType, msg.Data); err != nil {
+				log.Warn(err)
 				return
 			}
 		}
@@ -58,6 +60,7 @@ func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan
 		default:
 			_, message, err := conn.ReadMessage()
 			if err != nil {
+				log.Warn(err)
 				return
 			}
 			msgChan <- string(message)
