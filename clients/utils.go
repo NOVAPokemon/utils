@@ -31,7 +31,9 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finis
 				log.Warn(err)
 				return
 			}
-			msgChan <- string(message)
+			if message != nil {
+				msgChan <- string(message)
+			}
 		}
 	}
 }
@@ -63,7 +65,9 @@ func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan
 				log.Warn(err)
 				return
 			}
-			msgChan <- string(message)
+			if message != nil {
+				msgChan <- string(message)
+			}
 		}
 	}
 }
