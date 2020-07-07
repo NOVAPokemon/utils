@@ -96,7 +96,7 @@ func SendFromChanToConn(lobby *Lobby, trainerNum int) (done chan interface{}) {
 			select {
 			case <-pingTicker.C:
 				if err := conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
-					log.Error(err)
+					log.Warn(err)
 					return
 				}
 			case msg, ok := <-outChannel:
@@ -105,7 +105,7 @@ func SendFromChanToConn(lobby *Lobby, trainerNum int) (done chan interface{}) {
 				}
 				err := conn.WriteMessage(msg.MsgType, msg.Data)
 				if err != nil {
-					log.Error(err)
+					log.Warn(err)
 					return
 				}
 			case <-lobby.Finished:
