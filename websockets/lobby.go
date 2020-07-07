@@ -172,7 +172,7 @@ func GetTrainersJoined(lobby *Lobby) int {
 func ParseMessage(msg string) (*Message, error) {
 	toReturn := &Message{}
 	if err := json.Unmarshal([]byte(msg), toReturn); err != nil {
-		return nil, wrapMsgParsingError(ErrorMessageNil)
+		return nil, wrapMsgParsingError(err)
 	}
 	return toReturn, nil
 }
