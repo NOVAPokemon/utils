@@ -33,6 +33,7 @@ var (
 
 	ErrorMsgWasNotEmmitted = errors.New("msg was not emmitted")
 	ErrorLobbyIsFull = errors.New("lobby is full")
+	ErrorLobbyAlreadyFinished = errors.New("lobby finished")
 )
 
 // Wrappers
@@ -82,5 +83,5 @@ func NewLobbyStartedError(lobbyId string) error {
 }
 
 func NewLobbyFinishedError(lobbyId string) error {
-	return errors.New(fmt.Sprintf(errorLobbyFinished, lobbyId))
+	return errors.WithMessage(ErrorLobbyAlreadyFinished, fmt.Sprintf(errorLobbyFinished, lobbyId))
 }
