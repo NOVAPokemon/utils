@@ -79,8 +79,13 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 
 	timeoutInDuration = time.Duration(config.Timeout) * time.Second
 
-	startingLocation := s2.LatLngFromDegrees(config.Parameters.StartingLocationLat,
-		config.Parameters.StartingLocationLon)
+	var startingLocation s2.LatLng
+	if config.Parameters.StartingLocation {
+		startingLocation = s2.LatLngFromDegrees(config.Parameters.StartingLocationLat,
+			config.Parameters.StartingLocationLon)
+	} else {
+		startingLocation = getRandomLatLng()
+	}
 
 	return &LocationClient{
 		LocationAddr:        locationURL,
@@ -523,6 +528,15 @@ func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error
 	}
 
 	return pokeballs[rand.Intn(len(pokeballs))], nil
+}
+
+func getRandomLatLng() s2.LatLng {
+	randomLat := rand.Float64()*180 - 90
+	randomLng := rand.Float64()*360 - 180
+
+	randomLatLng := s2.LatLngFromDegrees(randomLat, randomLng)
+
+	return randomLatLng
 }
 
 func (c *LocationClient) GetWildPokemons() []utils.WildPokemonWithServer {

@@ -32,6 +32,7 @@ type RaidConfig struct {
 // how likely is the user to move between location updates
 // MaxMovingSpeed should be in meters per second
 type LocationParameters struct {
+	StartingLocation     bool    `json:"starting_location"`
 	StartingLocationLat  float64 `json:"starting_location_lat"`
 	StartingLocationLon  float64 `json:"starting_location_lon"`
 	MaxMovingSpeed       float64 `json:"max_moving_speed"`
