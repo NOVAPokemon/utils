@@ -81,9 +81,11 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 
 	var startingLocation s2.LatLng
 	if config.Parameters.StartingLocation {
+		log.Info("starting location enabled")
 		startingLocation = s2.LatLngFromDegrees(config.Parameters.StartingLocationLat,
 			config.Parameters.StartingLocationLon)
 	} else {
+		log.Info("starting location disabled")
 		startingLocation = getRandomLatLng()
 	}
 
