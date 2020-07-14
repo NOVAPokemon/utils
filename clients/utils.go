@@ -7,13 +7,14 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/NOVAPokemon/utils/comms_manager"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
-func Send(conn *websocket.Conn, msg *string) error {
-	return ws.WrapWritingMessageError(conn.WriteMessage(websocket.TextMessage, []byte(*msg)))
+func Send(conn *websocket.Conn, msg *string, writer comms_manager.CommunicationManager) error {
+	return ws.WrapWritingMessageError(writer.WriteMessageToConn(conn, websocket.TextMessage, []byte(*msg)))
 }
 
 func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finished chan struct{}) {
@@ -38,7 +39,9 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finis
 	}
 }
 
-func WriteMessagesFromChanToConn(conn *websocket.Conn, writeChannel <-chan ws.GenericMsg, finished chan struct{}) {
+func WriteMessagesFromChanToConn(conn *websocket.Conn, commsManager comms_manager.CommunicationManager,
+	writeChannel <-chan ws.GenericMsg,
+	finished chan struct{}) {
 	defer log.Info("closing write routine")
 
 	for {
@@ -46,7 +49,8 @@ func WriteMessagesFromChanToConn(conn *websocket.Conn, writeChannel <-chan ws.Ge
 		case <-finished:
 			return
 		case msg := <-writeChannel:
-			if err := conn.WriteMessage(msg.MsgType, msg.Data); err != nil {
+			err := commsManager.WriteMessageToConn(conn, msg.MsgType, msg.Data)
+			if err != nil {
 				log.Warn(err)
 				return
 			}
@@ -133,14 +137,15 @@ func BuildRequest(method, host, path string, body interface{}) (*http.Request, e
 }
 
 // For now this function assumes that a response should always have 200 code
-func DoRequest(httpClient *http.Client, request *http.Request, responseBody interface{}) (*http.Response, error) {
+func DoRequest(httpClient *http.Client, request *http.Request, responseBody interface{},
+	manager comms_manager.CommunicationManager) (*http.Response, error) {
 	log.Infof("Doing request: %s %s", request.Method, request.URL.String())
 
 	if httpClient == nil {
 		return nil, wrapDoRequestError(newHttpClientNilError(request.URL.String()))
 	}
 
-	resp, err := httpClient.Do(request)
+	resp, err := manager.DoHTTPRequest(httpClient, request)
 	if err != nil {
 		log.Error(err)
 		return nil, wrapDoRequestError(err)

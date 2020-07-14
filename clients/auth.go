@@ -9,19 +9,21 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	errors2 "github.com/NOVAPokemon/utils/clients/errors"
+	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	log "github.com/sirupsen/logrus"
 )
 
 type AuthClient struct {
-	AuthToken  string
-	AuthAddr   string
-	httpClient *http.Client
+	AuthToken    string
+	AuthAddr     string
+	httpClient   *http.Client
+	commsManager comms_manager.CommunicationManager
 }
 
 var defaultAuthURL = fmt.Sprintf("%s:%d", utils.Host, utils.AuthenticationPort)
 
-func NewAuthClient() *AuthClient {
+func NewAuthClient(commsManager comms_manager.CommunicationManager) *AuthClient {
 	authURL, exists := os.LookupEnv(utils.AuthenticationEnvVar)
 
 	if !exists {
@@ -30,8 +32,9 @@ func NewAuthClient() *AuthClient {
 	}
 
 	return &AuthClient{
-		AuthAddr:   authURL,
-		httpClient: &http.Client{},
+		AuthAddr:     authURL,
+		httpClient:   &http.Client{},
+		commsManager: commsManager,
 	}
 }
 
@@ -39,7 +42,7 @@ func (client *AuthClient) LoginWithUsernameAndPassword(username, password string
 	userJSON := utils.UserJSON{Username: username, Password: password}
 	req, err := BuildRequest("POST", client.AuthAddr, api.LoginPath, userJSON)
 
-	resp, err := DoRequest(client.httpClient, req, nil)
+	resp, err := DoRequest(client.httpClient, req, nil, client.commsManager)
 	if err != nil {
 		return errors2.WrapLoginError(err)
 	}
@@ -53,7 +56,7 @@ func (client *AuthClient) Register(username string, password string) error {
 	userJSON := utils.UserJSON{Username: username, Password: password}
 	req, err := BuildRequest("POST", client.AuthAddr, api.RegisterPath, userJSON)
 
-	resp, err := DoRequest(client.httpClient, req, nil)
+	resp, err := DoRequest(client.httpClient, req, nil, client.commsManager)
 	if err != nil {
 		return errors2.WrapRegisterError(err)
 	}
@@ -70,7 +73,7 @@ func (client *AuthClient) RefreshAuthToken() error {
 	req.Header.Set(tokens.AuthTokenHeaderName, client.AuthToken)
 	log.Info("Refreshing token....")
 
-	resp, err := DoRequest(client.httpClient, req, nil)
+	resp, err := DoRequest(client.httpClient, req, nil, client.commsManager)
 	if err != nil {
 		return errors2.WrapRefreshAuthTokenError(err)
 	}

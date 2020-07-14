@@ -10,6 +10,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
+	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
@@ -18,13 +19,14 @@ import (
 )
 
 type GymClient struct {
-	GymAddr    string
-	HttpClient *http.Client
+	GymAddr      string
+	HttpClient   *http.Client
+	commsManager comms_manager.CommunicationManager
 }
 
 var defaultGymURL = fmt.Sprintf("%s:%d", utils.Host, utils.GymPort)
 
-func NewGymClient(httpClient *http.Client) *GymClient {
+func NewGymClient(httpClient *http.Client, commsManager comms_manager.CommunicationManager) *GymClient {
 	gymURL, exists := os.LookupEnv(utils.GymEnvVar)
 
 	if !exists {
@@ -33,8 +35,9 @@ func NewGymClient(httpClient *http.Client) *GymClient {
 	}
 
 	return &GymClient{
-		GymAddr:    gymURL,
-		HttpClient: httpClient,
+		GymAddr:      gymURL,
+		HttpClient:   httpClient,
+		commsManager: commsManager,
 	}
 }
 
@@ -45,7 +48,7 @@ func (g *GymClient) GetGymInfo(serverHostname string, gymName string) (*utils.Gy
 	}
 
 	gym := &utils.Gym{}
-	_, err = DoRequest(g.HttpClient, req, gym)
+	_, err = DoRequest(g.HttpClient, req, gym, g.commsManager)
 	return gym, errors.WrapGetGymInfoError(err)
 }
 
@@ -56,7 +59,7 @@ func (g *GymClient) CreateGym(toCreate utils.Gym) (*utils.Gym, error) {
 	}
 
 	createdGym := &utils.Gym{}
-	_, err = DoRequest(g.HttpClient, req, createdGym)
+	_, err = DoRequest(g.HttpClient, req, createdGym, g.commsManager)
 	return createdGym, errors.WrapCreateGymError(err)
 }
 
@@ -66,7 +69,7 @@ func (g *GymClient) CreateRaid(serverHostname string, gymName string) error {
 		return errors.WrapCreateRaidError(err)
 	}
 
-	_, err = DoRequest(g.HttpClient, req, nil)
+	_, err = DoRequest(g.HttpClient, req, nil, g.commsManager)
 	log.Info("Finish createRaid")
 
 	return errors.WrapCreateRaidError(err)
@@ -100,7 +103,7 @@ func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsTo
 	SetDefaultPingHandler(c, outChannel)
 
 	go ReadMessagesFromConnToChan(c, inChannel, finished)
-	go WriteMessagesFromChanToConn(c, outChannel, finished)
+	go WriteMessagesFromChanToConn(c, g.commsManager, outChannel, finished)
 
 	return c, &battles.BattleChannels{OutChannel: outChannel, InChannel: inChannel, FinishChannel: finished}, nil
 }

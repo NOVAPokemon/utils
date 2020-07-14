@@ -10,6 +10,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
+	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	notificationMessages "github.com/NOVAPokemon/utils/websockets/notifications"
@@ -22,6 +23,7 @@ type NotificationClient struct {
 	httpClient           *http.Client
 	NotificationsChannel chan utils.Notification
 	readChannel          chan string
+	wsWriter             *comms_manager.CommunicationManager
 }
 
 const (
@@ -36,7 +38,8 @@ var (
 	numberMeasuresNotificationMsgs       = 0
 )
 
-func NewNotificationClient(notificationsChannel chan utils.Notification) *NotificationClient {
+func NewNotificationClient(notificationsChannel chan utils.Notification,
+	wsWriter *comms_manager.CommunicationManager) *NotificationClient {
 	notificationsURL, exists := os.LookupEnv(utils.NotificationsEnvVar)
 
 	if !exists {
@@ -49,6 +52,7 @@ func NewNotificationClient(notificationsChannel chan utils.Notification) *Notifi
 		httpClient:           &http.Client{},
 		NotificationsChannel: notificationsChannel,
 		readChannel:          make(chan string),
+		wsWriter:             wsWriter,
 	}
 }
 
@@ -78,8 +82,7 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 	}
 
 	conn.SetPingHandler(func(string) error {
-		// log.Warn("Received ping from notifications, sending pong")
-		return conn.WriteMessage(websocket.PongMessage, nil)
+		return client.wsWriter.WriteMessageToConn(conn, websocket.PongMessage, nil)
 	})
 
 	go ReadMessagesFromConnToChan(conn, client.readChannel, receiveFinish)

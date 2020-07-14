@@ -59,24 +59,10 @@ func StartServer(serviceName, host string, port int, routes Routes) {
 	log.Fatal(http.ListenAndServe(addr, r))
 }
 
-func CheckLogFlag(serviceName string) {
-	logToStdout := GetLogFlag(serviceName)
-
-	if !logToStdout {
+func CheckLogFlag(logToStdOut *bool, serviceName string) {
+	if !*logToStdOut {
 		SetLogFile(serviceName)
 	}
-}
-
-func GetLogFlag(serviceName string) bool {
-	flag.Usage = func() {
-		fmt.Println("Usage:")
-		fmt.Printf("%s -l \n", serviceName)
-	}
-	var logToStdout bool
-	flag.BoolVar(&logToStdout, "l", false, "log to stdout")
-	flag.Parse()
-
-	return logToStdout
 }
 
 func SetLogFile(serviceName string) {
@@ -87,4 +73,48 @@ func SetLogFile(serviceName string) {
 	}
 
 	log.SetOutput(logFile)
+}
+
+func CheckDelayedFlag(delayedComms *string, serviceName string) {
+	if delayedComms != "" {
+
+	}
+}
+
+func GetDelayedConfig(serviceName string) {
+
+}
+
+type Flags struct {
+	logToFile           *bool
+	delayedCommsManager *string
+}
+
+func setLogFlag() *bool {
+	var logToStdout bool
+	flag.BoolVar(&logToStdout, "l", false, "log to stdout")
+	return &logToStdout
+}
+
+func setDelayedFlag() *string {
+	var delayed string
+	flag.StringVar(&delayed, "d", "", "add delays to communication")
+	return &delayed
+}
+
+func ParseFlags(serviceName string) Flags {
+	flag.Usage = func() {
+		fmt.Println("Usage:")
+		fmt.Printf("%s -l -d delays_config_filename\n", serviceName)
+	}
+
+	logToStdOut := setLogFlag()
+	delayedComms := setDelayedFlag()
+
+	flag.Parse()
+
+	return Flags{
+		logToFile:           logToStdOut,
+		delayedCommsManager: delayedComms,
+	}
 }

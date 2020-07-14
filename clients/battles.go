@@ -12,6 +12,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
+	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
@@ -20,13 +21,14 @@ import (
 )
 
 type BattleLobbyClient struct {
-	BattlesAddr string
-	httpClient  http.Client
+	BattlesAddr  string
+	httpClient   http.Client
+	commsManager comms_manager.CommunicationManager
 }
 
 var defaultBattleURL = fmt.Sprintf("%s:%d", utils.Host, utils.BattlesPort)
 
-func NewBattlesClient() *BattleLobbyClient {
+func NewBattlesClient(commsManager comms_manager.CommunicationManager) *BattleLobbyClient {
 	battlesURL, exists := os.LookupEnv(utils.BattlesEnvVar)
 
 	if !exists {
@@ -35,8 +37,9 @@ func NewBattlesClient() *BattleLobbyClient {
 	}
 
 	return &BattleLobbyClient{
-		BattlesAddr: battlesURL,
-		httpClient:  http.Client{},
+		BattlesAddr:  battlesURL,
+		httpClient:   http.Client{},
+		commsManager: commsManager,
 	}
 }
 
@@ -85,7 +88,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	finished := make(chan struct{})
 
 	go ReadMessagesFromConnToChan(c, inChannel, finished)
-	go WriteMessagesFromChanToConn(c, outChannel, finished)
+	go WriteMessagesFromChanToConn(c, client.commsManager, outChannel, finished)
 
 	battleChannels := battles.BattleChannels{
 		OutChannel:      outChannel,
@@ -126,7 +129,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	finished := make(chan struct{})
 
 	go ReadMessagesFromConnToChan(c, inChannel, finished)
-	go WriteMessagesFromChanToConn(c, outChannel, finished)
+	go WriteMessagesFromChanToConn(c, client.commsManager, outChannel, finished)
 
 	battleChannels := battles.BattleChannels{
 		OutChannel:      outChannel,
@@ -166,7 +169,7 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	finished := make(chan struct{})
 
 	go ReadMessagesFromConnToChan(c, inChannel, finished)
-	go WriteMessagesFromChanToConn(c, outChannel, finished)
+	go WriteMessagesFromChanToConn(c, client.commsManager, outChannel, finished)
 
 	battleChannels := battles.BattleChannels{
 		OutChannel:      outChannel,
@@ -188,7 +191,7 @@ func (client *BattleLobbyClient) RejectChallenge(authToken, battleId, serverHost
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	_, err = DoRequest(&http.Client{}, req, nil)
+	_, err = DoRequest(&http.Client{}, req, nil, client.commsManager)
 	if err != nil {
 		if strings.Contains(err.Error(), fmt.Sprintf("got status code %d", http.StatusNotFound)) {
 			log.Warn(errors.WrapRejectBattleChallengeError(err))

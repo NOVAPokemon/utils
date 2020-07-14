@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -52,7 +53,8 @@ func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 	}
 }
 
-func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) (int, error) {
+func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn, commsManager comms_manager.CommunicationManager) (int,
+	error) {
 	lobby.changeLobbyLock.Lock()
 	defer lobby.changeLobbyLock.Unlock()
 
@@ -74,13 +76,13 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn) (int
 		lobby.TrainerOutChannels[trainerNum] = trainerChanOut
 		lobby.trainerConnections[trainerNum] = trainerConn
 		lobby.DoneListeningFromConn[trainerNum] = RecvFromConnToChann(lobby, trainerNum)
-		lobby.DoneWritingToConn[trainerNum] = SendFromChanToConn(lobby, trainerNum)
+		lobby.DoneWritingToConn[trainerNum] = sendFromChanToConn(lobby, trainerNum, commsManager)
 		lobby.TrainersJoined++
 		return lobby.TrainersJoined, nil
 	}
 }
 
-func SendFromChanToConn(lobby *Lobby, trainerNum int) (done chan interface{}) {
+func sendFromChanToConn(lobby *Lobby, trainerNum int, writer comms_manager.CommunicationManager) (done chan interface{}) {
 	done = make(chan interface{})
 	go func() {
 		pingTicker := time.NewTicker(PingPeriod)
@@ -95,7 +97,8 @@ func SendFromChanToConn(lobby *Lobby, trainerNum int) (done chan interface{}) {
 		for {
 			select {
 			case <-pingTicker.C:
-				if err := conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+				err := writer.WriteMessageToConn(conn, websocket.PingMessage, []byte{})
+				if err != nil {
 					log.Warn(err)
 					return
 				}
@@ -103,7 +106,7 @@ func SendFromChanToConn(lobby *Lobby, trainerNum int) (done chan interface{}) {
 				if !ok {
 					continue
 				}
-				err := conn.WriteMessage(msg.MsgType, msg.Data)
+				err := writer.WriteMessageToConn(conn, msg.MsgType, msg.Data)
 				if err != nil {
 					log.Warn(err)
 					return
