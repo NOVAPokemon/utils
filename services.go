@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/websockets"
+	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
@@ -55,7 +55,7 @@ const (
 	DefaultDelayConfigFilename  = "delays_config.json"
 )
 
-func StartServer(serviceName, host string, port int, routes Routes, manager CommunicationManager) {
+func StartServer(serviceName, host string, port int, routes Routes, manager websockets.CommunicationManager) {
 	rand.Seed(time.Now().UnixNano())
 	addr := fmt.Sprintf("%s:%d", host, port)
 
@@ -79,7 +79,7 @@ func SetLogFile(serviceName string) {
 }
 
 func CreateDelayedCommunicationManager(delayedCommsFilename string,
-	locationTag string) CommunicationManager {
+	locationTag string) websockets.CommunicationManager {
 	delaysConfig := getDelayedConfig(delayedCommsFilename)
 
 	return &comms_manager.DelayedCommsManager{
@@ -88,7 +88,7 @@ func CreateDelayedCommunicationManager(delayedCommsFilename string,
 	}
 }
 
-func CreateDefaultCommunicationManager() CommunicationManager {
+func CreateDefaultCommunicationManager() websockets.CommunicationManager {
 	return &comms_manager.DefaultCommsManager{}
 }
 

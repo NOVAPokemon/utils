@@ -20,12 +20,12 @@ import (
 type GymClient struct {
 	GymAddr      string
 	HttpClient   *http.Client
-	commsManager utils.CommunicationManager
+	commsManager websockets.CommunicationManager
 }
 
 var defaultGymURL = fmt.Sprintf("%s:%d", utils.Host, utils.GymPort)
 
-func NewGymClient(httpClient *http.Client, commsManager utils.CommunicationManager) *GymClient {
+func NewGymClient(httpClient *http.Client, commsManager websockets.CommunicationManager) *GymClient {
 	gymURL, exists := os.LookupEnv(utils.GymEnvVar)
 
 	if !exists {

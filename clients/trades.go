@@ -31,7 +31,7 @@ type TradeLobbyClient struct {
 	finishOnce   sync.Once
 	readChannel  chan string
 	writeChannel chan ws.Serializable
-	commsManager utils.CommunicationManager
+	commsManager ws.CommunicationManager
 }
 
 const (
@@ -52,7 +52,7 @@ var (
 	numberMeasuresTradeMsgs       = 0
 )
 
-func NewTradesClient(config utils.TradesClientConfig, manager utils.CommunicationManager) *TradeLobbyClient {
+func NewTradesClient(config utils.TradesClientConfig, manager ws.CommunicationManager) *TradeLobbyClient {
 	tradesURL, exists := os.LookupEnv(utils.TradesEnvVar)
 
 	if !exists {

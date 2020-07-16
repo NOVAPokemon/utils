@@ -22,7 +22,7 @@ type NotificationClient struct {
 	httpClient           *http.Client
 	NotificationsChannel chan utils.Notification
 	readChannel          chan string
-	commsManager         utils.CommunicationManager
+	commsManager         ws.CommunicationManager
 }
 
 const (
@@ -38,7 +38,7 @@ var (
 )
 
 func NewNotificationClient(notificationsChannel chan utils.Notification,
-	manager utils.CommunicationManager) *NotificationClient {
+	manager ws.CommunicationManager) *NotificationClient {
 	notificationsURL, exists := os.LookupEnv(utils.NotificationsEnvVar)
 
 	if !exists {

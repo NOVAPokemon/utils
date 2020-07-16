@@ -7,18 +7,17 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/NOVAPokemon/utils"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
-func Send(conn *websocket.Conn, msg ws.Serializable, writer utils.CommunicationManager) error {
+func Send(conn *websocket.Conn, msg ws.Serializable, writer ws.CommunicationManager) error {
 	return ws.WrapWritingMessageError(writer.WriteTextMessageToConn(conn, msg))
 }
 
 func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finished chan struct{},
-	commsManager utils.CommunicationManager) {
+	commsManager ws.CommunicationManager) {
 	defer func() {
 		log.Info("closing read routine")
 		close(msgChan)
@@ -40,7 +39,7 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finis
 	}
 }
 
-func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager utils.CommunicationManager,
+func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.CommunicationManager,
 	writeChannel <-chan ws.Serializable, finished chan struct{}) {
 	defer log.Info("closing write routine")
 
@@ -58,7 +57,7 @@ func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager utils.Co
 	}
 }
 
-func WriteNonTextMessagesFromChanToConn(conn *websocket.Conn, commsManager utils.CommunicationManager,
+func WriteNonTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.CommunicationManager,
 	writeChannel <-chan ws.GenericMsg, finished chan struct{}) {
 	defer log.Info("closing write routine")
 
@@ -77,7 +76,7 @@ func WriteNonTextMessagesFromChanToConn(conn *websocket.Conn, commsManager utils
 }
 
 func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan string, finished chan struct{},
-	manager utils.CommunicationManager) {
+	manager ws.CommunicationManager) {
 	for {
 		select {
 		case <-finished:
@@ -103,7 +102,7 @@ func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan ws.GenericMsg
 	})
 }
 
-func Read(conn *websocket.Conn, manager utils.CommunicationManager) (*ws.Message, error) {
+func Read(conn *websocket.Conn, manager ws.CommunicationManager) (*ws.Message, error) {
 	msgBytes, err := manager.ReadTextMessageFromConn(conn)
 	if err != nil {
 		return nil, ws.WrapReadingMessageError(err)
@@ -156,7 +155,7 @@ func BuildRequest(method, host, path string, body interface{}) (*http.Request, e
 
 // For now this function assumes that a response should always have 200 code
 func DoRequest(httpClient *http.Client, request *http.Request, responseBody interface{},
-	manager utils.CommunicationManager) (*http.Response, error) {
+	manager ws.CommunicationManager) (*http.Response, error) {
 	log.Infof("Doing request: %s %s", request.Method, request.URL.String())
 
 	if httpClient == nil {

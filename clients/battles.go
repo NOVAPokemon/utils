@@ -22,12 +22,12 @@ import (
 type BattleLobbyClient struct {
 	BattlesAddr  string
 	httpClient   http.Client
-	commsManager utils.CommunicationManager
+	commsManager websockets.CommunicationManager
 }
 
 var defaultBattleURL = fmt.Sprintf("%s:%d", utils.Host, utils.BattlesPort)
 
-func NewBattlesClient(commsManager utils.CommunicationManager) *BattleLobbyClient {
+func NewBattlesClient(commsManager websockets.CommunicationManager) *BattleLobbyClient {
 	battlesURL, exists := os.LookupEnv(utils.BattlesEnvVar)
 
 	if !exists {

@@ -10,18 +10,19 @@ import (
 	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/tokens"
+	"github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"
 )
 
 type StoreClient struct {
 	StoreAddr    string
 	httpClient   *http.Client
-	commsManager utils.CommunicationManager
+	commsManager websockets.CommunicationManager
 }
 
 var defaultStoreURL = fmt.Sprintf("%s:%d", utils.Host, utils.StorePort)
 
-func NewStoreClient(commsManager utils.CommunicationManager) *StoreClient {
+func NewStoreClient(commsManager websockets.CommunicationManager) *StoreClient {
 	storeURL, exists := os.LookupEnv(utils.StoreEnvVar)
 
 	if !exists {

@@ -56,7 +56,7 @@ type LocationClient struct {
 	finishConnChans  sync.Map
 	connections      sync.Map
 
-	commsManager utils.CommunicationManager
+	commsManager ws.CommunicationManager
 
 	updateConnectionsLock sync.Mutex
 }
@@ -71,7 +71,7 @@ var (
 	catchPokemonResponses chan *location.CatchWildPokemonMessageResponse
 )
 
-func NewLocationClient(config utils.LocationClientConfig, manager utils.CommunicationManager) *LocationClient {
+func NewLocationClient(config utils.LocationClientConfig, manager ws.CommunicationManager) *LocationClient {
 	locationURL, exists := os.LookupEnv(utils.LocationEnvVar)
 
 	if !exists {
