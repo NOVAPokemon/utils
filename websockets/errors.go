@@ -24,7 +24,6 @@ const (
 )
 
 var (
-	ErrorMessageNil           = errors.New("message is nil")
 	ErrorInvalidMessageFormat = errors.New("error invalid message format")
 	ErrorInvalidMessageType   = errors.New("error invalid message type")
 
