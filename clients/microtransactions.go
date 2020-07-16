@@ -8,6 +8,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
+	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,11 +17,12 @@ import (
 type MicrotransactionsClient struct {
 	MicrotransactionsAddr string
 	httpClient            *http.Client
+	commsManager          comms_manager.CommunicationManager
 }
 
 var defaultMicrotransactionsURL = fmt.Sprintf("%s:%d", utils.Host, utils.MicrotransactionsPort)
 
-func NewMicrotransactionsClient() *MicrotransactionsClient {
+func NewMicrotransactionsClient(manager comms_manager.CommunicationManager) *MicrotransactionsClient {
 	microtransactionsURL, exists := os.LookupEnv(utils.MicrotransactionsEnvVar)
 
 	if !exists {
@@ -31,6 +33,7 @@ func NewMicrotransactionsClient() *MicrotransactionsClient {
 	return &MicrotransactionsClient{
 		MicrotransactionsAddr: microtransactionsURL,
 		httpClient:            &http.Client{},
+		commsManager:          manager,
 	}
 }
 
@@ -42,7 +45,7 @@ func (c *MicrotransactionsClient) GetOffers() ([]utils.TransactionTemplate, erro
 
 	var transactionOffers []utils.TransactionTemplate
 
-	_, err = DoRequest(c.httpClient, req, &transactionOffers)
+	_, err = DoRequest(c.httpClient, req, &transactionOffers, c.commsManager)
 	return transactionOffers, errors.WrapGetOffersError(err)
 }
 
@@ -55,7 +58,7 @@ func (c *MicrotransactionsClient) GetTransactionRecords(authToken string) ([]uti
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var transactions []utils.TransactionRecord
-	_, err = DoRequest(c.httpClient, req, &transactions)
+	_, err = DoRequest(c.httpClient, req, &transactions, c.commsManager)
 
 	return transactions, errors.WrapGetTransactionsRecordsError(err)
 }
@@ -72,7 +75,7 @@ func (c *MicrotransactionsClient) PerformTransaction(offerName, authToken, stats
 	req.Header.Set(tokens.StatsTokenHeaderName, statsToken)
 
 	transactionId := &primitive.ObjectID{}
-	resp, err := DoRequest(c.httpClient, req, transactionId)
+	resp, err := DoRequest(c.httpClient, req, transactionId, c.commsManager)
 	if err != nil {
 		return nil, "", errors.WrapPerformTransactionError(err)
 	}
