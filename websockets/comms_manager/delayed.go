@@ -12,26 +12,23 @@ const (
 	locationTagKey = "Location_tag"
 )
 
-type DelaysMatrixType = map[string]map[string]int
+type DelaysMatrixType = map[string]map[string]float64
 
 type DelayedCommsManager struct {
 	LocationTag  string
 	DelaysMatrix *DelaysMatrixType
 }
 
-func (d *DelayedCommsManager) WriteTextMessageToConn(conn *websocket.Conn,
-	serializable websockets.Serializable) error {
+func (d *DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, msg websockets.GenericMsg) error {
+	if msg.MsgType == websocket.TextMessage {
+		taggedMsg := websockets.TaggedMessage{
+			LocationTag: d.LocationTag,
+			MsgBytes:    msg.Data,
+		}.SerializeToWSMessage().Serialize()
 
-	msg := websockets.TaggedMessage{
-		LocationTag: d.LocationTag,
-		MsgBytes:    []byte(serializable.SerializeToWSMessage().Serialize()),
-	}.SerializeToWSMessage().Serialize()
-
-	return conn.WriteMessage(websocket.TextMessage, []byte(msg))
-}
-
-func (d *DelayedCommsManager) WriteNonTextMessageToConn(conn *websocket.Conn, msgType int, data []byte) error {
-	return conn.WriteMessage(msgType, data)
+		return conn.WriteMessage(websocket.TextMessage, []byte(taggedMsg))
+	}
+	return conn.WriteMessage(msg.MsgType, msg.Data)
 }
 
 func (d *DelayedCommsManager) ReadTextMessageFromConn(conn *websocket.Conn) ([]byte, error) {

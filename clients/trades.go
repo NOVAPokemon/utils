@@ -30,7 +30,7 @@ type TradeLobbyClient struct {
 	finished     chan struct{}
 	finishOnce   sync.Once
 	readChannel  chan string
-	writeChannel chan ws.Serializable
+	writeChannel chan ws.GenericMsg
 	commsManager ws.CommunicationManager
 }
 
@@ -149,7 +149,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	client.finished = make(chan struct{})
 	client.finishOnce = sync.Once{}
 	client.readChannel = make(chan string)
-	client.writeChannel = make(chan ws.Serializable)
+	client.writeChannel = make(chan ws.GenericMsg)
 
 	go ReadMessagesFromConnToChan(conn, client.readChannel, client.finished, client.commsManager)
 
@@ -337,7 +337,11 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 
 		acceptMsg := trades.NewAcceptMessage()
 		acceptMsg.LogEmit(trades.Accept)
-		client.writeChannel <- acceptMsg
+		serializedMsg := ws.GenericMsg{
+			MsgType: websocket.TextMessage,
+			Data:    []byte(trades.NewAcceptMessage().SerializeToWSMessage().Serialize()),
+		}
+		client.writeChannel <- serializedMsg
 	}
 
 	for {
@@ -367,7 +371,11 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 			randomItemIdx := rand.Intn(len(availableItems))
 			tradeMsg := trades.NewTradeMessage(availableItems[randomItemIdx])
 			tradeMsg.LogEmit(trades.Trade)
-			client.writeChannel <- tradeMsg
+			serializedMsg := ws.GenericMsg{
+				MsgType: websocket.TextMessage,
+				Data:    []byte(tradeMsg.SerializeToWSMessage().Serialize()),
+			}
+			client.writeChannel <- serializedMsg
 
 			log.Infof("adding %s to trade", availableItems[randomItemIdx])
 
@@ -387,7 +395,11 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 			} else {
 				acceptMsg := trades.NewAcceptMessage()
 				acceptMsg.LogEmit(trades.Accept)
-				client.writeChannel <- acceptMsg
+				serializedAcceptMsg := ws.GenericMsg{
+					MsgType: websocket.TextMessage,
+					Data:    []byte(acceptMsg.SerializeToWSMessage().Serialize()),
+				}
+				client.writeChannel <- serializedAcceptMsg
 			}
 		}
 	}

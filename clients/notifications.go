@@ -81,7 +81,10 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 	}
 
 	conn.SetPingHandler(func(string) error {
-		return client.commsManager.WriteNonTextMessageToConn(conn, websocket.PongMessage, nil)
+		return client.commsManager.WriteGenericMessageToConn(conn, ws.GenericMsg{
+			MsgType: websocket.PongMessage,
+			Data:    nil,
+		})
 	})
 
 	go ReadMessagesFromConnToChan(conn, client.readChannel, receiveFinish, client.commsManager)

@@ -139,10 +139,9 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 }
 
 func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) error {
-	outChan := make(chan ws.Serializable, bufferSize)
-	pingChan := make(chan ws.GenericMsg, bufferSize)
+	outChan := make(chan ws.GenericMsg, bufferSize)
 
-	conn, err := c.connect(serverUrl, pingChan, authToken)
+	conn, err := c.connect(serverUrl, outChan, authToken)
 	if err != nil {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
@@ -154,11 +153,10 @@ func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) e
 	c.connections.Store(serverUrl, conn)
 	c.serversConnected = append(c.serversConnected, serverUrl)
 
-	SetDefaultPingHandler(conn, pingChan)
+	SetDefaultPingHandler(conn, outChan)
 
 	go ReadMessagesFromConnToChanWithoutClosing(conn, c.fromConnChan, finishChan, c.commsManager)
 	go WriteTextMessagesFromChanToConn(conn, c.commsManager, outChan, finishChan)
-	go WriteNonTextMessagesFromChanToConn(conn, c.commsManager, pingChan, finishChan)
 
 	log.Info("handling connection to ", serverUrl)
 

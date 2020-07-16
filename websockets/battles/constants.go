@@ -3,25 +3,24 @@ package battles
 import (
 	"time"
 
-	"github.com/NOVAPokemon/utils/websockets"
-
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
+	"github.com/NOVAPokemon/utils/websockets"
 )
 
 var (
 	StatusDefended = "You defended an attack"
 )
 
-type BattleChannels struct {
-	OutChannel      chan websockets.Serializable
-	InChannel       chan string
-	RejectedChannel chan struct{}
-	FinishChannel   chan struct{}
-}
-
 type (
+	BattleChannels struct {
+		OutChannel      chan websockets.GenericMsg
+		InChannel       chan string
+		RejectedChannel chan struct{}
+		FinishChannel   chan struct{}
+	}
+
 	TrainerBattleStatus struct {
 		Username        string
 		TrainerStats    *utils.TrainerStats

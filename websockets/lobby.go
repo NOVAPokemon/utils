@@ -29,8 +29,7 @@ type Lobby struct {
 	TrainerInChannels     []chan string
 	DoneListeningFromConn []chan interface{}
 	DoneWritingToConn     []chan interface{}
-	TrainerOutChannels    []chan Serializable
-	TrainerPingChannels   []chan GenericMsg
+	TrainerOutChannels    []chan GenericMsg
 	trainerConnections    []*websocket.Conn
 	finishOnce            sync.Once
 }
@@ -44,8 +43,7 @@ func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 		trainerConnections:    make([]*websocket.Conn, capacity),
 		TrainerInChannels:     make([]chan string, capacity),
 		DoneListeningFromConn: make([]chan interface{}, capacity),
-		TrainerOutChannels:    make([]chan Serializable, capacity),
-		TrainerPingChannels:   make([]chan GenericMsg, capacity),
+		TrainerOutChannels:    make([]chan GenericMsg, capacity),
 		DoneWritingToConn:     make([]chan interface{}, capacity),
 		Started:               make(chan struct{}),
 		Finished:              make(chan struct{}),
@@ -71,13 +69,11 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn,
 	default:
 		trainerNum := lobby.TrainersJoined
 		trainerChanIn := make(chan string)
-		trainerChanOut := make(chan Serializable)
-		trainerChanPing := make(chan GenericMsg)
+		trainerChanOut := make(chan GenericMsg)
 
 		lobby.TrainerUsernames[trainerNum] = username
 		lobby.TrainerInChannels[trainerNum] = trainerChanIn
 		lobby.TrainerOutChannels[trainerNum] = trainerChanOut
-		lobby.TrainerPingChannels[trainerNum] = trainerChanPing
 		lobby.trainerConnections[trainerNum] = trainerConn
 		lobby.DoneListeningFromConn[trainerNum] = RecvFromConnToChann(lobby, trainerNum, commsManager)
 		lobby.DoneWritingToConn[trainerNum] = sendFromChanToConn(lobby, trainerNum, commsManager)
@@ -92,7 +88,6 @@ func sendFromChanToConn(lobby *Lobby, trainerNum int, writer CommunicationManage
 		pingTicker := time.NewTicker(PingPeriod)
 		conn := lobby.trainerConnections[trainerNum]
 		outChannel := lobby.TrainerOutChannels[trainerNum]
-		pingChannel := lobby.TrainerPingChannels[trainerNum]
 		conn.SetPongHandler(func(_ string) error {
 			return conn.SetReadDeadline(time.Now().Add(PongWait))
 		})
@@ -102,7 +97,10 @@ func sendFromChanToConn(lobby *Lobby, trainerNum int, writer CommunicationManage
 		for {
 			select {
 			case <-pingTicker.C:
-				err := writer.WriteNonTextMessageToConn(conn, websocket.PingMessage, nil)
+				err := writer.WriteGenericMessageToConn(conn, GenericMsg{
+					MsgType: websocket.PingMessage,
+					Data:    nil,
+				})
 				if err != nil {
 					log.Warn(err)
 					return
@@ -111,16 +109,7 @@ func sendFromChanToConn(lobby *Lobby, trainerNum int, writer CommunicationManage
 				if !ok {
 					continue
 				}
-				err := writer.WriteTextMessageToConn(conn, msg)
-				if err != nil {
-					log.Warn(err)
-					return
-				}
-			case msg, ok := <-pingChannel:
-				if !ok {
-					continue
-				}
-				err := writer.WriteNonTextMessageToConn(conn, msg.MsgType, msg.Data)
+				err := writer.WriteGenericMessageToConn(conn, msg)
 				if err != nil {
 					log.Warn(err)
 					return

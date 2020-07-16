@@ -13,7 +13,10 @@ import (
 )
 
 func Send(conn *websocket.Conn, msg ws.Serializable, writer ws.CommunicationManager) error {
-	return ws.WrapWritingMessageError(writer.WriteTextMessageToConn(conn, msg))
+	return ws.WrapWritingMessageError(writer.WriteGenericMessageToConn(conn, ws.GenericMsg{
+		MsgType: websocket.TextMessage,
+		Data:    []byte(msg.SerializeToWSMessage().Serialize()),
+	}))
 }
 
 func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finished chan struct{},
@@ -40,24 +43,6 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finis
 }
 
 func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.CommunicationManager,
-	writeChannel <-chan ws.Serializable, finished chan struct{}) {
-	defer log.Info("closing write routine")
-
-	for {
-		select {
-		case <-finished:
-			return
-		case msg := <-writeChannel:
-			err := commsManager.WriteTextMessageToConn(conn, msg)
-			if err != nil {
-				log.Warn(err)
-				return
-			}
-		}
-	}
-}
-
-func WriteNonTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.CommunicationManager,
 	writeChannel <-chan ws.GenericMsg, finished chan struct{}) {
 	defer log.Info("closing write routine")
 
@@ -66,7 +51,8 @@ func WriteNonTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.Co
 		case <-finished:
 			return
 		case msg := <-writeChannel:
-			err := commsManager.WriteNonTextMessageToConn(conn, msg.MsgType, msg.Data)
+			err := commsManager.WriteGenericMessageToConn(conn, msg)
+
 			if err != nil {
 				log.Warn(err)
 				return

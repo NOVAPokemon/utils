@@ -9,13 +9,8 @@ import (
 
 type DefaultCommsManager struct{}
 
-func (d *DefaultCommsManager) WriteTextMessageToConn(conn *websocket.Conn,
-	serializable websockets.Serializable) error {
-	return conn.WriteMessage(websocket.TextMessage, []byte(serializable.SerializeToWSMessage().Serialize()))
-}
-
-func (d *DefaultCommsManager) WriteNonTextMessageToConn(conn *websocket.Conn, msgType int, data []byte) error {
-	return conn.WriteMessage(msgType, data)
+func (d *DefaultCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, msg websockets.GenericMsg) error {
+	return conn.WriteMessage(msg.MsgType, msg.Data)
 }
 
 func (d *DefaultCommsManager) ReadTextMessageFromConn(conn *websocket.Conn) ([]byte, error) {
