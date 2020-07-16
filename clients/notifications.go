@@ -23,7 +23,7 @@ type NotificationClient struct {
 	httpClient           *http.Client
 	NotificationsChannel chan utils.Notification
 	readChannel          chan string
-	wsWriter             *comms_manager.CommunicationManager
+	commsManager         comms_manager.CommunicationManager
 }
 
 const (
@@ -39,7 +39,7 @@ var (
 )
 
 func NewNotificationClient(notificationsChannel chan utils.Notification,
-	wsWriter *comms_manager.CommunicationManager) *NotificationClient {
+	manager comms_manager.CommunicationManager) *NotificationClient {
 	notificationsURL, exists := os.LookupEnv(utils.NotificationsEnvVar)
 
 	if !exists {
@@ -52,7 +52,7 @@ func NewNotificationClient(notificationsChannel chan utils.Notification,
 		httpClient:           &http.Client{},
 		NotificationsChannel: notificationsChannel,
 		readChannel:          make(chan string),
-		wsWriter:             wsWriter,
+		commsManager:         manager,
 	}
 }
 
@@ -82,10 +82,10 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 	}
 
 	conn.SetPingHandler(func(string) error {
-		return client.wsWriter.WriteMessageToConn(conn, websocket.PongMessage, nil)
+		return client.commsManager.WriteNonTextMessageToConn(conn, websocket.PongMessage, nil)
 	})
 
-	go ReadMessagesFromConnToChan(conn, client.readChannel, receiveFinish)
+	go ReadMessagesFromConnToChan(conn, client.readChannel, receiveFinish, client.commsManager)
 
 Loop:
 	for {
@@ -123,7 +123,7 @@ func (client *NotificationClient) StopListening(authToken string) error {
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	_, err = DoRequest(client.httpClient, req, nil)
+	_, err = DoRequest(client.httpClient, req, nil, client.commsManager)
 	return errors.WrapStopListeningError(err)
 }
 
@@ -136,7 +136,7 @@ func (client *NotificationClient) AddNotification(notificationMsg *notificationM
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	_, err = DoRequest(client.httpClient, req, nil)
+	_, err = DoRequest(client.httpClient, req, nil, client.commsManager)
 	return errors.WrapAddNotificationError(err)
 }
 
@@ -149,7 +149,7 @@ func (client *NotificationClient) GetOthersListening(authToken string) ([]string
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var usernames []string
-	_, err = DoRequest(client.httpClient, req, &usernames)
+	_, err = DoRequest(client.httpClient, req, &usernames, client.commsManager)
 	if err != nil {
 		return nil, errors.WrapGetOthersListeningError(err)
 	}
