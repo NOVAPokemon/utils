@@ -4,7 +4,7 @@ import "fmt"
 
 const (
 	// GetBattlesPath path to get all battles
-	GetBattlesPath        = "/battles"
+	GetBattlesPath = "/battles"
 
 	// ChallengeToBattlePath path to challenge user for a battle
 	ChallengeToBattlePath = "/battles/challenge/%s"
@@ -13,7 +13,7 @@ const (
 	AcceptChallengePath = "/battles/accept/%s"
 
 	// QueueForBattlePath path to queue for battle
-	QueueForBattlePath  = "/battles/queue"
+	QueueForBattlePath = "/battles/queue"
 
 	// RejectChallengePath path to reject battle challenge
 	RejectChallengePath = "/battles/reject/%s"
@@ -21,7 +21,7 @@ const (
 
 const (
 	// BattleIdPathVar battleId variable in path
-	BattleIdPathVar       = "battleId"
+	BattleIdPathVar = "battleId"
 
 	// TargetPlayerIdPathvar targetPlayer variable in path
 	TargetPlayerIdPathvar = "targetPlayer"

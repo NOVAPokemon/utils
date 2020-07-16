@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	errorAddGym         = "error adding gym"
-	errorGetGyms        = "error getting gyms"
+	errorAddGym  = "error adding gym"
+	errorGetGyms = "error getting gyms"
 
 	errorGetServerConfig       = "error getting server %s configs"
 	errorUpdateServerConfig    = "error updating server %s configs"

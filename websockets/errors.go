@@ -30,8 +30,8 @@ var (
 	ErrorTooEarlyToLogEmit    = errors.New("tried logging before setting emitted timestamp")
 	ErrorTooEarlyToLogReceive = errors.New("tried logging before setting received timestamp")
 
-	ErrorMsgWasNotEmmitted = errors.New("msg was not emmitted")
-	ErrorLobbyIsFull = errors.New("lobby is full")
+	ErrorMsgWasNotEmmitted    = errors.New("msg was not emmitted")
+	ErrorLobbyIsFull          = errors.New("lobby is full")
 	ErrorLobbyAlreadyFinished = errors.New("lobby finished")
 )
 

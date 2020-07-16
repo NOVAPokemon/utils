@@ -5,7 +5,7 @@ const (
 	RegisterPath = "/authentication/register"
 
 	// LoginPath path to login user
-	LoginPath    = "/authentication/login"
+	LoginPath = "/authentication/login"
 
 	// RefreshPath path to refresh user tokens
 	RefreshPath = "/authentication/refresh"

@@ -13,7 +13,7 @@ const earthRadius = 6378000
 func CalcLocationPlusDistanceTraveled(location s2.LatLng, dLat, dLong float64) s2.LatLng {
 	newLat := location.Lat.Degrees() + (dLat/earthRadius)*(180.0/math.Pi)
 	newLong := location.Lng.Degrees() +
-		(dLong/earthRadius)*(180.0/math.Pi)/math.Cos(location.Lat.Degrees() * math.Pi / 180)
+		(dLong/earthRadius)*(180.0/math.Pi)/math.Cos(location.Lat.Degrees()*math.Pi/180)
 
 	return s2.LatLngFromDegrees(newLat, newLong)
 }
