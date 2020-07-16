@@ -1,13 +1,16 @@
 package utils
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -47,22 +50,22 @@ const (
 )
 
 const (
-	logDir = "/logs"
+	logDir                      = "/logs"
+	DefaultLocationTagsFilename = "location_tags.json"
+	DefaultDelayConfigFilename  = "delays_config.json"
 )
 
-func StartServer(serviceName, host string, port int, routes Routes) {
+func StartServer(serviceName, host string, port int, routes Routes, manager comms_manager.CommunicationManager) {
 	rand.Seed(time.Now().UnixNano())
 	addr := fmt.Sprintf("%s:%d", host, port)
+
 	r := NewRouter(routes)
 	r.Handle("/metrics", promhttp.Handler())
+
+	r.Use(manager.HTTPRequestInterceptor)
+
 	log.Infof("Starting %s server in port %d...\n", serviceName, port)
 	log.Fatal(http.ListenAndServe(addr, r))
-}
-
-func CheckLogFlag(logToStdOut *bool, serviceName string) {
-	if !*logToStdOut {
-		SetLogFile(serviceName)
-	}
 }
 
 func SetLogFile(serviceName string) {
@@ -75,19 +78,38 @@ func SetLogFile(serviceName string) {
 	log.SetOutput(logFile)
 }
 
-func CheckDelayedFlag(delayedComms *string, serviceName string) {
-	if delayedComms != "" {
+func CreateDelayedCommunicationManager(delayedCommsFilename string,
+	locationTag string) comms_manager.CommunicationManager {
+	delaysConfig := getDelayedConfig(delayedCommsFilename)
 
+	return &comms_manager.DelayedCommsManager{
+		LocationTag:  locationTag,
+		DelaysMatrix: delaysConfig,
 	}
 }
 
-func GetDelayedConfig(serviceName string) {
+func CreateDefaultCommunicationManager() comms_manager.CommunicationManager {
+	return &comms_manager.DefaultCommsManager{}
+}
 
+func getDelayedConfig(delayedCommsFilename string) *comms_manager.DelaysMatrixType {
+	file, err := ioutil.ReadFile(delayedCommsFilename)
+	if err != nil {
+		panic(fmt.Sprintf("could not read %s: %s", delayedCommsFilename, err))
+	}
+
+	var delaysMatrix comms_manager.DelaysMatrixType
+	err = json.Unmarshal(file, &delaysMatrix)
+	if err != nil {
+		panic(err)
+	}
+
+	return &delaysMatrix
 }
 
 type Flags struct {
-	logToFile           *bool
-	delayedCommsManager *string
+	LogToStdout  *bool
+	DelayedComms *string
 }
 
 func setLogFlag() *bool {
@@ -96,7 +118,11 @@ func setLogFlag() *bool {
 	return &logToStdout
 }
 
-func setDelayedFlag() *string {
+func CheckDelayedFlag(delayedCommsFilename string) bool {
+	return delayedCommsFilename != ""
+}
+
+func SetDelayedFlag() *string {
 	var delayed string
 	flag.StringVar(&delayed, "d", "", "add delays to communication")
 	return &delayed
@@ -109,12 +135,31 @@ func ParseFlags(serviceName string) Flags {
 	}
 
 	logToStdOut := setLogFlag()
-	delayedComms := setDelayedFlag()
+	delayedComms := SetDelayedFlag()
 
 	flag.Parse()
 
 	return Flags{
-		logToFile:           logToStdOut,
-		delayedCommsManager: delayedComms,
+		LogToStdout:  logToStdOut,
+		DelayedComms: delayedComms,
+	}
+}
+
+func GetLocationTag(filename, serverName string) string {
+	file, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(fmt.Sprintf("error getting location tags while loading file %s", filename))
+	}
+
+	var locationTags map[string]string
+	err = json.Unmarshal(file, &locationTags)
+	if err != nil {
+		panic(err)
+	}
+
+	if locationTag, ok := locationTags[serverName]; !ok {
+		panic(fmt.Sprintf("could not find location tag for servername %s", serverName))
+	} else {
+		return locationTag
 	}
 }
