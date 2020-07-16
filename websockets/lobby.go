@@ -135,7 +135,7 @@ func sendFromChanToConn(lobby *Lobby, trainerNum int, writer CommunicationManage
 }
 
 func RecvFromConnToChann(lobby *Lobby, trainerNum int,
-	manager utils.CommunicationManager) (done chan interface{}) {
+	manager CommunicationManager) (done chan interface{}) {
 	done = make(chan interface{})
 	go func() {
 		conn := lobby.trainerConnections[trainerNum]
