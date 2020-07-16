@@ -13,6 +13,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
+	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/trades"
@@ -30,7 +31,8 @@ type TradeLobbyClient struct {
 	finished     chan struct{}
 	finishOnce   sync.Once
 	readChannel  chan string
-	writeChannel chan ws.GenericMsg
+	writeChannel chan ws.Serializable
+	commsManager comms_manager.CommunicationManager
 }
 
 const (
@@ -51,7 +53,7 @@ var (
 	numberMeasuresTradeMsgs       = 0
 )
 
-func NewTradesClient(config utils.TradesClientConfig) *TradeLobbyClient {
+func NewTradesClient(config utils.TradesClientConfig, manager comms_manager.CommunicationManager) *TradeLobbyClient {
 	tradesURL, exists := os.LookupEnv(utils.TradesEnvVar)
 
 	if !exists {
@@ -60,8 +62,9 @@ func NewTradesClient(config utils.TradesClientConfig) *TradeLobbyClient {
 	}
 
 	return &TradeLobbyClient{
-		TradesAddr: tradesURL,
-		config:     config,
+		TradesAddr:   tradesURL,
+		config:       config,
+		commsManager: manager,
 	}
 }
 
@@ -72,7 +75,7 @@ func (client *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
 	}
 
 	var tradesArray []utils.Lobby
-	_, err = DoRequest(&http.Client{}, req, &tradesArray)
+	_, err = DoRequest(&http.Client{}, req, &tradesArray, client.commsManager)
 	if err != nil {
 		return nil, errors.WrapGetTradeLobbiesError(err)
 	}
@@ -92,7 +95,7 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	req.Header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
 	var resp api.CreateLobbyResponse
-	_, err = DoRequest(&http.Client{}, req, &resp)
+	_, err = DoRequest(&http.Client{}, req, &resp, client.commsManager)
 	if err != nil {
 		return nil, nil, errors.WrapCreateTradeLobbyError(err)
 	}
@@ -147,9 +150,9 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	client.finished = make(chan struct{})
 	client.finishOnce = sync.Once{}
 	client.readChannel = make(chan string)
-	client.writeChannel = make(chan ws.GenericMsg)
+	client.writeChannel = make(chan ws.Serializable)
 
-	go ReadMessagesFromConnToChan(conn, client.readChannel, client.finished)
+	go ReadMessagesFromConnToChan(conn, client.readChannel, client.finished, client.commsManager)
 
 	itemIds := make([]string, len(items.Items))
 	i := 0
@@ -177,7 +180,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 		break
 	}
 
-	go WriteMessagesFromChanToConn(conn, client.writeChannel, client.finished)
+	go WriteTextMessagesFromChanToConn(conn, client.commsManager, client.writeChannel, client.finished)
 
 	itemTokens, err := client.autoTrader(itemIds)
 
@@ -230,7 +233,7 @@ func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverH
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 	req.Header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
-	_, err = DoRequest(&http.Client{}, req, nil)
+	_, err = DoRequest(&http.Client{}, req, nil, client.commsManager)
 	if err != nil {
 		if strings.Contains(err.Error(), fmt.Sprintf("got status code %d", http.StatusNotFound)) {
 			log.Warn(errors.WrapRejectTradeLobbyError(err))
@@ -335,10 +338,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 
 		acceptMsg := trades.NewAcceptMessage()
 		acceptMsg.LogEmit(trades.Accept)
-		msg := acceptMsg.SerializeToWSMessage()
-		s := (*msg).Serialize()
-
-		client.writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
+		client.writeChannel <- acceptMsg
 	}
 
 	for {
@@ -368,10 +368,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 			randomItemIdx := rand.Intn(len(availableItems))
 			tradeMsg := trades.NewTradeMessage(availableItems[randomItemIdx])
 			tradeMsg.LogEmit(trades.Trade)
-			msg := tradeMsg.SerializeToWSMessage()
-			s := (*msg).Serialize()
-
-			client.writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
+			client.writeChannel <- tradeMsg
 
 			log.Infof("adding %s to trade", availableItems[randomItemIdx])
 
@@ -391,10 +388,7 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 			} else {
 				acceptMsg := trades.NewAcceptMessage()
 				acceptMsg.LogEmit(trades.Accept)
-				msg := acceptMsg.SerializeToWSMessage()
-				s := (*msg).Serialize()
-
-				client.writeChannel <- ws.GenericMsg{MsgType: websocket.TextMessage, Data: []byte(s)}
+				client.writeChannel <- acceptMsg
 			}
 		}
 	}
