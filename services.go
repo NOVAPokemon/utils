@@ -109,7 +109,7 @@ func getDelayedConfig(delayedCommsFilename string) *comms_manager.DelaysMatrixTy
 
 type Flags struct {
 	LogToStdout  *bool
-	DelayedComms *string
+	DelayedComms *bool
 }
 
 func setLogFlag() *bool {
@@ -118,13 +118,9 @@ func setLogFlag() *bool {
 	return &logToStdout
 }
 
-func CheckDelayedFlag(delayedCommsFilename string) bool {
-	return delayedCommsFilename != ""
-}
-
-func SetDelayedFlag() *string {
-	var delayed string
-	flag.StringVar(&delayed, "d", "", "add delays to communication")
+func SetDelayedFlag() *bool {
+	var delayed bool
+	flag.BoolVar(&delayed, "d", false, "add delays to communication")
 	return &delayed
 }
 
