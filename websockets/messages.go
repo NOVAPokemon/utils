@@ -103,12 +103,42 @@ func MakeTimestamp() int64 {
 
 // Basic messages
 const (
+	Tagged   = "TAGGED"
 	Start    = "START"
 	Reject   = "REJECT"
 	SetToken = "SETTOKEN"
 	Finish   = "FINISH"
 	Error    = "ERROR"
 )
+
+type TaggedMessage struct {
+	LocationTag string
+	MsgBytes    []byte
+}
+
+func (tMsg TaggedMessage) SerializeToWSMessage() *Message {
+	msgJson, err := json.Marshal(tMsg)
+	if err != nil {
+		log.Error(WrapSerializeToWSMessageError(err, Tagged))
+		return nil
+	}
+
+	return &Message{
+		MsgType: Tagged,
+		MsgArgs: []string{string(msgJson)},
+	}
+}
+
+func DeserializeTaggedMessage(msgBytes []byte) (*TaggedMessage, error) {
+	var taggedMessage TaggedMessage
+
+	err := json.Unmarshal(msgBytes, &taggedMessage)
+	if err != nil {
+		return nil, wrapDeserializeMsgError(err, Tagged)
+	}
+
+	return &taggedMessage, nil
+}
 
 type StartMessage struct {
 	MessageWithId
