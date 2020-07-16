@@ -12,7 +12,7 @@ var (
 	ErrorParsing = ws.ErrorMessage{
 		Info:  "error parsing message",
 		Fatal: false,
-	}.SerializeToWSMessage()
+	}
 )
 
 // Message Types
