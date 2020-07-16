@@ -13,7 +13,6 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
-	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/trades"
@@ -32,7 +31,7 @@ type TradeLobbyClient struct {
 	finishOnce   sync.Once
 	readChannel  chan string
 	writeChannel chan ws.Serializable
-	commsManager comms_manager.CommunicationManager
+	commsManager utils.CommunicationManager
 }
 
 const (
@@ -53,7 +52,7 @@ var (
 	numberMeasuresTradeMsgs       = 0
 )
 
-func NewTradesClient(config utils.TradesClientConfig, manager comms_manager.CommunicationManager) *TradeLobbyClient {
+func NewTradesClient(config utils.TradesClientConfig, manager utils.CommunicationManager) *TradeLobbyClient {
 	tradesURL, exists := os.LookupEnv(utils.TradesEnvVar)
 
 	if !exists {

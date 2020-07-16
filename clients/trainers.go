@@ -10,7 +10,6 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
-	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/NOVAPokemon/utils/tokens"
@@ -31,14 +30,14 @@ type TrainersClient struct {
 	PokemonClaims      map[string]tokens.PokemonToken
 	ClaimsLock         sync.RWMutex
 
-	commsManager comms_manager.CommunicationManager
+	commsManager utils.CommunicationManager
 }
 
 var defaultTrainersURL = fmt.Sprintf("%s:%d", utils.Host, utils.TrainersPort)
 
 // TRAINER
 
-func NewTrainersClient(client *http.Client, manager comms_manager.CommunicationManager) *TrainersClient {
+func NewTrainersClient(client *http.Client, manager utils.CommunicationManager) *TrainersClient {
 	trainersURL, exists := os.LookupEnv(utils.TrainersEnvVar)
 
 	if !exists {

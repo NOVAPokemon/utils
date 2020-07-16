@@ -8,7 +8,6 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
-	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/tokens"
 	log "github.com/sirupsen/logrus"
@@ -17,12 +16,12 @@ import (
 type StoreClient struct {
 	StoreAddr    string
 	httpClient   *http.Client
-	commsManager comms_manager.CommunicationManager
+	commsManager utils.CommunicationManager
 }
 
 var defaultStoreURL = fmt.Sprintf("%s:%d", utils.Host, utils.StorePort)
 
-func NewStoreClient(commsManager comms_manager.CommunicationManager) *StoreClient {
+func NewStoreClient(commsManager utils.CommunicationManager) *StoreClient {
 	storeURL, exists := os.LookupEnv(utils.StoreEnvVar)
 
 	if !exists {

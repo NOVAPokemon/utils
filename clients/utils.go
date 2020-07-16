@@ -7,18 +7,18 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/NOVAPokemon/utils/comms_manager"
+	"github.com/NOVAPokemon/utils"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
-func Send(conn *websocket.Conn, msg ws.Serializable, writer comms_manager.CommunicationManager) error {
+func Send(conn *websocket.Conn, msg ws.Serializable, writer utils.CommunicationManager) error {
 	return ws.WrapWritingMessageError(writer.WriteTextMessageToConn(conn, msg))
 }
 
 func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finished chan struct{},
-	commsManager comms_manager.CommunicationManager) {
+	commsManager utils.CommunicationManager) {
 	defer func() {
 		log.Info("closing read routine")
 		close(msgChan)
@@ -40,7 +40,7 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finis
 	}
 }
 
-func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager comms_manager.CommunicationManager,
+func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager utils.CommunicationManager,
 	writeChannel <-chan ws.Serializable, finished chan struct{}) {
 	defer log.Info("closing write routine")
 
@@ -58,7 +58,7 @@ func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager comms_ma
 	}
 }
 
-func WriteNonTextMessagesFromChanToConn(conn *websocket.Conn, commsManager comms_manager.CommunicationManager,
+func WriteNonTextMessagesFromChanToConn(conn *websocket.Conn, commsManager utils.CommunicationManager,
 	writeChannel <-chan ws.GenericMsg, finished chan struct{}) {
 	defer log.Info("closing write routine")
 
@@ -77,7 +77,7 @@ func WriteNonTextMessagesFromChanToConn(conn *websocket.Conn, commsManager comms
 }
 
 func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan string, finished chan struct{},
-	manager comms_manager.CommunicationManager) {
+	manager utils.CommunicationManager) {
 	for {
 		select {
 		case <-finished:
@@ -103,7 +103,7 @@ func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan ws.GenericMsg
 	})
 }
 
-func Read(conn *websocket.Conn, manager comms_manager.CommunicationManager) (*ws.Message, error) {
+func Read(conn *websocket.Conn, manager utils.CommunicationManager) (*ws.Message, error) {
 	msgBytes, err := manager.ReadTextMessageFromConn(conn)
 	if err != nil {
 		return nil, ws.WrapReadingMessageError(err)
@@ -156,7 +156,7 @@ func BuildRequest(method, host, path string, body interface{}) (*http.Request, e
 
 // For now this function assumes that a response should always have 200 code
 func DoRequest(httpClient *http.Client, request *http.Request, responseBody interface{},
-	manager comms_manager.CommunicationManager) (*http.Response, error) {
+	manager utils.CommunicationManager) (*http.Response, error) {
 	log.Infof("Doing request: %s %s", request.Method, request.URL.String())
 
 	if httpClient == nil {

@@ -9,7 +9,6 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	errors2 "github.com/NOVAPokemon/utils/clients/errors"
-	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,12 +17,12 @@ type AuthClient struct {
 	AuthToken    string
 	AuthAddr     string
 	httpClient   *http.Client
-	commsManager comms_manager.CommunicationManager
+	commsManager utils.CommunicationManager
 }
 
 var defaultAuthURL = fmt.Sprintf("%s:%d", utils.Host, utils.AuthenticationPort)
 
-func NewAuthClient(commsManager comms_manager.CommunicationManager) *AuthClient {
+func NewAuthClient(commsManager utils.CommunicationManager) *AuthClient {
 	authURL, exists := os.LookupEnv(utils.AuthenticationEnvVar)
 
 	if !exists {

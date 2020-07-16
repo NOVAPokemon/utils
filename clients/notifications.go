@@ -10,7 +10,6 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
-	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	notificationMessages "github.com/NOVAPokemon/utils/websockets/notifications"
@@ -23,7 +22,7 @@ type NotificationClient struct {
 	httpClient           *http.Client
 	NotificationsChannel chan utils.Notification
 	readChannel          chan string
-	commsManager         comms_manager.CommunicationManager
+	commsManager         utils.CommunicationManager
 }
 
 const (
@@ -39,7 +38,7 @@ var (
 )
 
 func NewNotificationClient(notificationsChannel chan utils.Notification,
-	manager comms_manager.CommunicationManager) *NotificationClient {
+	manager utils.CommunicationManager) *NotificationClient {
 	notificationsURL, exists := os.LookupEnv(utils.NotificationsEnvVar)
 
 	if !exists {

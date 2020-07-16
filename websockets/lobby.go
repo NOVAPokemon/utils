@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/NOVAPokemon/utils/comms_manager"
+	"github.com/NOVAPokemon/utils"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -56,7 +56,7 @@ func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 }
 
 func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn,
-	commsManager comms_manager.CommunicationManager) (int, error) {
+	commsManager utils.CommunicationManager) (int, error) {
 	lobby.changeLobbyLock.Lock()
 	defer lobby.changeLobbyLock.Unlock()
 
@@ -87,7 +87,7 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn,
 	}
 }
 
-func sendFromChanToConn(lobby *Lobby, trainerNum int, writer comms_manager.CommunicationManager) (done chan interface{}) {
+func sendFromChanToConn(lobby *Lobby, trainerNum int, writer utils.CommunicationManager) (done chan interface{}) {
 	done = make(chan interface{})
 	go func() {
 		pingTicker := time.NewTicker(PingPeriod)
@@ -136,7 +136,7 @@ func sendFromChanToConn(lobby *Lobby, trainerNum int, writer comms_manager.Commu
 }
 
 func RecvFromConnToChann(lobby *Lobby, trainerNum int,
-	manager comms_manager.CommunicationManager) (done chan interface{}) {
+	manager utils.CommunicationManager) (done chan interface{}) {
 	done = make(chan interface{})
 	go func() {
 		conn := lobby.trainerConnections[trainerNum]

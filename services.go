@@ -55,7 +55,7 @@ const (
 	DefaultDelayConfigFilename  = "delays_config.json"
 )
 
-func StartServer(serviceName, host string, port int, routes Routes, manager comms_manager.CommunicationManager) {
+func StartServer(serviceName, host string, port int, routes Routes, manager CommunicationManager) {
 	rand.Seed(time.Now().UnixNano())
 	addr := fmt.Sprintf("%s:%d", host, port)
 
@@ -79,7 +79,7 @@ func SetLogFile(serviceName string) {
 }
 
 func CreateDelayedCommunicationManager(delayedCommsFilename string,
-	locationTag string) comms_manager.CommunicationManager {
+	locationTag string) CommunicationManager {
 	delaysConfig := getDelayedConfig(delayedCommsFilename)
 
 	return &comms_manager.DelayedCommsManager{
@@ -88,7 +88,7 @@ func CreateDelayedCommunicationManager(delayedCommsFilename string,
 	}
 }
 
-func CreateDefaultCommunicationManager() comms_manager.CommunicationManager {
+func CreateDefaultCommunicationManager() CommunicationManager {
 	return &comms_manager.DefaultCommsManager{}
 }
 

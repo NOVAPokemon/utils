@@ -10,7 +10,6 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
-	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
@@ -21,12 +20,12 @@ import (
 type GymClient struct {
 	GymAddr      string
 	HttpClient   *http.Client
-	commsManager comms_manager.CommunicationManager
+	commsManager utils.CommunicationManager
 }
 
 var defaultGymURL = fmt.Sprintf("%s:%d", utils.Host, utils.GymPort)
 
-func NewGymClient(httpClient *http.Client, commsManager comms_manager.CommunicationManager) *GymClient {
+func NewGymClient(httpClient *http.Client, commsManager utils.CommunicationManager) *GymClient {
 	gymURL, exists := os.LookupEnv(utils.GymEnvVar)
 
 	if !exists {

@@ -12,7 +12,6 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
-	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
@@ -23,12 +22,12 @@ import (
 type BattleLobbyClient struct {
 	BattlesAddr  string
 	httpClient   http.Client
-	commsManager comms_manager.CommunicationManager
+	commsManager utils.CommunicationManager
 }
 
 var defaultBattleURL = fmt.Sprintf("%s:%d", utils.Host, utils.BattlesPort)
 
-func NewBattlesClient(commsManager comms_manager.CommunicationManager) *BattleLobbyClient {
+func NewBattlesClient(commsManager utils.CommunicationManager) *BattleLobbyClient {
 	battlesURL, exists := os.LookupEnv(utils.BattlesEnvVar)
 
 	if !exists {

@@ -1,4 +1,4 @@
-package comms_manager
+package utils
 
 import (
 	"net/http"

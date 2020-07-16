@@ -14,7 +14,6 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	errors2 "github.com/NOVAPokemon/utils/clients/errors"
-	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/gps"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/tokens"
@@ -57,7 +56,7 @@ type LocationClient struct {
 	finishConnChans  sync.Map
 	connections      sync.Map
 
-	commsManager comms_manager.CommunicationManager
+	commsManager utils.CommunicationManager
 
 	updateConnectionsLock sync.Mutex
 }
@@ -72,7 +71,7 @@ var (
 	catchPokemonResponses chan *location.CatchWildPokemonMessageResponse
 )
 
-func NewLocationClient(config utils.LocationClientConfig, manager comms_manager.CommunicationManager) *LocationClient {
+func NewLocationClient(config utils.LocationClientConfig, manager utils.CommunicationManager) *LocationClient {
 	locationURL, exists := os.LookupEnv(utils.LocationEnvVar)
 
 	if !exists {
