@@ -14,6 +14,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	errors2 "github.com/NOVAPokemon/utils/clients/errors"
+	"github.com/NOVAPokemon/utils/comms_manager"
 	"github.com/NOVAPokemon/utils/gps"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/tokens"
@@ -56,6 +57,8 @@ type LocationClient struct {
 	finishConnChans  sync.Map
 	connections      sync.Map
 
+	commsManager comms_manager.CommunicationManager
+
 	updateConnectionsLock sync.Mutex
 }
 
@@ -69,7 +72,7 @@ var (
 	catchPokemonResponses chan *location.CatchWildPokemonMessageResponse
 )
 
-func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
+func NewLocationClient(config utils.LocationClientConfig, manager comms_manager.CommunicationManager) *LocationClient {
 	locationURL, exists := os.LookupEnv(utils.LocationEnvVar)
 
 	if !exists {
@@ -104,6 +107,7 @@ func NewLocationClient(config utils.LocationClientConfig) *LocationClient {
 		finishConnChans:     sync.Map{},
 		connections:         sync.Map{},
 		toConnsChans:        sync.Map{},
+		commsManager:        manager,
 	}
 }
 
@@ -136,8 +140,10 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 }
 
 func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) error {
-	outChan := make(chan ws.GenericMsg, bufferSize)
-	conn, err := c.connect(serverUrl, outChan, authToken)
+	outChan := make(chan ws.Serializable, bufferSize)
+	pingChan := make(chan ws.GenericMsg, bufferSize)
+
+	conn, err := c.connect(serverUrl, pingChan, authToken)
 	if err != nil {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
@@ -149,10 +155,11 @@ func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) e
 	c.connections.Store(serverUrl, conn)
 	c.serversConnected = append(c.serversConnected, serverUrl)
 
-	SetDefaultPingHandler(conn, outChan)
+	SetDefaultPingHandler(conn, pingChan)
 
-	go ReadMessagesFromConnToChanWithoutClosing(conn, c.fromConnChan, finishChan)
-	go WriteMessagesFromChanToConn(conn, outChan, finishChan)
+	go ReadMessagesFromConnToChanWithoutClosing(conn, c.fromConnChan, finishChan, c.commsManager)
+	go WriteTextMessagesFromChanToConn(conn, c.commsManager, outChan, finishChan)
+	go WriteNonTextMessagesFromChanToConn(conn, c.commsManager, pingChan, finishChan)
 
 	log.Info("handling connection to ", serverUrl)
 
@@ -438,7 +445,7 @@ func (c *LocationClient) AddGymLocation(gym utils.GymWithServer) error {
 	if err != nil {
 		return errors2.WrapAddGymLocationError(err)
 	}
-	_, err = DoRequest(c.HttpClient, req, nil)
+	_, err = DoRequest(c.HttpClient, req, nil, c.commsManager)
 	return errors2.WrapAddGymLocationError(err)
 }
 
@@ -451,7 +458,7 @@ func (c *LocationClient) GetServerForLocation(loc s2.LatLng) (*string, error) {
 	log.Info(u.String())
 	req, err := http.NewRequest("GET", u.String(), nil)
 	var servername string
-	_, err = DoRequest(http.DefaultClient, req, &servername)
+	_, err = DoRequest(http.DefaultClient, req, &servername, c.commsManager)
 	if err != nil {
 		return nil, errors2.WrapGetServerForLocationError(err)
 	}
