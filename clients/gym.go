@@ -96,14 +96,16 @@ func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsTo
 		return nil, nil, err
 	}
 
-	outChannel := make(chan websockets.GenericMsg)
+	outChannel := make(chan websockets.Serializable)
+	pingChannel := make(chan websockets.GenericMsg)
 	inChannel := make(chan string)
 	finished := make(chan struct{})
 
-	SetDefaultPingHandler(c, outChannel)
+	SetDefaultPingHandler(c, pingChannel)
 
-	go ReadMessagesFromConnToChan(c, inChannel, finished)
-	go WriteMessagesFromChanToConn(c, g.commsManager, outChannel, finished)
+	go ReadMessagesFromConnToChan(c, inChannel, finished, g.commsManager)
+	go WriteTextMessagesFromChanToConn(c, g.commsManager, outChannel, finished)
+	go WriteNonTextMessagesFromChanToConn(c, g.commsManager, pingChannel, finished)
 
 	return c, &battles.BattleChannels{OutChannel: outChannel, InChannel: inChannel, FinishChannel: finished}, nil
 }
