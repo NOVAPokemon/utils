@@ -82,13 +82,13 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 		return nil, nil, err
 	}
 
-	outChannel := make(chan websockets.GenericMsg)
+	outChannel := make(chan websockets.Serializable)
 	inChannel := make(chan string)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
-	go ReadMessagesFromConnToChan(c, inChannel, finished)
-	go WriteMessagesFromChanToConn(c, client.commsManager, outChannel, finished)
+	go ReadMessagesFromConnToChan(c, inChannel, finished, client.commsManager)
+	go WriteTextMessagesFromChanToConn(c, client.commsManager, outChannel, finished)
 
 	battleChannels := battles.BattleChannels{
 		OutChannel:      outChannel,
@@ -124,12 +124,12 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	}
 
 	inChannel := make(chan string)
-	outChannel := make(chan websockets.GenericMsg)
+	outChannel := make(chan websockets.Serializable)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
-	go ReadMessagesFromConnToChan(c, inChannel, finished)
-	go WriteMessagesFromChanToConn(c, client.commsManager, outChannel, finished)
+	go ReadMessagesFromConnToChan(c, inChannel, finished, client.commsManager)
+	go WriteTextMessagesFromChanToConn(c, client.commsManager, outChannel, finished)
 
 	battleChannels := battles.BattleChannels{
 		OutChannel:      outChannel,
@@ -163,13 +163,13 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 		return nil, nil, err
 	}
 
-	outChannel := make(chan websockets.GenericMsg)
+	outChannel := make(chan websockets.Serializable)
 	inChannel := make(chan string)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
-	go ReadMessagesFromConnToChan(c, inChannel, finished)
-	go WriteMessagesFromChanToConn(c, client.commsManager, outChannel, finished)
+	go ReadMessagesFromConnToChan(c, inChannel, finished, client.commsManager)
+	go WriteTextMessagesFromChanToConn(c, client.commsManager, outChannel, finished)
 
 	battleChannels := battles.BattleChannels{
 		OutChannel:      outChannel,
