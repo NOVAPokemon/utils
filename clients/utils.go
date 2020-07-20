@@ -30,7 +30,7 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finis
 		case <-finished:
 			return
 		default:
-			message, err := commsManager.ReadTextMessageFromConn(conn)
+			_, message, err := commsManager.ReadMessageFromConn(conn)
 			if err != nil {
 				log.Warn(err)
 				return
@@ -68,7 +68,7 @@ func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan
 		case <-finished:
 			return
 		default:
-			message, err := manager.ReadTextMessageFromConn(conn)
+			_, message, err := manager.ReadMessageFromConn(conn)
 			if err != nil {
 				log.Warn(err)
 				return
@@ -89,7 +89,7 @@ func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan ws.GenericMsg
 }
 
 func Read(conn *websocket.Conn, manager ws.CommunicationManager) (*ws.Message, error) {
-	msgBytes, err := manager.ReadTextMessageFromConn(conn)
+	msgType, msgBytes, err := manager.ReadMessageFromConn(conn)
 	if err != nil {
 		return nil, ws.WrapReadingMessageError(err)
 	}
@@ -98,6 +98,7 @@ func Read(conn *websocket.Conn, manager ws.CommunicationManager) (*ws.Message, e
 	log.Debugf("Received %s from the websocket", msgStr)
 	msgParsed, err := ws.ParseMessage(msgStr)
 	if err != nil {
+		log.Error("msgType=", msgType, " msg=", msgBytes)
 		return nil, ws.WrapReadingMessageError(err)
 	}
 	return msgParsed, nil

@@ -31,10 +31,10 @@ func (d *DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, ms
 	return conn.WriteMessage(msg.MsgType, msg.Data)
 }
 
-func (d *DelayedCommsManager) ReadTextMessageFromConn(conn *websocket.Conn) ([]byte, error) {
-	_, p, err := conn.ReadMessage()
+func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (int, []byte, error) {
+	msgType, p, err := conn.ReadMessage()
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
 	taggedMessage, err := websockets.DeserializeTaggedMessage(p)
@@ -46,7 +46,7 @@ func (d *DelayedCommsManager) ReadTextMessageFromConn(conn *websocket.Conn) ([]b
 	sleepDuration := time.Duration((*d.DelaysMatrix)[requesterLocationTag][d.LocationTag]) * time.Millisecond
 	time.Sleep(sleepDuration)
 
-	return taggedMessage.MsgBytes, nil
+	return msgType, taggedMessage.MsgBytes, nil
 }
 
 func (d *DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {

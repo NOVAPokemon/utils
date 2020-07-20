@@ -131,7 +131,7 @@ func RecvFromConnToChann(lobby *Lobby, trainerNum int,
 		inChannel := lobby.TrainerInChannels[trainerNum]
 		defer close(done)
 		for {
-			message, err := manager.ReadTextMessageFromConn(conn)
+			_, message, err := manager.ReadMessageFromConn(conn)
 			if err != nil {
 				log.Info("Receive routine finishing because connection was closed")
 				return

@@ -13,9 +13,8 @@ func (d *DefaultCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, ms
 	return conn.WriteMessage(msg.MsgType, msg.Data)
 }
 
-func (d *DefaultCommsManager) ReadTextMessageFromConn(conn *websocket.Conn) ([]byte, error) {
-	_, p, err := conn.ReadMessage()
-	return p, err
+func (d *DefaultCommsManager) ReadMessageFromConn(conn *websocket.Conn) (int, []byte, error) {
+	return conn.ReadMessage()
 }
 
 func (d *DefaultCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
