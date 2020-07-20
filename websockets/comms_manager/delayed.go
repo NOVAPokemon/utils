@@ -38,8 +38,13 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (int, []
 		return 0, nil, err
 	}
 
+	msg, err := websockets.ParseMessage(string(p))
+	if err != nil {
+		panic(err)
+	}
+
 	log.Infof("deserializing %s", string(p))
-	taggedMessage, err := websockets.DeserializeTaggedMessage(p)
+	taggedMessage, err := websockets.DeserializeTaggedMessage([]byte(msg.MsgArgs[0]))
 	if err != nil {
 		panic(err)
 	}
