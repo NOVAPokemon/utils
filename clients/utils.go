@@ -50,7 +50,11 @@ func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.Commu
 		select {
 		case <-finished:
 			return
-		case msg := <-writeChannel:
+		case msg, ok := <-writeChannel:
+			if !ok {
+				return
+			}
+
 			err := commsManager.WriteGenericMessageToConn(conn, msg)
 
 			if err != nil {
