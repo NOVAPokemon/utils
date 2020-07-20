@@ -92,20 +92,13 @@ func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan ws.GenericMsg
 	})
 }
 
-func Read(conn *websocket.Conn, manager ws.CommunicationManager) (*ws.Message, error) {
-	msgType, msgBytes, err := manager.ReadMessageFromConn(conn)
+func Read(conn *websocket.Conn, manager ws.CommunicationManager) ([]byte, error) {
+	_, message, err := manager.ReadMessageFromConn(conn)
 	if err != nil {
 		return nil, ws.WrapReadingMessageError(err)
 	}
 
-	msgStr := string(msgBytes)
-	log.Debugf("Received %s from the websocket", msgStr)
-	msgParsed, err := ws.ParseMessage(msgStr)
-	if err != nil {
-		log.Error("msgType=", msgType, " msg=", msgBytes)
-		return nil, ws.WrapReadingMessageError(err)
-	}
-	return msgParsed, nil
+	return message, nil
 }
 
 // REQUESTS

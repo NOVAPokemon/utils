@@ -364,7 +364,7 @@ func (c *LocationClient) updateLocation() {
 		log.Info("updating location to ", serverUrl)
 
 		toConnChan := toConnChanValue.(toConnChansValueType)
-		log.Infof("sending location msg %+v", genericLocationMsg)
+		log.Infof("sending location msg %s", string(genericLocationMsg.Data))
 		toConnChan <- genericLocationMsg
 
 		connValue, ok := c.connections.Load(serverUrl)
