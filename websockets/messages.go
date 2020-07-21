@@ -113,6 +113,7 @@ const (
 
 type TaggedMessage struct {
 	LocationTag string
+	IsClient    bool
 	MsgBytes    []byte
 }
 
