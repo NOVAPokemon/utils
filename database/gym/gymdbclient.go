@@ -38,35 +38,6 @@ func init() {
 	dbClient = databaseUtils.DBClient{Client: client, Ctx: &ctx, Collection: gymsLocationCollection}
 }
 
-func GetAllGyms() ([]utils.GymWithServer, error) {
-	var (
-		ctx        = dbClient.Ctx
-		collection = dbClient.Collection
-	)
-
-	cursor, err := collection.Find(*ctx, bson.M{})
-
-	if err != nil {
-		return nil, wrapGetConfig(err)
-	}
-
-	var gymsForServer []utils.GymWithServer
-	defer func() {
-		if err := cursor.Close(*ctx); err != nil {
-			log.Error(err)
-		}
-	}()
-	if err := cursor.All(*ctx, &gymsForServer); err != nil {
-		return nil, wrapGetConfig(err)
-
-	}
-	if len(gymsForServer) == 0 {
-		return nil, wrapGetConfig(errors.New("no gyms found"))
-
-	}
-	return gymsForServer, nil
-}
-
 func GetGymsForServer(serverName string) ([]utils.GymWithServer, error) {
 	var (
 		ctx        = dbClient.Ctx
