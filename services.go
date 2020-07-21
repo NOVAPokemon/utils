@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/NOVAPokemon/utils/clients"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -53,6 +54,7 @@ const (
 	logDir                      = "/logs"
 	DefaultLocationTagsFilename = "location_tags.json"
 	DefaultDelayConfigFilename  = "delays_config.json"
+	DefaultClientDelaysFilename = "client_delays.json"
 )
 
 func StartServer(serviceName, host string, port int, routes Routes, manager websockets.CommunicationManager) {
@@ -78,15 +80,22 @@ func SetLogFile(serviceName string) {
 	log.SetOutput(logFile)
 }
 
-func CreateDelayedCommunicationManager(delayedCommsFilename string,
+func CreateDefaultDelayedManager(locationTag string, isClient bool) websockets.CommunicationManager {
+	return createDelayedCommunicationManager(DefaultDelayConfigFilename, DefaultClientDelaysFilename, locationTag,
+		isClient)
+}
+
+func createDelayedCommunicationManager(delayedCommsFilename, clientDelaysFilename string,
 	locationTag string, isClient bool) websockets.CommunicationManager {
 	log.Info("using DELAYED communication manager")
 
 	delaysConfig := getDelayedConfig(delayedCommsFilename)
+	clientDelays := getClientDelays(clientDelaysFilename)
 
 	return &comms_manager.DelayedCommsManager{
 		LocationTag:  locationTag,
 		DelaysMatrix: delaysConfig,
+		ClientDelays: clientDelays,
 		CommsManagerWithClient: comms_manager.CommsManagerWithClient{
 			IsClient: isClient,
 		},
@@ -111,6 +120,21 @@ func getDelayedConfig(delayedCommsFilename string) *comms_manager.DelaysMatrixTy
 	}
 
 	return &delaysMatrix
+}
+
+func getClientDelays(clientDelaysFilename string) *clients.ClientDelays {
+	file, err := ioutil.ReadFile(clientDelaysFilename)
+	if err != nil {
+		panic(fmt.Sprintf("could not read %s: %s", clientDelaysFilename, err))
+	}
+
+	var clientDelays clients.ClientDelays
+	err = json.Unmarshal(file, &clientDelays)
+	if err != nil {
+		panic(err)
+	}
+
+	return &clientDelays
 }
 
 type Flags struct {
