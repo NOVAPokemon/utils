@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -19,10 +18,15 @@ const (
 
 type DelaysMatrixType = map[string]map[string]float64
 
+type ClientDelays struct {
+	Default     float64            `json:"default"`
+	Multipliers map[string]float64 `json:"multipliers"`
+}
+
 type DelayedCommsManager struct {
 	LocationTag  string
 	DelaysMatrix *DelaysMatrixType
-	ClientDelays *utils.ClientDelays
+	ClientDelays *ClientDelays
 	CommsManagerWithClient
 }
 

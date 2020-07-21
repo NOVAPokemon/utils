@@ -121,13 +121,13 @@ func getDelayedConfig(delayedCommsFilename string) *comms_manager.DelaysMatrixTy
 	return &delaysMatrix
 }
 
-func getClientDelays(clientDelaysFilename string) *ClientDelays {
+func getClientDelays(clientDelaysFilename string) *comms_manager.ClientDelays {
 	file, err := ioutil.ReadFile(clientDelaysFilename)
 	if err != nil {
 		panic(fmt.Sprintf("could not read %s: %s", clientDelaysFilename, err))
 	}
 
-	var clientDelays ClientDelays
+	var clientDelays comms_manager.ClientDelays
 	err = json.Unmarshal(file, &clientDelays)
 	if err != nil {
 		panic(err)
