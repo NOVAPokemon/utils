@@ -7,6 +7,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type CommsManagerWithClient struct {
+	IsClient bool
+}
+
 type DefaultCommsManager struct{}
 
 func (d *DefaultCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, msg websockets.GenericMsg) error {
