@@ -55,6 +55,11 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (int, []
 	}
 
 	log.Infof("deserializing %s", string(p))
+
+	if msg.MsgType != websockets.Tagged {
+		return msgType, p, err
+	}
+
 	taggedMessage, err := websockets.DeserializeTaggedMessage([]byte(msg.MsgArgs[0]))
 	if err != nil {
 		panic(err)
@@ -81,7 +86,8 @@ func (d *DelayedCommsManager) HTTPRequestInterceptor(next http.Handler) http.Han
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requesterLocationTag := r.Header.Get(locationTagKey)
 		if requesterLocationTag == "" {
-			panic("requester location tag was empty")
+			next.ServeHTTP(w, r)
+			return
 		}
 		requesterIsClient, err := strconv.ParseBool(r.Header.Get(tagIsClientKey))
 		if err != nil {
