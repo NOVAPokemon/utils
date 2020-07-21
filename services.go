@@ -10,7 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/NOVAPokemon/utils/clients"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -122,13 +121,13 @@ func getDelayedConfig(delayedCommsFilename string) *comms_manager.DelaysMatrixTy
 	return &delaysMatrix
 }
 
-func getClientDelays(clientDelaysFilename string) *clients.ClientDelays {
+func getClientDelays(clientDelaysFilename string) *ClientDelays {
 	file, err := ioutil.ReadFile(clientDelaysFilename)
 	if err != nil {
 		panic(fmt.Sprintf("could not read %s: %s", clientDelaysFilename, err))
 	}
 
-	var clientDelays clients.ClientDelays
+	var clientDelays ClientDelays
 	err = json.Unmarshal(file, &clientDelays)
 	if err != nil {
 		panic(err)
