@@ -8,7 +8,6 @@ import (
 
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -54,8 +53,6 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (int, []
 		panic(err)
 	}
 
-	log.Infof("deserializing %s", string(p))
-
 	if msg.MsgType != websockets.Tagged {
 		return msgType, p, err
 	}
@@ -64,8 +61,6 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (int, []
 	if err != nil {
 		panic(err)
 	}
-
-	log.Infof("result %+v", taggedMessage)
 
 	requesterLocationTag := taggedMessage.LocationTag
 	delay := d.getDelay(requesterLocationTag, taggedMessage.IsClient)
