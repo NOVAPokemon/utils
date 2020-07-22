@@ -1,8 +1,10 @@
 package clients
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"math/rand"
 	"net/http"
@@ -62,7 +64,8 @@ type LocationClient struct {
 }
 
 const (
-	bufferSize = 10
+	bufferSize                   = 10
+	defaultRegionsToAreaFilename = "regions_to_area.json"
 )
 
 var (
@@ -71,7 +74,8 @@ var (
 	catchPokemonResponses chan *location.CatchWildPokemonMessageResponse
 )
 
-func NewLocationClient(config utils.LocationClientConfig, manager ws.CommunicationManager) *LocationClient {
+func NewLocationClient(config utils.LocationClientConfig,
+	region string, manager ws.CommunicationManager) *LocationClient {
 	locationURL, exists := os.LookupEnv(utils.LocationEnvVar)
 
 	if !exists {
@@ -86,9 +90,9 @@ func NewLocationClient(config utils.LocationClientConfig, manager ws.Communicati
 		log.Info("starting location enabled")
 		startingLocation = s2.LatLngFromDegrees(config.Parameters.StartingLocationLat,
 			config.Parameters.StartingLocationLon)
-	} else {
+	} else if region != "" {
 		log.Info("starting location disabled")
-		startingLocation = getRandomLatLng()
+		startingLocation = getRandomLatLng(region)
 	}
 
 	return &LocationClient{
@@ -537,13 +541,36 @@ func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error
 	return pokeballs[rand.Intn(len(pokeballs))], nil
 }
 
-func getRandomLatLng() s2.LatLng {
-	randomLat := rand.Float64()*180 - 90
-	randomLng := rand.Float64()*360 - 180
+func getRandomLatLng(region string) s2.LatLng {
+	regionsToArea := loadRegionsToArea(defaultRegionsToAreaFilename)
+	areas := regionsToArea.Regions[region]
+	randArea := areas[rand.Intn(len(areas))]
+
+	deltaLat := math.Abs(randArea.TopLeft.Lat - randArea.BotRight.Lat)
+	deltaLng := math.Abs(randArea.TopLeft.Lng - randArea.BotRight.Lng)
+	randomLat := randArea.TopLeft.Lat - rand.Float64()*(deltaLat)
+	randomLng := randArea.BotRight.Lng - rand.Float64()*(deltaLng)
 
 	randomLatLng := s2.LatLngFromDegrees(randomLat, randomLng)
 
 	return randomLatLng
+}
+
+func loadRegionsToArea(regionsFilename string) *utils.RegionsToAreas {
+	fileData, err := ioutil.ReadFile(regionsFilename)
+	if err != nil {
+		log.Error("error loading regions filename")
+		panic(err)
+	}
+
+	var regionsToArea utils.RegionsToAreas
+	err = json.Unmarshal(fileData, &regionsToArea)
+	if err != nil {
+		panic(err)
+		return nil
+	}
+
+	return &regionsToArea
 }
 
 func (c *LocationClient) GetWildPokemons() []utils.WildPokemonWithServer {

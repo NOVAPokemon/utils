@@ -14,9 +14,9 @@ type TradesClientConfig struct {
 }
 
 type LocationClientConfig struct {
-	UpdateInterval int                `json:"update_interval"` // in seconds
-	Timeout        int                `json:"timeout"`
-	Parameters     LocationParameters `json:"params"`
+	UpdateInterval  int                `json:"update_interval"` // in seconds
+	Timeout         int                `json:"timeout"`
+	Parameters      LocationParameters `json:"params"`
 }
 
 type BattleClientConfig struct {
@@ -39,3 +39,19 @@ type LocationParameters struct {
 	MovingProbability    float64 `json:"moving_probability"`
 	MaxDistanceFromStart int     `json:"max_distance_from_start"`
 }
+
+type Coord struct {
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
+}
+
+type Area struct {
+	TopLeft  Coord `json:"topLeft"`
+	BotRight Coord `json:"botRight"`
+}
+
+type RegionsToAreas struct {
+	Regions map[string][]Area
+}
+
+type LocationWeights = map[string]int
