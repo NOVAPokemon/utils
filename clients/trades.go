@@ -382,12 +382,6 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 			availableItems[randomItemIdx] = availableItems[len(availableItems)-1]
 			availableItems = availableItems[:len(availableItems)-1]
 
-			if client.config.MaxSleepTime > 0 {
-				randSleep := rand.Intn(client.config.MaxSleepTime)
-				time.Sleep(time.Duration(randSleep) * time.Millisecond)
-				log.Infof("sleeping %d milliseconds", randSleep)
-			}
-
 			itemsTraded++
 
 			if itemsTraded < numItemsToAdd {
@@ -407,8 +401,8 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 
 func (client *TradeLobbyClient) setTimerRandSleepTime(timer *time.Timer) *time.Timer {
 	var randSleep int
-	if client.config.MaxSleepTime > 0 {
-		randSleep = rand.Intn(client.config.MaxSleepTime)
+	if client.config.ThinkTime > 0 {
+		randSleep = rand.Intn(client.config.ThinkTime)
 	}
 
 	log.Infof("sleeping %d milliseconds", randSleep)

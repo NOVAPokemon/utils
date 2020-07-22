@@ -9,14 +9,14 @@ type ClientConfig struct {
 
 type TradesClientConfig struct {
 	MaxItemsToTrade   int     `json:"max_items"`
-	MaxSleepTime      int     `json:"max_sleep_time"` // in seconds
+	ThinkTime         int     `json:"think_time"`
 	AcceptProbability float64 `json:"accept_probability"`
 }
 
 type LocationClientConfig struct {
-	UpdateInterval  int                `json:"update_interval"` // in seconds
-	Timeout         int                `json:"timeout"`
-	Parameters      LocationParameters `json:"params"`
+	UpdateInterval int                `json:"update_interval"` // in seconds
+	Timeout        int                `json:"timeout"`
+	Parameters     LocationParameters `json:"params"`
 }
 
 type BattleClientConfig struct {
