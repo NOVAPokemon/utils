@@ -148,8 +148,8 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	client.rejected = make(chan struct{})
 	client.finished = make(chan struct{})
 	client.finishOnce = sync.Once{}
-	client.readChannel = make(chan string)
-	client.writeChannel = make(chan ws.GenericMsg)
+	client.readChannel = make(chan string, 10)
+	client.writeChannel = make(chan ws.GenericMsg, 10)
 
 	go ReadMessagesFromConnToChan(conn, client.readChannel, client.finished, client.commsManager)
 
@@ -327,22 +327,59 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 
 	log.Infof("will trade %d items", numItemsToAdd)
 
-	itemsTraded := 0
+	go func() {
+		itemsTraded := 0
 
-	timer := client.setTimerRandSleepTime(nil)
-	if numItemsToAdd == 0 {
-		if !timer.Stop() {
-			<-timer.C
+		timer := client.setTimerRandSleepTime(nil)
+		if numItemsToAdd == 0 {
+			if !timer.Stop() {
+				<-timer.C
+			}
+
+			acceptMsg := trades.NewAcceptMessage()
+			acceptMsg.LogEmit(trades.Accept)
+			serializedMsg := ws.GenericMsg{
+				MsgType: websocket.TextMessage,
+				Data:    []byte(trades.NewAcceptMessage().SerializeToWSMessage().Serialize()),
+			}
+			client.writeChannel <- serializedMsg
 		}
 
-		acceptMsg := trades.NewAcceptMessage()
-		acceptMsg.LogEmit(trades.Accept)
-		serializedMsg := ws.GenericMsg{
-			MsgType: websocket.TextMessage,
-			Data:    []byte(trades.NewAcceptMessage().SerializeToWSMessage().Serialize()),
+		for {
+			select {
+			case <-client.finished:
+				return
+			case <-timer.C:
+				randomItemIdx := rand.Intn(len(availableItems))
+				tradeMsg := trades.NewTradeMessage(availableItems[randomItemIdx])
+				tradeMsg.LogEmit(trades.Trade)
+				serializedMsg := ws.GenericMsg{
+					MsgType: websocket.TextMessage,
+					Data:    []byte(tradeMsg.SerializeToWSMessage().Serialize()),
+				}
+				client.writeChannel <- serializedMsg
+
+				log.Infof("adding %s to trade", availableItems[randomItemIdx])
+
+				availableItems[randomItemIdx] = availableItems[len(availableItems)-1]
+				availableItems = availableItems[:len(availableItems)-1]
+
+				itemsTraded++
+
+				if itemsTraded < numItemsToAdd {
+					client.setTimerRandSleepTime(timer)
+				} else {
+					acceptMsg := trades.NewAcceptMessage()
+					acceptMsg.LogEmit(trades.Accept)
+					serializedAcceptMsg := ws.GenericMsg{
+						MsgType: websocket.TextMessage,
+						Data:    []byte(acceptMsg.SerializeToWSMessage().Serialize()),
+					}
+					client.writeChannel <- serializedAcceptMsg
+				}
+			}
 		}
-		client.writeChannel <- serializedMsg
-	}
+	}()
 
 	for {
 		select {
@@ -366,34 +403,6 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 			if itemTokens != nil {
 				log.Info("updated tokens")
 				finalItemTokens = itemTokens
-			}
-		case <-timer.C:
-			randomItemIdx := rand.Intn(len(availableItems))
-			tradeMsg := trades.NewTradeMessage(availableItems[randomItemIdx])
-			tradeMsg.LogEmit(trades.Trade)
-			serializedMsg := ws.GenericMsg{
-				MsgType: websocket.TextMessage,
-				Data:    []byte(tradeMsg.SerializeToWSMessage().Serialize()),
-			}
-			client.writeChannel <- serializedMsg
-
-			log.Infof("adding %s to trade", availableItems[randomItemIdx])
-
-			availableItems[randomItemIdx] = availableItems[len(availableItems)-1]
-			availableItems = availableItems[:len(availableItems)-1]
-
-			itemsTraded++
-
-			if itemsTraded < numItemsToAdd {
-				client.setTimerRandSleepTime(timer)
-			} else {
-				acceptMsg := trades.NewAcceptMessage()
-				acceptMsg.LogEmit(trades.Accept)
-				serializedAcceptMsg := ws.GenericMsg{
-					MsgType: websocket.TextMessage,
-					Data:    []byte(acceptMsg.SerializeToWSMessage().Serialize()),
-				}
-				client.writeChannel <- serializedAcceptMsg
 			}
 		}
 	}
