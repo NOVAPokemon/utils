@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func HandleUseItem(info ws.TrackedInfo, useItemMsg *UseItemMessage, issuer *TrainerBattleStatus,
+func HandleUseItem(info *ws.TrackedInfo, useItemMsg *UseItemMessage, issuer *TrainerBattleStatus,
 	issuerChan chan *ws.WebsocketMsg,
 	cooldownDuration time.Duration) bool {
 
@@ -53,14 +53,14 @@ func HandleUseItem(info ws.TrackedInfo, useItemMsg *UseItemMessage, issuer *Trai
 
 	issuer.UsedItems[item.Id.Hex()] = item
 	delete(issuer.TrainerItems, item.Id.Hex())
-	UpdateTrainerPokemon(&info, *issuer.SelectedPokemon, issuerChan, true)
+	UpdateTrainerPokemon(info, *issuer.SelectedPokemon, issuerChan, true)
 	issuerChan <- RemoveItemMessage{
 		ItemId: itemId,
-	}.ConvertToWSMessage(info)
+	}.ConvertToWSMessage(*info)
 	return true
 }
 
-func HandleSelectPokemon(info ws.TrackedInfo, selectedPokemonMsg *SelectPokemonMessage, issuer *TrainerBattleStatus,
+func HandleSelectPokemon(info *ws.TrackedInfo, selectedPokemonMsg *SelectPokemonMessage, issuer *TrainerBattleStatus,
 	issuerChan chan *ws.WebsocketMsg) bool {
 
 	selectedPokemonId := selectedPokemonMsg.PokemonId
@@ -87,11 +87,11 @@ func HandleSelectPokemon(info ws.TrackedInfo, selectedPokemonMsg *SelectPokemonM
 
 	issuer.SelectedPokemon = pokemon
 	log.Info("Changed selected pokemon")
-	UpdateTrainerPokemon(&info, *issuer.SelectedPokemon, issuerChan, true)
+	UpdateTrainerPokemon(info, *issuer.SelectedPokemon, issuerChan, true)
 	return true
 }
 
-func HandleDefendMove(info ws.TrackedInfo, issuer *TrainerBattleStatus, issuerChan chan *ws.WebsocketMsg,
+func HandleDefendMove(info *ws.TrackedInfo, issuer *TrainerBattleStatus, issuerChan chan *ws.WebsocketMsg,
 	cooldownDuration time.Duration) {
 	// if the pokemon is dead, player must select a new pokemon
 	if issuer.SelectedPokemon.HP == 0 {
@@ -117,10 +117,10 @@ func HandleDefendMove(info ws.TrackedInfo, issuer *TrainerBattleStatus, issuerCh
 	issuer.Defending = true
 	issuerChan <- StatusMessage{
 		Message: StatusDefending,
-	}.ConvertToWSMessage(info)
+	}.ConvertToWSMessage(*info)
 }
 
-func HandleAttackMove(info ws.TrackedInfo, issuer *TrainerBattleStatus, issuerChan chan *ws.WebsocketMsg,
+func HandleAttackMove(info *ws.TrackedInfo, issuer *TrainerBattleStatus, issuerChan chan *ws.WebsocketMsg,
 	defending bool, otherPokemon *pokemons.Pokemon, cooldownDuration time.Duration) bool {
 	if issuer.SelectedPokemon.HP == 0 {
 		issuerChan <- ws.ErrorMessage{

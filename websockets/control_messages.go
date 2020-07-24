@@ -23,7 +23,7 @@ type WebsocketMsgContent struct {
 	AppMsgType   string
 	Data         interface{}
 	MsgKind      MsgKinds
-	RequestTrack TrackedInfo
+	RequestTrack *TrackedInfo
 }
 
 func (msg WebsocketMsgContent) Serialize() []byte {
@@ -58,7 +58,7 @@ func NewReplyMsg(appMsgType string, content interface{}, requestTrack TrackedInf
 			AppMsgType:   appMsgType,
 			Data:         content,
 			MsgKind:      Reply,
-			RequestTrack: requestTrack,
+			RequestTrack: &requestTrack,
 		},
 	}
 }
@@ -132,8 +132,8 @@ type TrackedInfo struct {
 	Id           primitive.ObjectID
 }
 
-func NewTrackedInfo(id primitive.ObjectID) TrackedInfo {
-	return TrackedInfo{
+func NewTrackedInfo(id primitive.ObjectID) *TrackedInfo {
+	return &TrackedInfo{
 		TimeEmitted:  invalidTime,
 		TimeReceived: invalidTime,
 		Id:           id,

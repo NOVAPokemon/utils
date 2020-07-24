@@ -46,8 +46,8 @@ type ErrorMessage struct {
 	Fatal bool
 }
 
-func (e ErrorMessage) ConvertToWSMessageWithInfo(info TrackedInfo) *WebsocketMsg {
-	return NewReplyMsg(Error, e, info)
+func (e ErrorMessage) ConvertToWSMessageWithInfo(info *TrackedInfo) *WebsocketMsg {
+	return NewReplyMsg(Error, e, *info)
 }
 
 func (e ErrorMessage) ConvertToWSMessage() *WebsocketMsg {
