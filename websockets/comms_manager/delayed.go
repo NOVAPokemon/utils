@@ -39,7 +39,8 @@ func (d *DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *w
 		panic(fmt.Sprintf("delayed comms manager does not know how to treat %s", msg.Content.AppMsgType))
 	}
 
-	log.Info(msg)
+	log.Infof("Msg: %+v", msg)
+	log.Infof("Content: %+v", msg.Content)
 	taggedMessage := msg.Content.Data.(websockets.TaggedMessage)
 
 	requesterLocationTag := taggedMessage.LocationTag
@@ -62,6 +63,8 @@ func (d *DelayedCommsManager) ApplySendLogic(msg *websockets.WebsocketMsg) *webs
 		}
 
 		wrapperGenericMsg := taggedMsg.ConvertToWSMessage()
+
+		log.Info("Will send: %+v", wrapperGenericMsg)
 
 		return wrapperGenericMsg
 	}
