@@ -8,6 +8,7 @@ import (
 
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -38,6 +39,7 @@ func (d *DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *w
 		panic(fmt.Sprintf("delayed comms manager does not know how to treat %s", msg.Content.AppMsgType))
 	}
 
+	log.Info(msg)
 	taggedMessage := msg.Content.Data.(websockets.TaggedMessage)
 
 	requesterLocationTag := taggedMessage.LocationTag

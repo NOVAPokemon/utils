@@ -24,7 +24,7 @@ type UpdateLocationMessage struct {
 }
 
 func (ulMsg UpdateLocationMessage) ConvertToWSMessage() *ws.WebsocketMsg {
-	return ws.NewRequestMsg(UpdateLocation,ulMsg)
+	return ws.NewRequestMsg(UpdateLocation, ulMsg)
 }
 
 type UpdateLocationWithTilesMessage struct {
