@@ -1,14 +1,11 @@
 package location
 
 import (
-	"encoding/json"
-
 	"github.com/golang/geo/s2"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/items"
 	ws "github.com/NOVAPokemon/utils/websockets"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -22,223 +19,70 @@ const (
 	CellsResponse           = "TILES_RESPONSE"
 )
 
-// Location
 type UpdateLocationMessage struct {
 	Location s2.LatLng
-	ws.MessageWithId
 }
 
-func (ulMsg UpdateLocationMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(ulMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: UpdateLocation,
-		MsgArgs: []string{string(msgJson)},
-	}
+func (ulMsg UpdateLocationMessage) ConvertToWSMessage() *ws.WebsocketMsg {
+	return ws.NewRequestMsg(UpdateLocation,ulMsg)
 }
 
 type UpdateLocationWithTilesMessage struct {
 	CellsPerServer map[string]s2.CellUnion
-	ws.MessageWithId
 }
 
-func (ulwtMsg UpdateLocationWithTilesMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(ulwtMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: UpdateLocationWithTiles,
-		MsgArgs: []string{string(msgJson)},
-	}
+func (ulwtMsg UpdateLocationWithTilesMessage) ConvertToWSMessage() *ws.WebsocketMsg {
+	return ws.NewRequestMsg(UpdateLocationWithTiles, ulwtMsg)
 }
 
 type ServersMessage struct {
 	Servers []string
-	ws.MessageWithId
 }
 
-func (getResponseMsg ServersMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(getResponseMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: ServersResponse,
-		MsgArgs: []string{string(msgJson)},
-	}
+func (serverMsg ServersMessage) ConvertToWSMessage(info ws.TrackedInfo) *ws.WebsocketMsg {
+	return ws.NewReplyMsg(ServersResponse, serverMsg, info)
 }
 
 type CellsPerServerMessage struct {
 	CellsPerServer map[string]s2.CellUnion
 	OriginServer   string
-	ws.MessageWithId
 }
 
-func (tilesMsg CellsPerServerMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(tilesMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: CellsResponse,
-		MsgArgs: []string{string(msgJson)},
-	}
+func (tilesMsg CellsPerServerMessage) ConvertToWSMessage(info ws.TrackedInfo) *ws.WebsocketMsg {
+	return ws.NewReplyMsg(CellsResponse, tilesMsg, info)
 }
 
 type GymsMessage struct {
 	Gyms []utils.GymWithServer
-	ws.MessageWithId
 }
 
-func (gymMsg GymsMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(gymMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: Gyms,
-		MsgArgs: []string{string(msgJson)},
-	}
+func (gMsg GymsMessage) ConvertToWSMessage(info ws.TrackedInfo) *ws.WebsocketMsg {
+	return ws.NewReplyMsg(Gyms, gMsg, info)
 }
 
 type PokemonMessage struct {
 	Pokemon []utils.WildPokemonWithServer
-	ws.MessageWithId
 }
 
-func (pokemonMsg PokemonMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(pokemonMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: Pokemon,
-		MsgArgs: []string{string(msgJson)},
-	}
+func (pMsg PokemonMessage) ConvertToWSMessage(info ws.TrackedInfo) *ws.WebsocketMsg {
+	return ws.NewReplyMsg(Pokemon, pMsg, info)
 }
 
 type CatchWildPokemonMessage struct {
 	Pokeball    items.Item
 	WildPokemon utils.WildPokemonWithServer
-	ws.MessageWithId
 }
 
-func (catchPokemonMsg CatchWildPokemonMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(catchPokemonMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: CatchPokemon,
-		MsgArgs: []string{string(msgJson)},
-	}
+func (cMsg CatchWildPokemonMessage) ConvertToWSMessage() *ws.WebsocketMsg {
+	return ws.NewRequestMsg(CatchPokemon, cMsg)
 }
 
 type CatchWildPokemonMessageResponse struct {
 	Caught        bool
 	PokemonTokens []string
 	Error         string
-	ws.MessageWithId
 }
 
-func (catchPokemonMsgResp CatchWildPokemonMessageResponse) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(catchPokemonMsgResp)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: CatchPokemonResponse,
-		MsgArgs: []string{string(msgJson)},
-	}
-}
-
-func DeserializeLocationMsg(msg *ws.Message) (ws.Serializable, error) {
-	switch msg.MsgType {
-	case UpdateLocation:
-		var locationMsg UpdateLocationMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &locationMsg)
-		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, UpdateLocation)
-		}
-		return &locationMsg, nil
-
-	case UpdateLocationWithTiles:
-		var locationWithTilesMsg UpdateLocationWithTilesMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &locationWithTilesMsg)
-		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, UpdateLocationWithTiles)
-		}
-		return &locationWithTilesMsg, nil
-
-	case Gyms:
-		var gymsMsg GymsMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &gymsMsg)
-		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, Gyms)
-		}
-		return &gymsMsg, nil
-
-	case Pokemon:
-		var pokemonMsg PokemonMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &pokemonMsg)
-		if err != nil {
-			log.Error(err)
-			return nil, wrapDeserializeLocationMsgError(err, Pokemon)
-		}
-		return &pokemonMsg, nil
-
-	case CatchPokemon:
-		var catchPokemonMsg CatchWildPokemonMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &catchPokemonMsg)
-		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, CatchPokemon)
-		}
-		return &catchPokemonMsg, nil
-
-	case CatchPokemonResponse:
-		var catchPokemonMsgResp CatchWildPokemonMessageResponse
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &catchPokemonMsgResp)
-		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, CatchPokemonResponse)
-		}
-		return &catchPokemonMsgResp, nil
-
-	case ServersResponse:
-		var serversMessage ServersMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &serversMessage)
-		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, ServersResponse)
-		}
-		return &serversMessage, nil
-
-	case CellsResponse:
-		var cellsMsg CellsPerServerMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &cellsMsg)
-		if err != nil {
-			return nil, wrapDeserializeLocationMsgError(err, CellsResponse)
-		}
-		return &cellsMsg, nil
-
-	default:
-		return nil, wrapDeserializeLocationMsgError(ws.ErrorInvalidMessageType, msg.MsgType)
-	}
+func (cMsgResp CatchWildPokemonMessageResponse) ConvertToWSMessage(info ws.TrackedInfo) *ws.WebsocketMsg {
+	return ws.NewReplyMsg(CatchPokemonResponse, cMsgResp, info)
 }

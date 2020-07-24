@@ -21,20 +21,12 @@ type NotificationClient struct {
 	NotificationsAddr    string
 	httpClient           *http.Client
 	NotificationsChannel chan utils.Notification
-	readChannel          chan string
+	readChannel          chan *ws.WebsocketMsg
 	commsManager         ws.CommunicationManager
 }
 
-const (
-	logTimeTookNotificationMsg    = "time notification: %d ms"
-	logAverageTimeNotificationMsg = "average notification: %f ms"
-)
-
 var (
 	defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
-
-	totalTimeTookNotificationMsgs  int64 = 0
-	numberMeasuresNotificationMsgs       = 0
 )
 
 func NewNotificationClient(notificationsChannel chan utils.Notification,
@@ -50,7 +42,7 @@ func NewNotificationClient(notificationsChannel chan utils.Notification,
 		NotificationsAddr:    notificationsURL,
 		httpClient:           &http.Client{},
 		NotificationsChannel: notificationsChannel,
-		readChannel:          make(chan string),
+		readChannel:          make(chan *ws.WebsocketMsg),
 		commsManager:         manager,
 	}
 }
@@ -81,10 +73,7 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 	}
 
 	conn.SetPingHandler(func(string) error {
-		return client.commsManager.WriteGenericMessageToConn(conn, ws.GenericMsg{
-			MsgType: websocket.PongMessage,
-			Data:    nil,
-		})
+		return client.commsManager.WriteGenericMessageToConn(conn, ws.NewControlMsg(websocket.PongMessage))
 	})
 
 	go ReadMessagesFromConnToChan(conn, client.readChannel, receiveFinish, client.commsManager)
@@ -92,14 +81,9 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 Loop:
 	for {
 		select {
-		case msgString, ok := <-client.readChannel:
+		case wsMsg, ok := <-client.readChannel:
 			if ok {
-				msg, err := ws.ParseMessage(msgString)
-				if err != nil {
-					log.Error(errors.WrapListeningNotificationsError(err))
-					break Loop
-				}
-				client.parseToNotification(msg)
+				client.parseToNotification(wsMsg)
 			}
 		case <-receiveFinish:
 			break Loop
@@ -159,25 +143,8 @@ func (client *NotificationClient) GetOthersListening(authToken string) ([]string
 	return usernames, nil
 }
 
-func (client *NotificationClient) parseToNotification(msg *ws.Message) {
-	desMsg, err := notificationMessages.DeserializeNotificationMessage(msg)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	notificationMsg := desMsg.(*notificationMessages.NotificationMessage)
-	notificationMsg.Receive(ws.MakeTimestamp())
-
-	timeTook, ok := notificationMsg.TimeTook()
-	if ok {
-		totalTimeTookNotificationMsgs += timeTook
-		numberMeasuresNotificationMsgs++
-		log.Infof(logTimeTookNotificationMsg, timeTook)
-		log.Infof(logAverageTimeNotificationMsg,
-			float64(totalTimeTookNotificationMsgs)/float64(numberMeasuresNotificationMsgs))
-	}
-	notificationMsg.LogReceive(notificationMessages.Notification)
+func (client *NotificationClient) parseToNotification(wsMsg *ws.WebsocketMsg) {
+	notificationMsg := wsMsg.Content.Data.(notificationMessages.NotificationMessage)
 	client.NotificationsChannel <- notificationMsg.Notification
 	log.Infof("Received %s from the websocket", notificationMsg.Notification.Content)
 }

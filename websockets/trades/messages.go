@@ -1,22 +1,14 @@
 package trades
 
 import (
-	"encoding/json"
-
 	ws "github.com/NOVAPokemon/utils/websockets"
-	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
-var (
-	ErrorParsing = ws.ErrorMessage{
-		Info:  "error parsing message",
-		Fatal: false,
-	}
 )
 
 // Message Types
 const (
+	// HTTP requests
+	CreateTrade = "CREATE_TRADE"
+
 	Trade  = "TRADE"
 	Accept = "ACCEPT"
 	Update = "UPDATE"
@@ -25,116 +17,33 @@ const (
 // Trade
 type TradeMessage struct {
 	ItemId string
-	ws.TrackedMessage
 }
 
-func NewTradeMessage(itemId string) TradeMessage {
-	return TradeMessage{
-		ItemId:         itemId,
-		TrackedMessage: ws.NewTrackedMessage(primitive.NewObjectID()),
-	}
-}
-
-func (tMsg TradeMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(tMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: Trade,
-		MsgArgs: []string{string(msgJson)},
-	}
+func (tMsg TradeMessage) ConvertToWSMessage() *ws.WebsocketMsg {
+	return ws.NewRequestMsg(Trade, tMsg)
 }
 
 // Accept
-type AcceptMessage struct {
-	ws.TrackedMessage
-}
+type AcceptMessage struct{}
 
-func NewAcceptMessage() AcceptMessage {
-	return AcceptMessage{
-		TrackedMessage: ws.NewTrackedMessage(primitive.NewObjectID()),
-	}
-}
-
-func (aMsg AcceptMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(aMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: Accept,
-		MsgArgs: []string{string(msgJson)},
-	}
+func (aMsg AcceptMessage) ConvertToWSMessage() *ws.WebsocketMsg {
+	return ws.NewRequestMsg(Accept, aMsg)
 }
 
 // Update
 type UpdateMessage struct {
 	Players [2]*PlayerInfo
-	ws.TrackedMessage
 }
 
-func (uMsg UpdateMessage) SerializeToWSMessage() *ws.Message {
-	msgJson, err := json.Marshal(uMsg)
-	if err != nil {
-		log.Error(err)
-		return nil
-	}
-
-	return &ws.Message{
-		MsgType: Update,
-		MsgArgs: []string{string(msgJson)},
-	}
+func (uMsg UpdateMessage) ConvertToWSMessage(info ws.TrackedInfo) *ws.WebsocketMsg {
+	return ws.NewReplyMsg(Update, uMsg, info)
 }
 
-func UpdateMessageFromTrade(trade *TradeStatus, trackedMsg ws.TrackedMessage) *UpdateMessage {
+func UpdateMessageFromTrade(trade *TradeStatus) *UpdateMessage {
 	players := [2]*PlayerInfo{}
 	players[0] = PlayerToPlayerInfo(&trade.Players[0])
 	players[1] = PlayerToPlayerInfo(&trade.Players[1])
 	return &UpdateMessage{
-		Players:        players,
-		TrackedMessage: trackedMsg,
-	}
-}
-
-func DeserializeTradeMessage(msg *ws.Message) (ws.Serializable, error) {
-	switch msg.MsgType {
-	case Trade:
-		var tradeMsg TradeMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &tradeMsg)
-		if err != nil {
-			return nil, wrapDeserializeTradeMsgError(err, Trade)
-		}
-
-		return &tradeMsg, nil
-	case Accept:
-		var acceptMsg AcceptMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &acceptMsg)
-		if err != nil {
-			log.Error(err)
-			return nil, wrapDeserializeTradeMsgError(err, Trade)
-		}
-
-		return &acceptMsg, nil
-	case Update:
-		var updateMsg UpdateMessage
-		err := json.Unmarshal([]byte(msg.MsgArgs[0]), &updateMsg)
-		if err != nil {
-			log.Error(err)
-			return nil, wrapDeserializeTradeMsgError(err, Update)
-		}
-
-		return &updateMsg, nil
-	default:
-		deserializedMsg, err := ws.DeserializeMsg(msg)
-		if err != nil {
-			return nil, wrapDeserializeTradeMsgError(err, msg.MsgType)
-		}
-
-		return deserializedMsg, nil
+		Players: players,
 	}
 }

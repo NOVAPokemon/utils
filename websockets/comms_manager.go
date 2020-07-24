@@ -7,8 +7,10 @@ import (
 )
 
 type CommunicationManager interface {
-	WriteGenericMessageToConn(conn *websocket.Conn, msg GenericMsg) error
-	ReadMessageFromConn(conn *websocket.Conn) (int, []byte, error)
+	ApplyReceiveLogic(msg *WebsocketMsg) *WebsocketMsg
+	ApplySendLogic(msg *WebsocketMsg) *WebsocketMsg
+	WriteGenericMessageToConn(conn *websocket.Conn, msg *WebsocketMsg) error
+	ReadMessageFromConn(conn *websocket.Conn) (*WebsocketMsg, error)
 	DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error)
 	HTTPRequestInterceptor(next http.Handler) http.Handler
 }

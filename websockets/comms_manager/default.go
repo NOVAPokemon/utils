@@ -7,18 +7,43 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type CommsManagerWithClient struct {
-	IsClient bool
-}
-
 type DefaultCommsManager struct{}
 
-func (d *DefaultCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, msg websockets.GenericMsg) error {
-	return conn.WriteMessage(msg.MsgType, msg.Data)
+func (d *DefaultCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *websockets.WebsocketMsg {
+	if msg.MsgType == websocket.TextMessage && msg.Content.MsgKind == websockets.Reply {
+		msg.Content.RequestTrack.Receive(websockets.MakeTimestamp())
+		msg.Content.RequestTrack.LogReceive(msg.Content.AppMsgType)
+	}
+	return msg
 }
 
-func (d *DefaultCommsManager) ReadMessageFromConn(conn *websocket.Conn) (int, []byte, error) {
-	return conn.ReadMessage()
+func (d *DefaultCommsManager) ApplySendLogic(msg *websockets.WebsocketMsg) *websockets.WebsocketMsg {
+	if msg.MsgType == websocket.TextMessage && msg.Content.MsgKind == websockets.Request {
+		msg.Content.RequestTrack.Emit(websockets.MakeTimestamp())
+		msg.Content.RequestTrack.LogEmit(msg.Content.AppMsgType)
+	}
+	return msg
+}
+
+func (d *DefaultCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, msg *websockets.WebsocketMsg) error {
+	msg = d.ApplySendLogic(msg)
+	return conn.WriteMessage(msg.MsgType, msg.Content.Serialize())
+}
+
+func (d *DefaultCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websockets.WebsocketMsg, error) {
+	msgType, p, err := conn.ReadMessage()
+	if err != nil {
+		return nil, err
+	}
+
+	content := websockets.ParseContent(p)
+	msg := &websockets.WebsocketMsg{
+		MsgType: msgType,
+		Content: content,
+	}
+
+	msg = d.ApplyReceiveLogic(msg)
+	return msg, nil
 }
 
 func (d *DefaultCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {

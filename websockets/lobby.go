@@ -2,7 +2,6 @@ package websockets
 
 import (
 	"encoding/json"
-	"strings"
 	"sync"
 	"time"
 
@@ -26,10 +25,10 @@ type Lobby struct {
 	Capacity        int
 
 	TrainerUsernames      []string
-	TrainerInChannels     []chan string
+	TrainerInChannels     []chan *WebsocketMsg
 	DoneListeningFromConn []chan interface{}
 	DoneWritingToConn     []chan interface{}
-	TrainerOutChannels    []chan GenericMsg
+	TrainerOutChannels    []chan *WebsocketMsg
 	trainerConnections    []*websocket.Conn
 	finishOnce            sync.Once
 }
@@ -41,9 +40,9 @@ func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
 		TrainersJoined:        0,
 		TrainerUsernames:      make([]string, capacity),
 		trainerConnections:    make([]*websocket.Conn, capacity),
-		TrainerInChannels:     make([]chan string, capacity),
+		TrainerInChannels:     make([]chan *WebsocketMsg, capacity),
 		DoneListeningFromConn: make([]chan interface{}, capacity),
-		TrainerOutChannels:    make([]chan GenericMsg, capacity),
+		TrainerOutChannels:    make([]chan *WebsocketMsg, capacity),
 		DoneWritingToConn:     make([]chan interface{}, capacity),
 		Started:               make(chan struct{}),
 		Finished:              make(chan struct{}),
@@ -68,8 +67,8 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn,
 		return - 1, NewLobbyFinishedError(lobby.Id.Hex())
 	default:
 		trainerNum := lobby.TrainersJoined
-		trainerChanIn := make(chan string)
-		trainerChanOut := make(chan GenericMsg)
+		trainerChanIn := make(chan *WebsocketMsg)
+		trainerChanOut := make(chan *WebsocketMsg)
 
 		lobby.TrainerUsernames[trainerNum] = username
 		lobby.TrainerInChannels[trainerNum] = trainerChanIn
@@ -97,10 +96,7 @@ func sendFromChanToConn(lobby *Lobby, trainerNum int, writer CommunicationManage
 		for {
 			select {
 			case <-pingTicker.C:
-				err := writer.WriteGenericMessageToConn(conn, GenericMsg{
-					MsgType: websocket.PingMessage,
-					Data:    nil,
-				})
+				err := writer.WriteGenericMessageToConn(conn, NewControlMsg(websocket.PingMessage))
 				if err != nil {
 					log.Warn(err)
 					return
@@ -123,25 +119,23 @@ func sendFromChanToConn(lobby *Lobby, trainerNum int, writer CommunicationManage
 	return done
 }
 
-func RecvFromConnToChann(lobby *Lobby, trainerNum int,
-	manager CommunicationManager) (done chan interface{}) {
+func RecvFromConnToChann(lobby *Lobby, trainerNum int, manager CommunicationManager) (done chan interface{}) {
 	done = make(chan interface{})
 	go func() {
 		conn := lobby.trainerConnections[trainerNum]
 		inChannel := lobby.TrainerInChannels[trainerNum]
 		defer close(done)
 		for {
-			_, message, err := manager.ReadMessageFromConn(conn)
+			wsMsg, err := manager.ReadMessageFromConn(conn)
 			if err != nil {
 				log.Info("Receive routine finishing because connection was closed")
 				return
 			}
-			msg := strings.TrimSpace(string(message))
 			select {
 			case <-lobby.Finished:
-				log.Infof("Could not send message %s because finish channel ended meanwhile", msg)
+				log.Infof("Could not send message %s because finish channel ended meanwhile", wsMsg)
 				return
-			case inChannel <- msg:
+			case inChannel <- wsMsg:
 				log.Debugf("Received message from Websockets")
 			}
 		}
@@ -176,11 +170,13 @@ func GetTrainersJoined(lobby *Lobby) int {
 	return lobby.TrainersJoined
 }
 
-func ParseMessage(msg string) (*Message, error) {
-	toReturn := &Message{}
-	if err := json.Unmarshal([]byte(msg), toReturn); err != nil {
-		log.Error(msg)
-		return nil, wrapMsgParsingError(err)
+func ParseContent(msgData []byte) *WebsocketMsgContent {
+	toReturn := &WebsocketMsgContent{}
+
+	if err := json.Unmarshal(msgData, toReturn); err != nil {
+		log.Error(msgData)
+		panic(wrapMsgParsingError(err))
 	}
-	return toReturn, nil
+
+	return toReturn
 }

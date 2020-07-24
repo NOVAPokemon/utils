@@ -29,27 +29,13 @@ type TradeLobbyClient struct {
 	rejected     chan struct{}
 	finished     chan struct{}
 	finishOnce   sync.Once
-	readChannel  chan string
-	writeChannel chan ws.GenericMsg
+	readChannel  chan *ws.WebsocketMsg
+	writeChannel chan *ws.WebsocketMsg
 	commsManager ws.CommunicationManager
 }
 
-const (
-	logTimeTookStartTrade    = "time start trade: %d ms"
-	logAverageTimeStartTrade = "average start trade: %f ms"
-
-	logTimeTookTradeMsg    = "time trade: %d ms"
-	logAverageTimeTradeMsg = "average trade: %f ms"
-)
-
 var (
 	defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
-
-	totalTimeTookStart  int64 = 0
-	numberMeasuresStart       = 0
-
-	totalTimeTookTradeMsgs  int64 = 0
-	numberMeasuresTradeMsgs       = 0
 )
 
 func NewTradesClient(config utils.TradesClientConfig, manager ws.CommunicationManager) *TradeLobbyClient {
@@ -92,6 +78,10 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 	req.Header.Set(tokens.ItemsTokenHeaderName, itemsToken)
+	trackInfo := ws.NewTrackedInfo(primitive.NewObjectID())
+	trackInfo.Emit(ws.MakeTimestamp())
+	trackInfo.LogEmit(trades.CreateTrade)
+	req.Header.Set(ws.TrackInfoHeaderName, trackInfo.SerializeToJSON())
 
 	var resp api.CreateLobbyResponse
 	_, err = DoRequest(&http.Client{}, req, &resp, client.commsManager)
@@ -107,8 +97,8 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	return &lobbyId, &resp.ServerName, nil
 }
 
-func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serverHostname string, authToken string,
-	itemsToken string) (*string, error) {
+func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
+	serverHostname string, authToken string, itemsToken string) (*string, error) {
 	u := url.URL{
 		Scheme: "ws",
 		Host:   fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort),
@@ -130,8 +120,6 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 		return nil, errors.WrapJoinTradeLobbyError(err)
 	}
 
-	requestTimestamp := ws.MakeTimestamp()
-
 	defer func() {
 		if err := conn.Close(); err != nil {
 			log.Error(err)
@@ -148,8 +136,8 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	client.rejected = make(chan struct{})
 	client.finished = make(chan struct{})
 	client.finishOnce = sync.Once{}
-	client.readChannel = make(chan string, 10)
-	client.writeChannel = make(chan ws.GenericMsg, 10)
+	client.readChannel = make(chan *ws.WebsocketMsg, 10)
+	client.writeChannel = make(chan *ws.WebsocketMsg, 10)
 
 	go ReadMessagesFromConnToChan(conn, client.readChannel, client.finished, client.commsManager)
 
@@ -160,14 +148,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 		i++
 	}
 
-	timeTook := client.WaitForStart(requestTimestamp)
-	if timeTook != -1 {
-		log.Infof(logTimeTookStartTrade, timeTook)
-		numberMeasuresStart++
-		totalTimeTookStart += timeTook
-		log.Infof(logAverageTimeStartTrade, float64(totalTimeTookStart)/float64(numberMeasuresStart))
-	}
-
+	client.WaitForStart()
 	select {
 	case <-client.rejected:
 		log.Infof("trade was rejected")
@@ -188,9 +169,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID, serv
 	return itemTokens, errors.WrapJoinTradeLobbyError(err)
 }
 
-func (client *TradeLobbyClient) WaitForStart(requestTimestamp int64) int64 {
-	var responseTimestamp int64
-
+func (client *TradeLobbyClient) WaitForStart() {
 	log.Info("waiting for start...")
 
 	initialMessage, ok := <-client.readChannel
@@ -204,20 +183,14 @@ func (client *TradeLobbyClient) WaitForStart(requestTimestamp int64) int64 {
 
 	select {
 	case <-client.started:
-		responseTimestamp = ws.MakeTimestamp()
 	case <-client.rejected:
-		responseTimestamp = ws.MakeTimestamp()
 	case <-client.readChannel:
 		client.finishOnce.Do(func() { close(client.finished) })
-		return -1
 	case <-client.writeChannel:
 		client.finishOnce.Do(func() { close(client.finished) })
-		return -1
 	case <-client.finished:
-		return -1
 	}
 
-	return responseTimestamp - requestTimestamp
 }
 
 func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostname, authToken,
@@ -244,60 +217,28 @@ func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverH
 	return nil
 }
 
-func (client *TradeLobbyClient) HandleReceivedMessage(msgString string) (*string, error) {
-	msg, err := ws.ParseMessage(msgString)
-	if err != nil {
-		return nil, errors.WrapHandleMessagesTradeError(err)
-	}
+func (client *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*string, error) {
+	wsMsgContent := wsMsg.Content
+	msgData := wsMsg.Content.Data
 
-	switch msg.MsgType {
+	switch wsMsgContent.AppMsgType {
 	case ws.Start:
 		close(client.started)
 	case ws.Reject:
 		close(client.rejected)
 	case trades.Update:
-		desMsg, err := trades.DeserializeTradeMessage(msg)
-		if err != nil {
-			log.Error(errors.WrapHandleMessagesTradeError(err))
-			break
-		}
-
-		updateMsg := desMsg.(*trades.UpdateMessage)
-		updateMsg.Receive(ws.MakeTimestamp())
-
-		timeTook, ok := updateMsg.TimeTook()
-		if ok {
-			totalTimeTookTradeMsgs += timeTook
-			numberMeasuresTradeMsgs++
-			log.Infof(logTimeTookTradeMsg, timeTook)
-			log.Infof(logAverageTimeTradeMsg,
-				float64(totalTimeTookTradeMsgs)/float64(numberMeasuresTradeMsgs))
-		}
-
-		updateMsg.LogReceive(trades.Update)
+		updateMsg := msgData.(trades.UpdateMessage)
+		log.Debug(updateMsg)
 	case ws.SetToken:
-		desMsg, err := trades.DeserializeTradeMessage(msg)
+		tokenMessage := msgData.(ws.SetTokenMessage)
+		_, err := tokens.ExtractItemsToken(tokenMessage.TokensString[0])
 		if err != nil {
 			log.Error(errors.WrapHandleMessagesTradeError(err))
-			break
-		}
-
-		tokenMessage := desMsg.(*ws.SetTokenMessage)
-		_, err = tokens.ExtractItemsToken(tokenMessage.TokensString[0])
-		if err != nil {
-			log.Error(errors.WrapHandleMessagesTradeError(err))
-
 		}
 
 		return &tokenMessage.TokensString[0], nil
 	case ws.Finish:
-		desMsg, err := trades.DeserializeTradeMessage(msg)
-		if err != nil {
-			log.Error(errors.WrapHandleMessagesTradeError(err))
-			break
-		}
-
-		finishMsg := desMsg.(*ws.FinishMessage)
+		finishMsg := msgData.(ws.FinishMessage)
 		log.Info("Finished, Success: ", finishMsg.Success)
 		client.finishOnce.Do(func() { close(client.finished) })
 	}
@@ -368,13 +309,7 @@ func (client *TradeLobbyClient) sendTradeMessages(numItemsToAdd int, availableIt
 			<-timer.C
 		}
 
-		acceptMsg := trades.NewAcceptMessage()
-		acceptMsg.LogEmit(trades.Accept)
-		serializedMsg := ws.GenericMsg{
-			MsgType: websocket.TextMessage,
-			Data:    []byte(trades.NewAcceptMessage().SerializeToWSMessage().Serialize()),
-		}
-		client.writeChannel <- serializedMsg
+		client.writeChannel <- trades.AcceptMessage{}.ConvertToWSMessage()
 	}
 
 	for {
@@ -384,13 +319,10 @@ func (client *TradeLobbyClient) sendTradeMessages(numItemsToAdd int, availableIt
 			return
 		case <-timer.C:
 			randomItemIdx := rand.Intn(len(availableItems))
-			tradeMsg := trades.NewTradeMessage(availableItems[randomItemIdx])
-			tradeMsg.LogEmit(trades.Trade)
-			serializedMsg := ws.GenericMsg{
-				MsgType: websocket.TextMessage,
-				Data:    []byte(tradeMsg.SerializeToWSMessage().Serialize()),
-			}
-			client.writeChannel <- serializedMsg
+
+			client.writeChannel <- trades.TradeMessage{
+				ItemId: availableItems[randomItemIdx],
+			}.ConvertToWSMessage()
 
 			log.Infof("adding %s to trade", availableItems[randomItemIdx])
 
@@ -402,13 +334,7 @@ func (client *TradeLobbyClient) sendTradeMessages(numItemsToAdd int, availableIt
 			if itemsTraded < numItemsToAdd {
 				client.setTimerRandSleepTime(timer)
 			} else {
-				acceptMsg := trades.NewAcceptMessage()
-				acceptMsg.LogEmit(trades.Accept)
-				serializedAcceptMsg := ws.GenericMsg{
-					MsgType: websocket.TextMessage,
-					Data:    []byte(acceptMsg.SerializeToWSMessage().Serialize()),
-				}
-				client.writeChannel <- serializedAcceptMsg
+				client.writeChannel <- trades.AcceptMessage{}.ConvertToWSMessage()
 			}
 		}
 	}

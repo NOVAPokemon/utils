@@ -15,12 +15,14 @@ const (
 	tagIsClientKey = "Tag_is_client"
 )
 
-type DelaysMatrixType = map[string]map[string]float64
+type (
+	DelaysMatrixType = map[string]map[string]float64
 
-type ClientDelays struct {
-	Default     float64            `json:"default"`
-	Multipliers map[string]float64 `json:"multipliers"`
-}
+	ClientDelays struct {
+		Default     float64            `json:"default"`
+		Multipliers map[string]float64 `json:"multipliers"`
+	}
+)
 
 type DelayedCommsManager struct {
 	LocationTag  string
@@ -29,38 +31,14 @@ type DelayedCommsManager struct {
 	CommsManagerWithClient
 }
 
-func (d *DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, msg websockets.GenericMsg) error {
-	if msg.MsgType == websocket.TextMessage {
-		taggedMsg := websockets.TaggedMessage{
-			LocationTag: d.LocationTag,
-			IsClient:    d.IsClient,
-			MsgBytes:    msg.Data,
-		}.SerializeToWSMessage().Serialize()
-
-		return conn.WriteMessage(websocket.TextMessage, []byte(taggedMsg))
-	}
-	return conn.WriteMessage(msg.MsgType, msg.Data)
-}
-
-func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (int, []byte, error) {
-	msgType, p, err := conn.ReadMessage()
-	if err != nil {
-		return 0, nil, err
+func (d *DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *websockets.WebsocketMsg {
+	if msg.MsgType != websocket.TextMessage || msg.Content.MsgKind != websockets.Wrapper {
+		return msg
+	} else if msg.Content.AppMsgType != websockets.Tagged {
+		panic(fmt.Sprintf("delayed comms manager does not know how to treat %s", msg.Content.AppMsgType))
 	}
 
-	msg, err := websockets.ParseMessage(string(p))
-	if err != nil {
-		panic(err)
-	}
-
-	if msg.MsgType != websockets.Tagged {
-		return msgType, p, err
-	}
-
-	taggedMessage, err := websockets.DeserializeTaggedMessage([]byte(msg.MsgArgs[0]))
-	if err != nil {
-		panic(err)
-	}
+	taggedMessage := msg.Content.Data.(websockets.TaggedMessage)
 
 	requesterLocationTag := taggedMessage.LocationTag
 	delay := d.getDelay(requesterLocationTag, taggedMessage.IsClient)
@@ -68,7 +46,40 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (int, []
 	sleepDuration := time.Duration(delay) * time.Millisecond
 	time.Sleep(sleepDuration)
 
-	return msgType, taggedMessage.MsgBytes, nil
+	msg.Content = taggedMessage.Content
+
+	return msg
+}
+
+func (d *DelayedCommsManager) ApplySendLogic(msg *websockets.WebsocketMsg) *websockets.WebsocketMsg {
+	if msg.MsgType == websocket.TextMessage {
+		taggedMsg := websockets.TaggedMessage{
+			LocationTag: d.LocationTag,
+			IsClient:    d.IsClient,
+			Content:     msg.Content,
+		}
+
+		wrapperGenericMsg := taggedMsg.ConvertToWSMessage()
+
+		return wrapperGenericMsg
+	}
+
+	return msg
+}
+
+func (d *DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, msg *websockets.WebsocketMsg) error {
+	msg = d.ApplySendLogic(msg)
+	return d.DefaultCommsManager.WriteGenericMessageToConn(conn, msg)
+}
+
+func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websockets.WebsocketMsg, error) {
+	msg, err := d.DefaultCommsManager.ReadMessageFromConn(conn)
+	if err != nil {
+		return nil, err
+	}
+
+	msg = d.ApplyReceiveLogic(msg)
+	return msg, nil
 }
 
 func (d *DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {

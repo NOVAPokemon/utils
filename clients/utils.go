@@ -12,14 +12,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Send(conn *websocket.Conn, msg ws.Serializable, writer ws.CommunicationManager) error {
-	return ws.WrapWritingMessageError(writer.WriteGenericMessageToConn(conn, ws.GenericMsg{
-		MsgType: websocket.TextMessage,
-		Data:    []byte(msg.SerializeToWSMessage().Serialize()),
-	}))
+func Send(conn *websocket.Conn, msg *ws.WebsocketMsg, writer ws.CommunicationManager) error {
+	return ws.WrapWritingMessageError(writer.WriteGenericMessageToConn(conn, msg))
 }
 
-func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finished chan struct{},
+func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *ws.WebsocketMsg, finished chan struct{},
 	commsManager ws.CommunicationManager) {
 	defer func() {
 		log.Info("closing read routine")
@@ -30,20 +27,20 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan string, finis
 		case <-finished:
 			return
 		default:
-			_, message, err := commsManager.ReadMessageFromConn(conn)
+			wsMsg, err := commsManager.ReadMessageFromConn(conn)
 			if err != nil {
 				log.Warn(err)
 				return
 			}
-			if message != nil {
-				msgChan <- string(message)
+			if wsMsg != nil {
+				msgChan <- wsMsg
 			}
 		}
 	}
 }
 
 func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.CommunicationManager,
-	writeChannel <-chan ws.GenericMsg, finished chan struct{}) {
+	writeChannel <-chan *ws.WebsocketMsg, finished chan struct{}) {
 	defer log.Info("closing write routine")
 
 	for {
@@ -65,40 +62,40 @@ func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.Commu
 	}
 }
 
-func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan string, finished chan struct{},
-	manager ws.CommunicationManager) {
+func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan *ws.WebsocketMsg,
+	finished chan struct{}, manager ws.CommunicationManager) {
 	for {
 		select {
 		case <-finished:
 			return
 		default:
-			_, message, err := manager.ReadMessageFromConn(conn)
+			wsMsg, err := manager.ReadMessageFromConn(conn)
 			if err != nil {
 				log.Warn(err)
 				return
 			}
-			if message != nil {
-				msgChan <- string(message)
+			if wsMsg != nil {
+				msgChan <- wsMsg
 			}
 		}
 	}
 }
 
-func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan ws.GenericMsg) {
+func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan *ws.WebsocketMsg) {
 	_ = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 	conn.SetPingHandler(func(string) error {
-		writeChannel <- ws.GenericMsg{MsgType: websocket.PongMessage, Data: nil}
+		writeChannel <- ws.NewControlMsg(websocket.PongMessage)
 		return conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
 	})
 }
 
-func Read(conn *websocket.Conn, manager ws.CommunicationManager) ([]byte, error) {
-	_, message, err := manager.ReadMessageFromConn(conn)
+func Read(conn *websocket.Conn, manager ws.CommunicationManager) (*ws.WebsocketMsg, error) {
+	wsMsg, err := manager.ReadMessageFromConn(conn)
 	if err != nil {
 		return nil, ws.WrapReadingMessageError(err)
 	}
 
-	return message, nil
+	return wsMsg, nil
 }
 
 // REQUESTS

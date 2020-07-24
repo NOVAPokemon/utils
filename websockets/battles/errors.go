@@ -1,13 +1,7 @@
 package battles
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
-)
-
-const (
-	errorDeserializeBattleMessageFormat = "error deserializing battle message type %s"
 )
 
 var (
@@ -19,6 +13,3 @@ var (
 	ErrorItemNotAppliable       = errors.New("error item not appliable")
 )
 
-func wrapDeserializeBattleMsgError(err error, msgType string) error {
-	return errors.Wrap(err, fmt.Sprintf(errorDeserializeBattleMessageFormat, msgType))
-}

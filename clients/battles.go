@@ -74,6 +74,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	header.Set(tokens.StatsTokenHeaderName, statsToken)
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
+	websockets.AddTrackInfoToHeader(&header, battles.Queue)
 
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
@@ -81,8 +82,8 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 		return nil, nil, err
 	}
 
-	outChannel := make(chan websockets.GenericMsg)
-	inChannel := make(chan string)
+	outChannel := make(chan *websockets.WebsocketMsg)
+	inChannel := make(chan *websockets.WebsocketMsg)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
@@ -109,6 +110,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	header.Set(tokens.StatsTokenHeaderName, statsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
+	websockets.AddTrackInfoToHeader(&header, battles.Challenge)
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
@@ -122,8 +124,8 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 		return nil, nil, 0, err
 	}
 
-	inChannel := make(chan string)
-	outChannel := make(chan websockets.GenericMsg)
+	inChannel := make(chan *websockets.WebsocketMsg)
+	outChannel := make(chan *websockets.WebsocketMsg)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
@@ -162,8 +164,8 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 		return nil, nil, err
 	}
 
-	outChannel := make(chan websockets.GenericMsg)
-	inChannel := make(chan string)
+	outChannel := make(chan *websockets.WebsocketMsg)
+	inChannel := make(chan *websockets.WebsocketMsg)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 

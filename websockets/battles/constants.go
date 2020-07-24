@@ -11,12 +11,14 @@ import (
 
 var (
 	StatusDefended = "You defended an attack"
+	StatusDefending = "You are defending"
+	StatusEnemyDefended = "Enemy defended your attack"
 )
 
 type (
 	BattleChannels struct {
-		OutChannel      chan websockets.GenericMsg
-		InChannel       chan string
+		OutChannel      chan *websockets.WebsocketMsg
+		InChannel       chan *websockets.WebsocketMsg
 		RejectedChannel chan struct{}
 		FinishChannel   chan struct{}
 	}
