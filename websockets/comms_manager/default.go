@@ -27,6 +27,9 @@ func (d *DefaultCommsManager) ApplySendLogic(msg *websockets.WebsocketMsg) *webs
 
 func (d *DefaultCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, msg *websockets.WebsocketMsg) error {
 	msg = d.ApplySendLogic(msg)
+	if msg.Content == nil {
+		return conn.WriteMessage(msg.MsgType, nil)
+	}
 	return conn.WriteMessage(msg.MsgType, msg.Content.Serialize())
 }
 
