@@ -41,6 +41,7 @@ func (d *DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *w
 
 	log.Infof("Msg: %+v", msg)
 	log.Infof("Content: %+v", msg.Content)
+
 	taggedMessage := msg.Content.Data.(websockets.TaggedMessage)
 
 	requesterLocationTag := taggedMessage.LocationTag
@@ -73,17 +74,27 @@ func (d *DelayedCommsManager) ApplySendLogic(msg *websockets.WebsocketMsg) *webs
 }
 
 func (d *DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, msg *websockets.WebsocketMsg) error {
+	d.DefaultCommsManager.ApplySendLogic(msg)
 	msg = d.ApplySendLogic(msg)
-	return d.DefaultCommsManager.WriteGenericMessageToConn(conn, msg)
+
+	return conn.WriteMessage(msg.MsgType, msg.Content.Serialize())
 }
 
 func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websockets.WebsocketMsg, error) {
-	msg, err := d.DefaultCommsManager.ReadMessageFromConn(conn)
+	msgType, p, err := conn.ReadMessage()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	msg = d.ApplyReceiveLogic(msg)
+	taggedContent := websockets.ParseContent(p)
+	wsMsg := &websockets.WebsocketMsg{
+		MsgType: msgType,
+		Content: taggedContent,
+	}
+	msg := d.ApplyReceiveLogic(wsMsg)
+
+	d.DefaultCommsManager.ApplyReceiveLogic(msg)
+
 	return msg, nil
 }
 
