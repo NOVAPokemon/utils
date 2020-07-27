@@ -129,14 +129,14 @@ const (
 type TrackedInfo struct {
 	TimeEmitted  int64
 	TimeReceived int64
-	Id           primitive.ObjectID
+	Id           string
 }
 
 func NewTrackedInfo(id primitive.ObjectID) *TrackedInfo {
 	return &TrackedInfo{
 		TimeEmitted:  invalidTime,
 		TimeReceived: invalidTime,
-		Id:           id,
+		Id:           id.Hex(),
 	}
 }
 
@@ -154,7 +154,7 @@ func (ti *TrackedInfo) LogEmit(msgType string) {
 		return
 	}
 
-	log.Infof("[EMIT] %s %s %d", msgType, ti.Id.Hex(), ti.TimeEmitted)
+	log.Infof("[EMIT] %s %s %d", msgType, ti.Id, ti.TimeEmitted)
 }
 
 func (ti *TrackedInfo) LogReceive(msgType string) {
@@ -162,7 +162,7 @@ func (ti *TrackedInfo) LogReceive(msgType string) {
 		log.Error(ErrorTooEarlyToLogReceive)
 	}
 
-	log.Infof("[RECEIVE] %s %s %d", msgType, ti.Id.Hex(), ti.TimeReceived)
+	log.Infof("[RECEIVE] %s %s %d", msgType, ti.Id, ti.TimeReceived)
 }
 
 func (ti *TrackedInfo) TimeTook() (int64, bool) {

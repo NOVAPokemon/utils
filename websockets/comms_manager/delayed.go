@@ -49,7 +49,6 @@ func (d *DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *w
 	}
 	log.Infof("Converted: %+v", taggedMessage)
 
-
 	requesterLocationTag := taggedMessage.LocationTag
 	delay := d.getDelay(requesterLocationTag, taggedMessage.IsClient)
 
