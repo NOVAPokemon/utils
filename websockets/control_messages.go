@@ -110,7 +110,7 @@ type TaggedMessage struct {
 	Content     WebsocketMsgContent
 }
 
-func (tMsg *TaggedMessage) ConvertToWSMessage() *WebsocketMsg {
+func (tMsg TaggedMessage) ConvertToWSMessage() *WebsocketMsg {
 	return NewWrapperMsg(Tagged, tMsg)
 }
 
