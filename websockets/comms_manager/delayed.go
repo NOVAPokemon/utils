@@ -82,6 +82,10 @@ func (d *DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, ms
 	d.DefaultCommsManager.ApplySendLogic(msg)
 	msg = d.ApplySendLogic(msg)
 
+	if msg.Content == nil {
+		return conn.WriteMessage(msg.MsgType, nil)
+	}
+
 	return conn.WriteMessage(msg.MsgType, msg.Content.Serialize())
 }
 
