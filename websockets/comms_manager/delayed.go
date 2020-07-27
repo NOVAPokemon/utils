@@ -50,7 +50,7 @@ func (d *DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *w
 	sleepDuration := time.Duration(delay) * time.Millisecond
 	time.Sleep(sleepDuration)
 
-	msg.Content = taggedMessage.Content
+	msg.Content = &taggedMessage.Content
 
 	return msg
 }
@@ -60,7 +60,7 @@ func (d *DelayedCommsManager) ApplySendLogic(msg *websockets.WebsocketMsg) *webs
 		taggedMsg := websockets.TaggedMessage{
 			LocationTag: d.LocationTag,
 			IsClient:    d.IsClient,
-			Content:     msg.Content,
+			Content:     *msg.Content,
 		}
 
 		wrapperGenericMsg := taggedMsg.ConvertToWSMessage()

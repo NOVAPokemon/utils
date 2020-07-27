@@ -107,7 +107,7 @@ const Tagged = "TAGGED"
 type TaggedMessage struct {
 	LocationTag string
 	IsClient    bool
-	Content     *WebsocketMsgContent
+	Content     WebsocketMsgContent
 }
 
 func (tMsg *TaggedMessage) ConvertToWSMessage() *WebsocketMsg {
