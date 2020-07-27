@@ -8,6 +8,7 @@ import (
 
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
+	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -42,7 +43,12 @@ func (d *DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *w
 	log.Infof("Msg: %+v", msg)
 	log.Infof("Content: %+v", msg.Content)
 
-	taggedMessage := msg.Content.Data.(websockets.TaggedMessage)
+	taggedMessage := &websockets.TaggedMessage{}
+	if err := mapstructure.Decode(msg.Content.Data, taggedMessage); err != nil {
+		panic(err)
+	}
+	log.Infof("Converted: %+v", taggedMessage)
+
 
 	requesterLocationTag := taggedMessage.LocationTag
 	delay := d.getDelay(requesterLocationTag, taggedMessage.IsClient)
