@@ -92,7 +92,7 @@ func (d *DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, ms
 func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websockets.WebsocketMsg, error) {
 	msgType, p, err := conn.ReadMessage()
 	if err != nil {
-		panic(err)
+		log.Warn(err)
 	}
 
 	taggedContent := websockets.ParseContent(p)
