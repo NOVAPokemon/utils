@@ -56,7 +56,7 @@ func AddNotification(notification utils.Notification) error {
 	collection := dbClient.Collection
 
 	notificationId := primitive.NewObjectID()
-	notification.Id = notificationId
+	notification.Id = notificationId.Hex()
 
 	_, err := collection.InsertOne(*ctx, notification)
 
