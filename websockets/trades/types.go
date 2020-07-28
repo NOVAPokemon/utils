@@ -23,7 +23,7 @@ func PlayerToPlayerInfo(player *Player) *PlayerInfo {
 	playerItems := make([]string, len(player.Items))
 
 	for i, item := range player.Items {
-		playerItems[i] = item.Id.Hex()
+		playerItems[i] = item.Id
 	}
 
 	return &PlayerInfo{

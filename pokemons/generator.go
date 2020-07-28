@@ -34,7 +34,7 @@ func GetOneWildPokemon(maxLevel float64, stdHPDeviation float64, maxHP float64, 
 	}
 
 	wildPokemon := &Pokemon{
-		Id:      primitive.NewObjectID(),
+		Id:      primitive.NewObjectID().Hex(),
 		Species: species,
 		Level:   level,
 		XP:      experience.GetMinXpForLevel(float64(level)),
