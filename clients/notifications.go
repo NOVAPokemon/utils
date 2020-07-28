@@ -14,6 +14,7 @@ import (
 	ws "github.com/NOVAPokemon/utils/websockets"
 	notificationMessages "github.com/NOVAPokemon/utils/websockets/notifications"
 	"github.com/gorilla/websocket"
+	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -144,7 +145,12 @@ func (client *NotificationClient) GetOthersListening(authToken string) ([]string
 }
 
 func (client *NotificationClient) parseToNotification(wsMsg *ws.WebsocketMsg) {
-	notificationMsg := wsMsg.Content.Data.(notificationMessages.NotificationMessage)
+	notificationMsg := notificationMessages.NotificationMessage{}
+	err := mapstructure.Decode(wsMsg.Content.Data, &notificationMsg)
+	if err != nil {
+		panic(err)
+	}
+
 	client.NotificationsChannel <- notificationMsg.Notification
 	log.Infof("Received %s from the websocket", notificationMsg.Notification.Content)
 }
