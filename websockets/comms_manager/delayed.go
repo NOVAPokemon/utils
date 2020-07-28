@@ -93,9 +93,9 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websoc
 	msgType, p, err := conn.ReadMessage()
 	if err != nil {
 		log.Warn(err)
+		return nil, err
 	}
 
-	log.Infof("type: %d, content: %s", msgType, string(p))
 	taggedContent := websockets.ParseContent(p)
 	wsMsg := &websockets.WebsocketMsg{
 		MsgType: msgType,
