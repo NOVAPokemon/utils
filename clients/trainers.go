@@ -301,7 +301,7 @@ func (c *TrainersClient) GetItemsToken(username, authToken string) error {
 
 // verifications of tokens
 
-func (c *TrainersClient) VerifyItems(username string, hash []byte, authToken string) (*bool, error) {
+func (c *TrainersClient) VerifyItems(username string, hash string, authToken string) (*bool, error) {
 	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.VerifyItemsPath, username), hash)
 	if err != nil {
 		return nil, errors.WrapVerifyItemsError(err)
@@ -314,7 +314,7 @@ func (c *TrainersClient) VerifyItems(username string, hash []byte, authToken str
 	return &res, errors.WrapVerifyItemsError(err)
 }
 
-func (c *TrainersClient) VerifyPokemons(username string, hashes map[string][]byte, authToken string) (*bool,
+func (c *TrainersClient) VerifyPokemons(username string, hashes map[string]string, authToken string) (*bool,
 	error) {
 	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.VerifyPokemonsPath, username), hashes)
 	if err != nil {
@@ -328,7 +328,7 @@ func (c *TrainersClient) VerifyPokemons(username string, hashes map[string][]byt
 	return &res, errors.WrapVerifyPokemonsError(err)
 }
 
-func (c *TrainersClient) VerifyTrainerStats(username string, hash []byte, authToken string) (*bool, error) {
+func (c *TrainersClient) VerifyTrainerStats(username string, hash string, authToken string) (*bool, error) {
 	req, err := BuildRequest("POST", c.TrainersAddr, fmt.Sprintf(api.VerifyTrainerStatsPath, username), hash)
 	if err != nil {
 		return nil, errors.WrapVerifyStatsError(err)

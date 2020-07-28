@@ -62,8 +62,8 @@ func GetTransactionsFromUser(username string) ([]utils.TransactionRecord, error)
 	return result, nil
 }
 
-func AddTransaction(transaction utils.TransactionRecord) (*primitive.ObjectID, error) {
-	transaction.Id = primitive.NewObjectID()
+func AddTransaction(transaction utils.TransactionRecord) (*string, error) {
+	transaction.Id = primitive.NewObjectID().Hex()
 
 	var ctx = dbClient.Ctx
 	var collection = dbClient.Collection
@@ -72,7 +72,7 @@ func AddTransaction(transaction utils.TransactionRecord) (*primitive.ObjectID, e
 	if err != nil {
 		return nil, wrapAddTransactionError(err, transaction.User)
 	} else {
-		log.Infof("Added new transaction: %s", transaction.Id.Hex())
+		log.Infof("Added new transaction: %s", transaction.Id)
 		return &transaction.Id, nil
 	}
 }
