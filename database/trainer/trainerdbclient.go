@@ -193,6 +193,7 @@ func AddItemsToTrainer(username string, itemsToAdd []items.Item) (map[string]ite
 
 	res := collection.FindOneAndUpdate(*ctx, filter, change, opts)
 	if res.Err() != nil {
+		log.Error(res.Err())
 		return nil, wrapAddItemsToTrainerError(ErrorTrainerNotFound, username)
 	}
 
