@@ -1,17 +1,10 @@
 package websockets
 
 const (
-	Start    = "START"
 	SetToken = "SETTOKEN"
 	Finish   = "FINISH"
 	Error    = "ERROR"
 )
-
-type StartMessage struct{}
-
-func (s StartMessage) ConvertToWSMessage() *WebsocketMsg {
-	return NewStandardMsg(Start, nil)
-}
 
 type FinishMessage struct {
 	Success bool

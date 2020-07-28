@@ -30,9 +30,11 @@ type Lobby struct {
 	TrainerOutChannels    []chan *WebsocketMsg
 	trainerConnections    []*websocket.Conn
 	finishOnce            sync.Once
+
+	StartTrackInfo *TrackedInfo
 }
 
-func NewLobby(id string, capacity int) *Lobby {
+func NewLobby(id string, capacity int, startTrackInfo *TrackedInfo) *Lobby {
 	return &Lobby{
 		Capacity:              capacity,
 		Id:                    id,
@@ -47,6 +49,7 @@ func NewLobby(id string, capacity int) *Lobby {
 		Finished:              make(chan struct{}),
 		changeLobbyLock:       &sync.Mutex{},
 		finishOnce:            sync.Once{},
+		StartTrackInfo:        startTrackInfo,
 	}
 }
 

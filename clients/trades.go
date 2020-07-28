@@ -225,7 +225,7 @@ func (client *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*
 	msgData := wsMsg.Content.Data
 
 	switch wsMsgContent.AppMsgType {
-	case ws.Start:
+	case trades.StartTrade:
 		close(client.started)
 	case trades.RejectTrade:
 		close(client.rejected)
