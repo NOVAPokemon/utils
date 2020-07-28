@@ -67,11 +67,8 @@ func (d *DelayedCommsManager) ApplySendLogic(msg *websockets.WebsocketMsg) *webs
 			IsClient:    d.IsClient,
 			Content:     *msg.Content,
 		}
-
 		wrapperGenericMsg := taggedMsg.ConvertToWSMessage()
-
 		log.Info("Will send: %+v", wrapperGenericMsg)
-
 		return wrapperGenericMsg
 	}
 
@@ -83,7 +80,7 @@ func (d *DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, ms
 	msg = d.ApplySendLogic(msg)
 
 	if msg.Content == nil {
-		return conn.WriteMessage(msg.MsgType, nil)
+		return conn.WriteMessage(msg.MsgType, []byte{})
 	}
 
 	return conn.WriteMessage(msg.MsgType, msg.Content.Serialize())
@@ -93,7 +90,6 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websoc
 	msgType, p, err := conn.ReadMessage()
 	if err != nil {
 		log.Warn(err)
-		return nil, err
 	}
 
 	taggedContent := websockets.ParseContent(p)
