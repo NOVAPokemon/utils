@@ -10,14 +10,13 @@ import (
 )
 
 func HandleUseItem(info *ws.TrackedInfo, useItemMsg *UseItemMessage, issuer *TrainerBattleStatus,
-	issuerChan chan *ws.WebsocketMsg,
-	cooldownDuration time.Duration) bool {
+	issuerChan chan *ws.WebsocketMsg, cooldownDuration time.Duration) bool {
 
 	if issuer.Cooldown {
-		issuerChan <- ws.ErrorMessage{
+		issuerChan <- ErrorBattleMessage{
 			Info:  fmt.Sprintf(ErrorCooldown.Error()),
 			Fatal: false,
-		}.ConvertToWSMessageWithInfo(info)
+		}.ConvertToWSMessage(*info)
 
 		return false
 	}
@@ -25,27 +24,27 @@ func HandleUseItem(info *ws.TrackedInfo, useItemMsg *UseItemMessage, issuer *Tra
 	itemId := useItemMsg.ItemId
 	item, ok := issuer.TrainerItems[itemId]
 	if !ok {
-		issuerChan <- ws.ErrorMessage{
+		issuerChan <- ErrorBattleMessage{
 			Info:  fmt.Sprintf(ErrorInvalidItemSelected.Error()),
 			Fatal: false,
-		}.ConvertToWSMessageWithInfo(info)
+		}.ConvertToWSMessage(*info)
 
 		return false
 	}
 
 	if !item.Effect.Appliable {
-		issuerChan <- ws.ErrorMessage{
+		issuerChan <- ErrorBattleMessage{
 			Info:  fmt.Sprintf(ErrorItemNotAppliable.Error()),
 			Fatal: false,
-		}.ConvertToWSMessageWithInfo(info)
+		}.ConvertToWSMessage(*info)
 	}
 
 	err := item.Apply(issuer.SelectedPokemon)
 	if err != nil {
-		issuerChan <- ws.ErrorMessage{
+		issuerChan <- ErrorBattleMessage{
 			Info:  fmt.Sprintf(err.Error()),
 			Fatal: false,
-		}.ConvertToWSMessageWithInfo(info)
+		}.ConvertToWSMessage(*info)
 	}
 
 	issuer.CdTimer.Reset(cooldownDuration)
@@ -66,22 +65,22 @@ func HandleSelectPokemon(info *ws.TrackedInfo, selectedPokemonMsg *SelectPokemon
 	selectedPokemonId := selectedPokemonMsg.PokemonId
 	pokemon, ok := issuer.TrainerPokemons[selectedPokemonId]
 	if !ok {
-		errMsg := ws.ErrorMessage{
+		errMsg := ErrorBattleMessage{
 			Info:  fmt.Sprintf(ErrorInvalidPokemonSelected.Error()),
 			Fatal: false,
 		}
 
-		issuerChan <- errMsg.ConvertToWSMessageWithInfo(info)
+		issuerChan <- errMsg.ConvertToWSMessage(*info)
 		return false
 	}
 
 	if pokemon.HP <= 0 {
-		errMsg := ws.ErrorMessage{
+		errMsg := ErrorBattleMessage{
 			Info:  fmt.Sprintf(ErrorPokemonNoHP.Error()),
 			Fatal: false,
 		}
 
-		issuerChan <- errMsg.ConvertToWSMessageWithInfo(info)
+		issuerChan <- errMsg.ConvertToWSMessage(*info)
 		return false
 	}
 
@@ -95,19 +94,19 @@ func HandleDefendMove(info *ws.TrackedInfo, issuer *TrainerBattleStatus, issuerC
 	cooldownDuration time.Duration) {
 	// if the pokemon is dead, player must select a new pokemon
 	if issuer.SelectedPokemon.HP == 0 {
-		issuerChan <- ws.ErrorMessage{
+		issuerChan <- ErrorBattleMessage{
 			Info:  fmt.Sprintf(ErrorPokemonNoHP.Error()),
 			Fatal: false,
-		}.ConvertToWSMessageWithInfo(info)
+		}.ConvertToWSMessage(*info)
 		return
 	}
 
 	// if player has moved recently and is in Cooldown, discard move
 	if issuer.Cooldown {
-		issuerChan <- ws.ErrorMessage{
+		issuerChan <- ErrorBattleMessage{
 			Info:  fmt.Sprintf(ErrorCooldown.Error()),
 			Fatal: false,
-		}.ConvertToWSMessageWithInfo(info)
+		}.ConvertToWSMessage(*info)
 		return
 	}
 	issuer.CdTimer.Reset(cooldownDuration)
@@ -123,19 +122,19 @@ func HandleDefendMove(info *ws.TrackedInfo, issuer *TrainerBattleStatus, issuerC
 func HandleAttackMove(info *ws.TrackedInfo, issuer *TrainerBattleStatus, issuerChan chan *ws.WebsocketMsg,
 	defending bool, otherPokemon *pokemons.Pokemon, cooldownDuration time.Duration) bool {
 	if issuer.SelectedPokemon.HP == 0 {
-		issuerChan <- ws.ErrorMessage{
+		issuerChan <- ErrorBattleMessage{
 			Info:  fmt.Sprintf(ErrorPokemonNoHP.Error()),
 			Fatal: false,
-		}.ConvertToWSMessageWithInfo(info)
+		}.ConvertToWSMessage(*info)
 		return false
 	}
 
 	// if player has moved recently and is in Cooldown, discard move
 	if issuer.Cooldown {
-		issuerChan <- ws.ErrorMessage{
+		issuerChan <- ErrorBattleMessage{
 			Info:  fmt.Sprintf(ErrorCooldown.Error()),
 			Fatal: false,
-		}.ConvertToWSMessageWithInfo(info)
+		}.ConvertToWSMessage(*info)
 		return false
 	}
 

@@ -11,6 +11,9 @@ const (
 	Queue     = "QUEUE"
 	Challenge = "CHALLENGE"
 
+	StartBattle   = "START_BATTLE"
+	RejectBattle  = "REJECT_BATTLE"
+	ErrorBattle   = "ERROR_BATTLE"
 	Attack        = "ATTACK"
 	Defend        = "DEFEND"
 	UpdatePokemon = "UPDATE_POKEMON"
@@ -19,6 +22,27 @@ const (
 	SelectPokemon = "SELECT_POKEMON"
 	Status        = "STATUS"
 )
+
+type StartBattleMessage struct{}
+
+func (s StartBattleMessage) ConvertToWSMessage(info websockets.TrackedInfo) *websockets.WebsocketMsg {
+	return websockets.NewReplyMsg(StartBattle, nil, info)
+}
+
+type RejectBattleMessage struct{}
+
+func (s RejectBattleMessage) ConvertToWSMessage(info websockets.TrackedInfo) *websockets.WebsocketMsg {
+	return websockets.NewReplyMsg(RejectBattle, nil, info)
+}
+
+type ErrorBattleMessage struct{
+	Info  string
+	Fatal bool
+}
+
+func (e ErrorBattleMessage) ConvertToWSMessage(info websockets.TrackedInfo) *websockets.WebsocketMsg {
+	return websockets.NewReplyMsg(ErrorBattle, e, info)
+}
 
 type DefendMessage struct{}
 
