@@ -63,7 +63,7 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 
 	conn, _, err := dialer.Dial(u.String(), header)
 	defer func() {
-		if err := conn.Close(); err != nil {
+		if err = conn.Close(); err != nil {
 			log.Error(err)
 		}
 	}()

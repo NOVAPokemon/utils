@@ -53,11 +53,11 @@ func GetGymsForServer(serverName string) ([]utils.GymWithServer, error) {
 
 	var gymsForServer []utils.GymWithServer
 	defer func() {
-		if err := cursor.Close(*ctx); err != nil {
+		if err = cursor.Close(*ctx); err != nil {
 			log.Error(err)
 		}
 	}()
-	if err := cursor.All(*ctx, &gymsForServer); err != nil {
+	if err = cursor.All(*ctx, &gymsForServer); err != nil {
 		return nil, wrapGetServerConfig(err, serverName)
 
 	}

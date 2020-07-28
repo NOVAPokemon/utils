@@ -62,7 +62,7 @@ func GetAllUsers() ([]utils.User, error) {
 	defer databaseUtils.CloseCursor(cur, ctx)
 	for cur.Next(*ctx) {
 		var result utils.User
-		err := cur.Decode(&result)
+		err = cur.Decode(&result)
 		if err != nil {
 			return nil, wrapGetAllUsersError(err)
 		} else {
@@ -70,7 +70,7 @@ func GetAllUsers() ([]utils.User, error) {
 		}
 	}
 
-	if err := cur.Err(); err != nil {
+	if err = cur.Err(); err != nil {
 		return nil, wrapGetAllUsersError(err)
 	}
 	return results, nil

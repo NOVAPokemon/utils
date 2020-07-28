@@ -120,7 +120,7 @@ func (d *DelayedCommsManager) HTTPRequestInterceptor(next http.Handler) http.Han
 		}
 		requesterIsClient, err := strconv.ParseBool(r.Header.Get(tagIsClientKey))
 		if err != nil {
-			panic(fmt.Sprintf("could not parse %s to bool", requesterIsClient))
+			panic(fmt.Sprintf("could not parse %+v to bool", requesterIsClient))
 		}
 
 		delay := d.getDelay(requesterLocationTag, requesterIsClient)
