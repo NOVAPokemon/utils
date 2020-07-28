@@ -4,7 +4,6 @@ import (
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
 	"github.com/golang/geo/s2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type User struct {
@@ -29,7 +28,7 @@ type TransactionTemplate struct {
 }
 
 type TransactionRecord struct {
-	Id           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Id           string `json:"id" bson:"_id,omitempty"`
 	User         string
 	TemplateName string
 }
@@ -49,7 +48,7 @@ type Battle struct {
 }
 
 type Lobby struct {
-	Id       primitive.ObjectID
+	Id       string
 	Username string
 }
 
@@ -60,7 +59,7 @@ type UserJSON struct {
 
 type Notification struct {
 	Id       string `json:"id" bson:"_id,omitempty"`
-	Username string             `json:"username" bson:"username,omitempty"`
+	Username string `json:"username" bson:"username,omitempty"`
 	Type     string
 	Content  string
 }

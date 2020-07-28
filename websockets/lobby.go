@@ -7,7 +7,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
@@ -17,7 +16,7 @@ const (
 
 // Lobby maintains the connections from both trainers and the status of the battle
 type Lobby struct {
-	Id              primitive.ObjectID
+	Id              string
 	changeLobbyLock *sync.Mutex
 	TrainersJoined  int
 	Started         chan struct{}
@@ -33,7 +32,7 @@ type Lobby struct {
 	finishOnce            sync.Once
 }
 
-func NewLobby(id primitive.ObjectID, capacity int) *Lobby {
+func NewLobby(id string, capacity int) *Lobby {
 	return &Lobby{
 		Capacity:              capacity,
 		Id:                    id,
@@ -57,14 +56,14 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn,
 	defer lobby.changeLobbyLock.Unlock()
 
 	if lobby.TrainersJoined >= lobby.Capacity {
-		return -1, NewLobbyIsFullError(lobby.Id.Hex())
+		return -1, NewLobbyIsFullError(lobby.Id)
 	}
 
 	select {
 	case <-lobby.Started:
-		return - 1, NewLobbyStartedError(lobby.Id.Hex())
+		return - 1, NewLobbyStartedError(lobby.Id)
 	case <-lobby.Finished:
-		return - 1, NewLobbyFinishedError(lobby.Id.Hex())
+		return - 1, NewLobbyFinishedError(lobby.Id)
 	default:
 		trainerNum := lobby.TrainersJoined
 		trainerChanIn := make(chan *WebsocketMsg)

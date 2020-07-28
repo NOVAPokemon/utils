@@ -34,7 +34,7 @@ func TestAddTransaction(t *testing.T) {
 		t.FailNow()
 	}
 
-	t.Log("added: " + res.Hex())
+	t.Log("added: " + *res)
 }
 
 func TestGetTransactionsFromUser(t *testing.T) {
@@ -45,7 +45,7 @@ func TestGetTransactionsFromUser(t *testing.T) {
 		t.FailNow()
 		return
 	}
-	t.Log("added: " + added.Hex())
+	t.Log("added: " + *added)
 
 	transactions, err := GetTransactionsFromUser(transactionRecordMockup.User)
 
@@ -58,7 +58,7 @@ func TestGetTransactionsFromUser(t *testing.T) {
 	contains := false
 
 	for _, transaction := range transactions {
-		if transaction.Id.Hex() == added.Hex() {
+		if transaction.Id == *added {
 			contains = true
 			break
 		}

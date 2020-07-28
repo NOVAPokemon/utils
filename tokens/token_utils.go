@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -212,8 +213,10 @@ func setTokenInHeader(headerName string, token interface{ jwt.Claims }, headers 
 	headers.Set(headerName, tokenString)
 }
 
-func generateHash(toHash interface{}) []byte {
+func generateHash(toHash interface{}) string {
 	marshaled, _ := json.Marshal(toHash)
 	hash := md5.Sum(marshaled)
-	return hash[:]
+	encoder := base64.Encoding{}
+	hashB64 := encoder.EncodeToString(hash[:])
+	return hashB64
 }
