@@ -25,6 +25,7 @@ const (
 
 var (
 	authJWTKey = []byte("authJWTKey")
+	b64Encoder    = base64.Encoding{}
 )
 
 func ExtractAndVerifyAuthToken(headers http.Header) (*AuthToken, error) {
@@ -166,7 +167,7 @@ func AddTrainerStatsToken(stats utils.TrainerStats, headers http.Header) {
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerStatsToken := &TrainerStatsToken{
 		TrainerStats:   stats,
-		TrainerHash:    generateHash(stats),
+		TrainerHash:    GenerateHash(stats),
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
 	setTokenInHeader(StatsTokenHeaderName, trainerStatsToken, headers)
@@ -177,7 +178,7 @@ func AddPokemonsTokens(pokemons map[string]pokemons.Pokemon, headers http.Header
 	for _, v := range pokemons {
 		pokemonToken := &PokemonToken{
 			Pokemon:        v,
-			PokemonHash:    generateHash(v),
+			PokemonHash:    GenerateHash(v),
 			StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 		}
 		addTokenToHeader(PokemonsTokenHeaderName, pokemonToken, headers)
@@ -188,7 +189,7 @@ func AddItemsToken(items map[string]items.Item, headers http.Header) {
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerItemsToken := &ItemsToken{
 		Items:          items,
-		ItemsHash:      generateHash(items),
+		ItemsHash:      GenerateHash(items),
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
 	setTokenInHeader(ItemsTokenHeaderName, trainerItemsToken, headers)
@@ -213,10 +214,9 @@ func setTokenInHeader(headerName string, token interface{ jwt.Claims }, headers 
 	headers.Set(headerName, tokenString)
 }
 
-func generateHash(toHash interface{}) string {
+func GenerateHash(toHash interface{}) string {
 	marshaled, _ := json.Marshal(toHash)
 	hash := md5.Sum(marshaled)
-	encoder := base64.Encoding{}
-	hashB64 := encoder.EncodeToString(hash[:])
+	hashB64 := b64Encoder.EncodeToString(hash[:])
 	return hashB64
 }
