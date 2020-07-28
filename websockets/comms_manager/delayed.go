@@ -80,7 +80,7 @@ func (d *DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, ms
 	msg = d.ApplySendLogic(msg)
 
 	if msg.Content == nil {
-		return conn.WriteMessage(msg.MsgType, []byte{})
+		return conn.WriteMessage(msg.MsgType, nil)
 	}
 
 	return conn.WriteMessage(msg.MsgType, msg.Content.Serialize())
