@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mitchellh/mapstructure"
 	"io/ioutil"
 	"math"
 	"math/rand"
@@ -173,28 +174,53 @@ func (c *LocationClient) handleLocationMsg(wsMsg *ws.WebsocketMsg, authToken str
 
 	switch wsMsg.Content.AppMsgType {
 	case location.Gyms:
-		gyms := msgData.(location.GymsMessage).Gyms
+		gymsMsg := &location.GymsMessage{}
+		if err := mapstructure.Decode(msgData, gymsMsg); err != nil {
+			panic(err)
+		}
+		gyms := gymsMsg.Gyms
 		if len(gyms) > 0 {
 			server := gyms[0].ServerName
 			c.SetGyms(server, gyms)
 		}
 	case location.Pokemon:
-		c.SetPokemons(msgData.(location.PokemonMessage).Pokemon)
+		pokemonMsg := &location.PokemonMessage{}
+		if err := mapstructure.Decode(msgData, pokemonMsg); err != nil {
+			panic(err)
+		}
+		c.SetPokemons(pokemonMsg.Pokemon)
 	case location.CatchPokemonResponse:
-		cwpMsg := msgData.(location.CatchWildPokemonMessageResponse)
-		catchPokemonResponses <- &cwpMsg
+
+		cwpMsg := &location.CatchWildPokemonMessageResponse{}
+		if err := mapstructure.Decode(msgData, cwpMsg); err != nil {
+			panic(err)
+		}
+
+		catchPokemonResponses <- cwpMsg
 	case location.ServersResponse:
-		serversMsg := msgData.(location.ServersMessage)
+
+		serversMsg := &location.ServersMessage{}
+		if err := mapstructure.Decode(msgData, serversMsg); err != nil {
+			panic(err)
+		}
+
 		log.Info("received servers ", serversMsg.Servers)
 		err := c.updateConnections(serversMsg.Servers, authToken)
 		if err != nil {
 			return errors2.WrapHandleLocationMsgError(err)
 		}
 	case location.CellsResponse:
-		cellsMsg := msgData.(location.CellsPerServerMessage)
+		cellsMsg := &location.CellsPerServerMessage{}
+		if err := mapstructure.Decode(msgData, cellsMsg); err != nil {
+			panic(err)
+		}
+
 		c.updateLocationWithCells(cellsMsg.CellsPerServer, cellsMsg.OriginServer)
 	case ws.Error:
-		errMsg := msgData.(ws.ErrorMessage)
+		errMsg := &ws.ErrorMessage{}
+		if err := mapstructure.Decode(msgData, errMsg); err != nil {
+			panic(err)
+		}
 		log.Error(errMsg.Info)
 
 		if errMsg.Fatal {
