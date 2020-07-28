@@ -122,7 +122,7 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	}
 
 	defer func() {
-		if err := conn.Close(); err != nil {
+		if err = conn.Close(); err != nil {
 			log.Error(err)
 		}
 	}()

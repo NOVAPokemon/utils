@@ -235,12 +235,12 @@ func (c *TrainersClient) GetAllTrainerTokens(username string, authToken string) 
 	}
 
 	// Stats
-	if err := c.SetTrainerStatsToken(resp.Header.Get(tokens.StatsTokenHeaderName)); err != nil {
+	if err = c.SetTrainerStatsToken(resp.Header.Get(tokens.StatsTokenHeaderName)); err != nil {
 		return errors.WrapGetAllTokensError(err)
 	}
 
 	// ItemId
-	if err := c.SetItemsToken(resp.Header.Get(tokens.ItemsTokenHeaderName)); err != nil {
+	if err = c.SetItemsToken(resp.Header.Get(tokens.ItemsTokenHeaderName)); err != nil {
 		return errors.WrapGetAllTokensError(err)
 	}
 

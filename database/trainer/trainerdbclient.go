@@ -78,7 +78,7 @@ func GetAllTrainers() ([]utils.Trainer, error) {
 	defer databaseUtils.CloseCursor(cur, ctx)
 	for cur.Next(*ctx) {
 		var result utils.Trainer
-		err := cur.Decode(&result)
+		err = cur.Decode(&result)
 		if err != nil {
 			return nil, wrapGetAllTrainersError(err)
 		} else {
