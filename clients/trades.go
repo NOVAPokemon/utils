@@ -2,6 +2,7 @@ package clients
 
 import (
 	"fmt"
+	"github.com/mitchellh/mapstructure"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -218,7 +219,9 @@ func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverH
 }
 
 func (client *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*string, error) {
+
 	wsMsgContent := wsMsg.Content
+
 	msgData := wsMsg.Content.Data
 
 	switch wsMsgContent.AppMsgType {
@@ -227,10 +230,16 @@ func (client *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*
 	case ws.Reject:
 		close(client.rejected)
 	case trades.Update:
-		updateMsg := msgData.(trades.UpdateMessage)
-		log.Debug(updateMsg)
+		updateMsg := &trades.UpdateMessage{}
+		if err := mapstructure.Decode(msgData, updateMsg); err != nil {
+			panic(err)
+		}
+		log.Debugf("%+v ", updateMsg)
 	case ws.SetToken:
-		tokenMessage := msgData.(ws.SetTokenMessage)
+		tokenMessage := &ws.SetTokenMessage{}
+		if err := mapstructure.Decode(msgData, tokenMessage); err != nil {
+			panic(err)
+		}
 		_, err := tokens.ExtractItemsToken(tokenMessage.TokensString[0])
 		if err != nil {
 			log.Error(errors.WrapHandleMessagesTradeError(err))
@@ -238,7 +247,10 @@ func (client *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*
 
 		return &tokenMessage.TokensString[0], nil
 	case ws.Finish:
-		finishMsg := msgData.(ws.FinishMessage)
+		finishMsg := &ws.FinishMessage{}
+		if err := mapstructure.Decode(msgData, finishMsg); err != nil {
+			panic(err)
+		}
 		log.Info("Finished, Success: ", finishMsg.Success)
 		client.finishOnce.Do(func() { close(client.finished) })
 	}
