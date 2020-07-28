@@ -11,7 +11,6 @@ import (
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type MicrotransactionsClient struct {
@@ -63,7 +62,7 @@ func (c *MicrotransactionsClient) GetTransactionRecords(authToken string) ([]uti
 	return transactions, errors.WrapGetTransactionsRecordsError(err)
 }
 
-func (c *MicrotransactionsClient) PerformTransaction(offerName, authToken, statsToken string) (*primitive.ObjectID,
+func (c *MicrotransactionsClient) PerformTransaction(offerName, authToken, statsToken string) (*string,
 	string, error) {
 	req, err := BuildRequest("POST", c.MicrotransactionsAddr,
 		fmt.Sprintf(api.MakeTransactionPath, offerName), nil)
@@ -74,7 +73,7 @@ func (c *MicrotransactionsClient) PerformTransaction(offerName, authToken, stats
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 	req.Header.Set(tokens.StatsTokenHeaderName, statsToken)
 
-	transactionId := &primitive.ObjectID{}
+	var transactionId *string
 	resp, err := DoRequest(c.httpClient, req, transactionId, c.commsManager)
 	if err != nil {
 		return nil, "", errors.WrapPerformTransactionError(err)
