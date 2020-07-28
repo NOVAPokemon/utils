@@ -90,6 +90,7 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websoc
 	msgType, p, err := conn.ReadMessage()
 	if err != nil {
 		log.Warn(err)
+		return nil, err
 	}
 
 	taggedContent := websockets.ParseContent(p)
