@@ -73,11 +73,11 @@ func (c *MicrotransactionsClient) PerformTransaction(offerName, authToken, stats
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 	req.Header.Set(tokens.StatsTokenHeaderName, statsToken)
 
-	var transactionId *string
-	resp, err := DoRequest(c.httpClient, req, transactionId, c.commsManager)
+	var transactionId string
+	resp, err := DoRequest(c.httpClient, req, &transactionId, c.commsManager)
 	if err != nil {
 		return nil, "", errors.WrapPerformTransactionError(err)
 	}
 
-	return transactionId, resp.Header.Get(tokens.StatsTokenHeaderName), nil
+	return &transactionId, resp.Header.Get(tokens.StatsTokenHeaderName), nil
 }
