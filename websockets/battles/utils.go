@@ -51,8 +51,8 @@ func HandleUseItem(info *ws.TrackedInfo, useItemMsg *UseItemMessage, issuer *Tra
 	issuer.CdTimer.Reset(cooldownDuration)
 	issuer.Cooldown = true
 
-	issuer.UsedItems[item.Id.Hex()] = item
-	delete(issuer.TrainerItems, item.Id.Hex())
+	issuer.UsedItems[item.Id] = item
+	delete(issuer.TrainerItems, item.Id)
 	UpdateTrainerPokemon(info, *issuer.SelectedPokemon, issuerChan, true)
 	issuerChan <- RemoveItemMessage{
 		ItemId: itemId,

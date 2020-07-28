@@ -1,9 +1,5 @@
 package items
 
-import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
 const (
 	HealName       = "potion"
 	ReviveName     = "revive"
@@ -34,7 +30,7 @@ var (
 )
 
 type Item struct {
-	Id     primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Id     string `json:"id" bson:"_id,omitempty"`
 	Name   string
 	Effect Effect
 }

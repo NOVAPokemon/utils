@@ -20,9 +20,9 @@ var id2 = primitive.NewObjectID()
 var id3 = primitive.NewObjectID()
 
 var pokemonsTest = map[string]pokemons.Pokemon{
-	id1.Hex(): {Id: id1},
-	id2.Hex(): {Id: id2},
-	id3.Hex(): {Id: id3},
+	id1.Hex(): {Id: id1.Hex()},
+	id2.Hex(): {Id: id2.Hex()},
+	id3.Hex(): {Id: id3.Hex()},
 }
 
 var itemsToTest = map[string]items.Item{
@@ -83,7 +83,7 @@ func TestPokemonToken(t *testing.T) {
 
 	for k, token := range tokens {
 		fmt.Println(k, token)
-		correpondingPokemon := pokemonsTest[token.Pokemon.Id.Hex()]
+		correpondingPokemon := pokemonsTest[token.Pokemon.Id]
 		logrus.Infof("%+v-%+v", correpondingPokemon, token.Pokemon)
 		assert.Equal(t, correpondingPokemon, token.Pokemon)
 	}

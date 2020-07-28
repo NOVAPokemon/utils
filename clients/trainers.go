@@ -364,8 +364,8 @@ func (c *TrainersClient) SetPokemonTokens(header http.Header) error {
 			return errors.WrapSetPokemonTokensError(err)
 		}
 
-		auxClaims[pokemonClaims.Pokemon.Id.Hex()] = *pokemonClaims
-		auxTkns[pokemonClaims.Pokemon.Id.Hex()] = tkns[i]
+		auxClaims[pokemonClaims.Pokemon.Id] = *pokemonClaims
+		auxTkns[pokemonClaims.Pokemon.Id] = tkns[i]
 
 		added++
 	}
@@ -394,7 +394,7 @@ func (c *TrainersClient) AppendPokemonTokens(tkns []string) error {
 			return errors.WrapAppendPokemonTokensError(err)
 		}
 
-		pokemonIdString := pokemonClaims.Pokemon.Id.Hex()
+		pokemonIdString := pokemonClaims.Pokemon.Id
 
 		c.PokemonClaims[pokemonIdString] = *pokemonClaims
 		c.PokemonTokens[pokemonIdString] = tkns[i]

@@ -143,7 +143,7 @@ func TestAppendRemovePokemon(t *testing.T) {
 	_, _ = AddTrainer(trainerMockup)
 
 	toAdd := pokemons.Pokemon{
-		Id: primitive.NewObjectID(),
+		Id: primitive.NewObjectID().Hex(),
 	}
 
 	trainerPokemons, err := AddPokemonToTrainer(trainerMockup.Username, toAdd)
@@ -154,7 +154,7 @@ func TestAppendRemovePokemon(t *testing.T) {
 		return
 	}
 
-	_, ok := trainerPokemons[toAdd.Id.Hex()]
+	_, ok := trainerPokemons[toAdd.Id]
 
 	if !ok {
 		t.Error("Pokemon is not in added pokemons")
@@ -171,7 +171,7 @@ func TestAppendRemovePokemon(t *testing.T) {
 	}
 
 	user, err := GetTrainerByUsername(trainerMockup.Username)
-	_, ok = user.Pokemons[toAdd.Id.Hex()]
+	_, ok = user.Pokemons[toAdd.Id]
 
 	if ok {
 		t.Error("Pokemon was not removed")
@@ -214,7 +214,7 @@ func TestAppendAndRemoveItem(t *testing.T) {
 
 	assert.True(t, len(itemsAdded) == 2)
 
-	toRemove := primitive.ObjectID{}
+	toRemove := ""
 	for _, v := range itemsAdded {
 		toRemove = v.Id
 	}
@@ -229,7 +229,7 @@ func TestAppendAndRemoveItem(t *testing.T) {
 
 	assert.True(t, len(itemsAdded) == 1)
 
-	toRemove = primitive.ObjectID{}
+	toRemove = ""
 	for _, v := range itemsAdded {
 		toRemove = v.Id
 	}
