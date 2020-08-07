@@ -1,8 +1,6 @@
 package utils
 
 import (
-	originalHttp "net/http"
-
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 
 	"github.com/pkg/errors"
@@ -18,11 +16,11 @@ const (
 	errorReadingStdin   = "error reading from stdin"
 )
 
-func LogAndSendHTTPError(w *originalHttp.ResponseWriter, err error, httpCode int) {
+func LogAndSendHTTPError(w *http.ResponseWriter, err error, httpCode int) {
 	log.Error(err)
 	http.Error(*w, err.Error(), httpCode)
 }
-func LogWarnAndSendHTTPError(w *originalHttp.ResponseWriter, err error, httpCode int) {
+func LogWarnAndSendHTTPError(w *http.ResponseWriter, err error, httpCode int) {
 	log.Warn(err)
 	http.Error(*w, err.Error(), httpCode)
 }

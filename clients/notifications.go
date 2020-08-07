@@ -3,7 +3,6 @@ package clients
 import (
 	"fmt"
 	http "github.com/bruno-anjos/archimedesHTTPClient"
-	originalHttp "net/http"
 	"net/url"
 	"os"
 	"time"
@@ -54,12 +53,12 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 	u := url.URL{Scheme: "ws", Host: client.NotificationsAddr, Path: api.SubscribeNotificationPath}
 
 	dialer := &websocket.Dialer{
-		Proxy:            originalHttp.ProxyFromEnvironment,
+		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
 	}
 
 	log.Info("Dialing: ", u.String())
-	header := originalHttp.Header{}
+	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	conn, _, err := dialer.Dial(u.String(), header)

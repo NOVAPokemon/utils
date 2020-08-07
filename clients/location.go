@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mitchellh/mapstructure"
 	"io/ioutil"
 	"math"
 	"math/rand"
-	http "github.com/bruno-anjos/archimedesHTTPClient"
-	originalHttp "net/http"
 	"net/url"
 	"os"
 	"sync"
 	"time"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -309,11 +309,11 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg,
 	authToken string) (*websocket.Conn, error) {
 	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverUrl, utils.LocationPort), Path: api.UserLocationPath}
-	header := originalHttp.Header{}
+	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	dialer := &websocket.Dialer{
-		Proxy:            originalHttp.ProxyFromEnvironment,
+		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
 	}
 

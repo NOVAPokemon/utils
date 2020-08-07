@@ -2,9 +2,9 @@ package api
 
 import (
 	"fmt"
-	originalHttp "net/http"
 
 	"github.com/NOVAPokemon/utils"
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 )
 
 // Indicates if the server is online.
-func Status(w originalHttp.ResponseWriter, _ *originalHttp.Request) {
+func Status(w http.ResponseWriter, _ *http.Request) {
 	_, _ = fmt.Fprintln(w, StatusOnline)
 }
 

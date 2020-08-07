@@ -2,7 +2,6 @@ package comms_manager
 
 import (
 	"fmt"
-	originalHttp "net/http"
 	"strconv"
 	"time"
 
@@ -108,8 +107,8 @@ func (d *DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Reque
 	return client.Do(req)
 }
 
-func (d *DelayedCommsManager) HTTPRequestInterceptor(next originalHttp.Handler) originalHttp.Handler {
-	return originalHttp.HandlerFunc(func(w originalHttp.ResponseWriter, r *originalHttp.Request) {
+func (d *DelayedCommsManager) HTTPRequestInterceptor(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requesterLocationTag := r.Header.Get(locationTagKey)
 		if requesterLocationTag == "" {
 			next.ServeHTTP(w, r)

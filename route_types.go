@@ -1,8 +1,7 @@
 package utils
 
 import (
-	originalHttp "net/http"
-
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 	"github.com/gorilla/mux"
 )
 
@@ -10,7 +9,7 @@ type Route struct {
 	Name        string
 	Method      string
 	Pattern     string
-	HandlerFunc originalHttp.HandlerFunc
+	HandlerFunc http.HandlerFunc
 }
 
 type Routes []Route

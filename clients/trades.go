@@ -2,15 +2,15 @@ package clients
 
 import (
 	"fmt"
-	"github.com/mitchellh/mapstructure"
 	"math/rand"
-	http "github.com/bruno-anjos/archimedesHTTPClient"
-	originalHttp "net/http"
 	"net/url"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -108,12 +108,12 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	}
 	log.Infof("Connecting to: %s", u.String())
 
-	header := originalHttp.Header{}
+	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
 	dialer := &websocket.Dialer{
-		Proxy:            originalHttp.ProxyFromEnvironment,
+		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
 	}
 

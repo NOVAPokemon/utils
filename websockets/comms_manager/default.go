@@ -1,8 +1,6 @@
 package comms_manager
 
 import (
-	originalHttp "net/http"
-
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 	log "github.com/sirupsen/logrus"
 
@@ -58,6 +56,6 @@ func (d *DefaultCommsManager) DoHTTPRequest(client *http.Client, req *http.Reque
 	return client.Do(req)
 }
 
-func (d *DefaultCommsManager) HTTPRequestInterceptor(next originalHttp.Handler) originalHttp.Handler {
+func (d *DefaultCommsManager) HTTPRequestInterceptor(next http.Handler) http.Handler {
 	return next
 }

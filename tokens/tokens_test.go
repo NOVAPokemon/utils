@@ -2,12 +2,12 @@ package tokens
 
 import (
 	"fmt"
-	originalHttp "net/http"
 	"os"
 	"testing"
 
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAuthToken(t *testing.T) {
-	header := originalHttp.Header{}
+	header := http.Header{}
 	AddAuthToken(username, header)
 	token, err := ExtractAndVerifyAuthToken(header)
 
@@ -50,7 +50,7 @@ func TestAuthToken(t *testing.T) {
 }
 
 func TestItemsToken(t *testing.T) {
-	header := originalHttp.Header{}
+	header := http.Header{}
 	AddItemsToken(itemsToTest, header)
 	token, err := ExtractAndVerifyItemsToken(header)
 
@@ -66,7 +66,7 @@ func TestItemsToken(t *testing.T) {
 }
 
 func TestPokemonToken(t *testing.T) {
-	header := originalHttp.Header{}
+	header := http.Header{}
 
 	AddPokemonsTokens(pokemonsTest, header)
 	tokens, err := ExtractAndVerifyPokemonTokens(header)
