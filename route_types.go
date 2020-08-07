@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"net/http"
+	originalHttp "net/http"
 
 	"github.com/gorilla/mux"
 )
@@ -10,7 +10,7 @@ type Route struct {
 	Name        string
 	Method      string
 	Pattern     string
-	HandlerFunc http.HandlerFunc
+	HandlerFunc originalHttp.HandlerFunc
 }
 
 type Routes []Route

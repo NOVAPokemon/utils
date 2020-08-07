@@ -2,10 +2,11 @@ package clients
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"sync"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -45,6 +46,8 @@ func NewTrainersClient(client *http.Client, manager websockets.CommunicationMana
 		log.Warn("missing ", utils.TrainersEnvVar)
 		trainersURL = defaultTrainersURL
 	}
+
+	log.Debug("trainers url set to ", trainersURL)
 
 	return &TrainersClient{
 		TrainersAddr: trainersURL,

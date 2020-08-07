@@ -2,9 +2,11 @@ package comms_manager
 
 import (
 	"fmt"
-	"net/http"
+	originalHttp "net/http"
 	"strconv"
 	"time"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
@@ -106,8 +108,8 @@ func (d *DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Reque
 	return client.Do(req)
 }
 
-func (d *DelayedCommsManager) HTTPRequestInterceptor(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (d *DelayedCommsManager) HTTPRequestInterceptor(next originalHttp.Handler) originalHttp.Handler {
+	return originalHttp.HandlerFunc(func(w originalHttp.ResponseWriter, r *originalHttp.Request) {
 		requesterLocationTag := r.Header.Get(locationTagKey)
 		if requesterLocationTag == "" {
 			next.ServeHTTP(w, r)

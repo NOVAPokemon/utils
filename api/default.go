@@ -2,7 +2,7 @@ package api
 
 import (
 	"fmt"
-	"net/http"
+	originalHttp "net/http"
 
 	"github.com/NOVAPokemon/utils"
 )
@@ -16,7 +16,7 @@ const (
 )
 
 // Indicates if the server is online.
-func Status(w http.ResponseWriter, _ *http.Request) {
+func Status(w originalHttp.ResponseWriter, _ *originalHttp.Request) {
 	_, _ = fmt.Fprintln(w, StatusOnline)
 }
 

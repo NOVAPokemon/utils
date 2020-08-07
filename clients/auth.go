@@ -3,7 +3,7 @@ package clients
 import (
 	"errors"
 	"fmt"
-	"net/http"
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 	"os"
 
 	"github.com/NOVAPokemon/utils"

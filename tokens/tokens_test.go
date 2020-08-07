@@ -2,7 +2,7 @@ package tokens
 
 import (
 	"fmt"
-	"net/http"
+	originalHttp "net/http"
 	"os"
 	"testing"
 
@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAuthToken(t *testing.T) {
-	header := http.Header{}
+	header := originalHttp.Header{}
 	AddAuthToken(username, header)
 	token, err := ExtractAndVerifyAuthToken(header)
 
@@ -50,7 +50,7 @@ func TestAuthToken(t *testing.T) {
 }
 
 func TestItemsToken(t *testing.T) {
-	header := http.Header{}
+	header := originalHttp.Header{}
 	AddItemsToken(itemsToTest, header)
 	token, err := ExtractAndVerifyItemsToken(header)
 
@@ -66,7 +66,7 @@ func TestItemsToken(t *testing.T) {
 }
 
 func TestPokemonToken(t *testing.T) {
-	header := http.Header{}
+	header := originalHttp.Header{}
 
 	AddPokemonsTokens(pokemonsTest, header)
 	tokens, err := ExtractAndVerifyPokemonTokens(header)

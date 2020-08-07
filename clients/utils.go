@@ -3,9 +3,10 @@ package clients
 import (
 	"bytes"
 	"encoding/json"
-	"net/http"
 	"net/url"
 	"time"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"

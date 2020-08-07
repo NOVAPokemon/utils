@@ -2,6 +2,7 @@ package trainer
 
 import (
 	"context"
+	"net/url"
 	"os"
 
 	"github.com/NOVAPokemon/utils"
@@ -9,6 +10,7 @@ import (
 	"github.com/NOVAPokemon/utils/experience"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
+	archimedes "github.com/bruno-anjos/archimedes/api"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,13 +23,29 @@ const collectionName = "Trainers"
 
 var dbClient databaseUtils.DBClient
 
-func init() {
-	url, exists := os.LookupEnv(utils.MongoEnvVar)
+func InitTrainersDBClient(archimedesEnabled bool) {
+	mongoUrl, exists := os.LookupEnv(utils.MongoEnvVar)
 	if !exists {
-		url = databaseUtils.DefaultMongoDBUrl
+		mongoUrl = databaseUtils.DefaultMongoDBUrl
 	}
 
-	client, err := mongo.NewClient(options.Client().ApplyURI(url))
+	if archimedesEnabled {
+		urlParsed, err := url.Parse(mongoUrl)
+		if err != nil {
+			panic(err)
+		}
+
+		log.SetLevel(log.DebugLevel)
+
+		resolvedHostPort, err := archimedes.ResolveServiceInArchimedes(urlParsed.Host)
+		if err != nil {
+			panic(err)
+		}
+
+		mongoUrl = "mongodb://" + resolvedHostPort
+	}
+
+	client, err := mongo.NewClient(options.Client().ApplyURI(mongoUrl))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,7 +1,10 @@
 package comms_manager
 
 import (
-	"net/http"
+	originalHttp "net/http"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
@@ -50,9 +53,11 @@ func (d *DefaultCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websoc
 }
 
 func (d *DefaultCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
+	log.Debugf("doing req: %+v", req)
+	log.Debug("host in dohttprequest: ", req.Host)
 	return client.Do(req)
 }
 
-func (d *DefaultCommsManager) HTTPRequestInterceptor(next http.Handler) http.Handler {
+func (d *DefaultCommsManager) HTTPRequestInterceptor(next originalHttp.Handler) originalHttp.Handler {
 	return next
 }

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	archimedesHttp "github.com/bruno-anjos/archimedesHTTPClient"
+
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
@@ -192,7 +194,7 @@ func (client *BattleLobbyClient) RejectChallenge(authToken, battleId, serverHost
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	_, err = DoRequest(&http.Client{}, req, nil, client.commsManager)
+	_, err = DoRequest(&archimedesHttp.Client{}, req, nil, client.commsManager)
 	if err != nil {
 		if strings.Contains(err.Error(), fmt.Sprintf("got status code %d", http.StatusNotFound)) {
 			log.Warn(errors.WrapRejectBattleChallengeError(err))

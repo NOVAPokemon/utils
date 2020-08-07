@@ -2,7 +2,8 @@ package clients
 
 import (
 	"fmt"
-	"net/http"
+	http "github.com/bruno-anjos/archimedesHTTPClient"
+	originalHttp "net/http"
 	"net/url"
 	"os"
 	"time"
@@ -78,14 +79,14 @@ func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsTo
 	gymId string, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
 	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.GymPort), Path: fmt.Sprintf(api.JoinRaidPath, gymId)}
 	log.Infof("Connecting to: %s", u.String())
-	header := http.Header{}
+	header := originalHttp.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.StatsTokenHeaderName, statsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
 	dialer := &websocket.Dialer{
-		Proxy:            http.ProxyFromEnvironment,
+		Proxy:            originalHttp.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
 	}
 

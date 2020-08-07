@@ -8,7 +8,8 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
-	"net/http"
+	http "github.com/bruno-anjos/archimedesHTTPClient"
+	originalHttp "net/http"
 	"net/url"
 	"os"
 	"sync"
@@ -308,11 +309,11 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg,
 	authToken string) (*websocket.Conn, error) {
 	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverUrl, utils.LocationPort), Path: api.UserLocationPath}
-	header := http.Header{}
+	header := originalHttp.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	dialer := &websocket.Dialer{
-		Proxy:            http.ProxyFromEnvironment,
+		Proxy:            originalHttp.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
 	}
 

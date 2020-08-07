@@ -4,7 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
-	"net/http"
+	originalHttp "net/http"
 	"strings"
 	"time"
 
@@ -28,7 +28,7 @@ var (
 	b64Encoder    = base64.Encoding{}
 )
 
-func ExtractAndVerifyAuthToken(headers http.Header) (*AuthToken, error) {
+func ExtractAndVerifyAuthToken(headers originalHttp.Header) (*AuthToken, error) {
 	tknStr := headers.Get(AuthTokenHeaderName)
 	authToken := &AuthToken{}
 
@@ -48,7 +48,7 @@ func ExtractAndVerifyAuthToken(headers http.Header) (*AuthToken, error) {
 	return authToken, nil
 }
 
-func ExtractAndVerifyTrainerStatsToken(headers http.Header) (*TrainerStatsToken, error) {
+func ExtractAndVerifyTrainerStatsToken(headers originalHttp.Header) (*TrainerStatsToken, error) {
 	tknStr := headers.Get(StatsTokenHeaderName)
 	statsTkn := &TrainerStatsToken{}
 
@@ -68,7 +68,7 @@ func ExtractAndVerifyTrainerStatsToken(headers http.Header) (*TrainerStatsToken,
 	return statsTkn, nil
 }
 
-func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error) {
+func ExtractAndVerifyPokemonTokens(headers originalHttp.Header) ([]*PokemonToken, error) {
 	tkns, ok := headers[PokemonsTokenHeaderName]
 	if !ok {
 		err := wrapExtractVerifyPokemonTokensError(ErrorNoPokemonTokens)
@@ -98,7 +98,7 @@ func ExtractAndVerifyPokemonTokens(headers http.Header) ([]*PokemonToken, error)
 	return pokemonTkns[:i], nil
 }
 
-func ExtractAndVerifyItemsToken(headers http.Header) (*ItemsToken, error) {
+func ExtractAndVerifyItemsToken(headers originalHttp.Header) (*ItemsToken, error) {
 	tknStr := headers.Get(ItemsTokenHeaderName)
 	itemsToken := &ItemsToken{}
 
@@ -153,7 +153,7 @@ func ExtractItemsToken(itemsToken string) (*ItemsToken, error) {
 	return &claims, nil
 }
 
-func AddAuthToken(username string, headers http.Header) {
+func AddAuthToken(username string, headers originalHttp.Header) {
 	expirationTime := time.Now().Add(JWTDuration)
 	authToken := &AuthToken{
 		Username:       username,
@@ -163,7 +163,7 @@ func AddAuthToken(username string, headers http.Header) {
 	setTokenInHeader(AuthTokenHeaderName, authToken, headers)
 }
 
-func AddTrainerStatsToken(stats utils.TrainerStats, headers http.Header) {
+func AddTrainerStatsToken(stats utils.TrainerStats, headers originalHttp.Header) {
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerStatsToken := &TrainerStatsToken{
 		TrainerStats:   stats,
@@ -173,7 +173,7 @@ func AddTrainerStatsToken(stats utils.TrainerStats, headers http.Header) {
 	setTokenInHeader(StatsTokenHeaderName, trainerStatsToken, headers)
 }
 
-func AddPokemonsTokens(pokemons map[string]pokemons.Pokemon, headers http.Header) {
+func AddPokemonsTokens(pokemons map[string]pokemons.Pokemon, headers originalHttp.Header) {
 	expirationTime := time.Now().Add(JWTDuration)
 	for _, v := range pokemons {
 		pokemonToken := &PokemonToken{
@@ -185,7 +185,7 @@ func AddPokemonsTokens(pokemons map[string]pokemons.Pokemon, headers http.Header
 	}
 }
 
-func AddItemsToken(items map[string]items.Item, headers http.Header) {
+func AddItemsToken(items map[string]items.Item, headers originalHttp.Header) {
 	expirationTime := time.Now().Add(JWTDuration)
 	trainerItemsToken := &ItemsToken{
 		Items:          items,
@@ -195,7 +195,7 @@ func AddItemsToken(items map[string]items.Item, headers http.Header) {
 	setTokenInHeader(ItemsTokenHeaderName, trainerItemsToken, headers)
 }
 
-func addTokenToHeader(headerName string, token interface{ jwt.Claims }, headers http.Header) {
+func addTokenToHeader(headerName string, token interface{ jwt.Claims }, headers originalHttp.Header) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, token)
 	tokenString, err := jwtToken.SignedString(authJWTKey)
 	if err != nil {
@@ -205,7 +205,7 @@ func addTokenToHeader(headerName string, token interface{ jwt.Claims }, headers 
 	headers.Add(headerName, tokenString)
 }
 
-func setTokenInHeader(headerName string, token interface{ jwt.Claims }, headers http.Header) {
+func setTokenInHeader(headerName string, token interface{ jwt.Claims }, headers originalHttp.Header) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, token)
 	tokenString, err := jwtToken.SignedString(authJWTKey)
 	if err != nil {

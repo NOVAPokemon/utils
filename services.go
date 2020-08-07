@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"os"
 	"time"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/comms_manager"
@@ -66,6 +67,7 @@ func StartServer(serviceName, host string, port int, routes Routes, manager webs
 	r.Use(manager.HTTPRequestInterceptor)
 
 	log.Infof("Starting %s server in port %d...\n", serviceName, port)
+
 	log.Fatal(http.ListenAndServe(addr, r))
 }
 
@@ -137,14 +139,21 @@ func getClientDelays(clientDelaysFilename string) *comms_manager.ClientDelays {
 }
 
 type Flags struct {
-	LogToStdout  *bool
-	DelayedComms *bool
+	LogToStdout       *bool
+	DelayedComms      *bool
+	ArchimedesEnabled *bool
 }
 
 func setLogFlag() *bool {
 	var logToStdout bool
 	flag.BoolVar(&logToStdout, "l", false, "log to stdout")
 	return &logToStdout
+}
+
+func setArchimedesFlag() *bool {
+	var archimedesFlag bool
+	flag.BoolVar(&archimedesFlag, "a", false, "archimedes")
+	return &archimedesFlag
 }
 
 func SetDelayedFlag() *bool {
@@ -161,12 +170,14 @@ func ParseFlags(serviceName string) Flags {
 
 	logToStdOut := setLogFlag()
 	delayedComms := SetDelayedFlag()
+	archimedesEnabled := setArchimedesFlag()
 
 	flag.Parse()
 
 	return Flags{
-		LogToStdout:  logToStdOut,
-		DelayedComms: delayedComms,
+		LogToStdout:       logToStdOut,
+		DelayedComms:      delayedComms,
+		ArchimedesEnabled: archimedesEnabled,
 	}
 }
 

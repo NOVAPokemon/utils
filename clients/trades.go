@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"math/rand"
-	"net/http"
+	http "github.com/bruno-anjos/archimedesHTTPClient"
+	originalHttp "net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -107,12 +108,12 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	}
 	log.Infof("Connecting to: %s", u.String())
 
-	header := http.Header{}
+	header := originalHttp.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
 	dialer := &websocket.Dialer{
-		Proxy:            http.ProxyFromEnvironment,
+		Proxy:            originalHttp.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
 	}
 
