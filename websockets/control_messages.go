@@ -2,8 +2,9 @@ package websockets
 
 import (
 	"encoding/json"
-	"net/http"
 	"time"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
