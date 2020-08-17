@@ -3,10 +3,12 @@ package location
 import (
 	"context"
 	"errors"
+	"net/url"
 	"os"
 
 	"github.com/NOVAPokemon/utils"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
+	archimedes "github.com/bruno-anjos/archimedes/api"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,13 +20,27 @@ const gymsConfigCollectionName = "GymConfigs"
 
 var dbClient databaseUtils.DBClient
 
-func init() {
-	url, exists := os.LookupEnv(utils.MongoEnvVar)
+func InitGymDBClient(archimedesEnabled bool) {
+	mongoUrl, exists := os.LookupEnv(utils.MongoEnvVar)
 	if !exists {
-		url = databaseUtils.DefaultMongoDBUrl
+		mongoUrl = databaseUtils.DefaultMongoDBUrl
 	}
 
-	client, err := mongo.NewClient(options.Client().ApplyURI(url))
+	if archimedesEnabled {
+		urlParsed, err := url.Parse(mongoUrl)
+		if err != nil {
+			panic(err)
+		}
+
+		resolvedHostPort, err := archimedes.ResolveServiceInArchimedes(nil, urlParsed.Host)
+		if err != nil {
+			panic(err)
+		}
+
+		mongoUrl = "mongodb://" + resolvedHostPort
+	}
+
+	client, err := mongo.NewClient(options.Client().ApplyURI(mongoUrl))
 	if err != nil {
 		log.Fatal(err)
 	}

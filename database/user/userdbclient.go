@@ -33,8 +33,6 @@ func InitUsersDBClient(archimedesEnabled bool) {
 			panic(err)
 		}
 
-		log.SetLevel(log.DebugLevel)
-
 		resolvedHostPort, err := archimedes.ResolveServiceInArchimedes(nil, urlParsed.Host)
 		if err != nil {
 			panic(err)
