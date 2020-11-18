@@ -7,7 +7,7 @@ import (
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/database"
-	archimedes "github.com/bruno-anjos/archimedes/api"
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,7 +32,8 @@ func InitTransactionsDBClient(archimedesEnabled bool) {
 			panic(err)
 		}
 
-		resolvedHostPort, err := archimedes.ResolveServiceInArchimedes(nil, urlParsed.Host)
+		client := http.Client{}
+		resolvedHostPort, err := client.ResolveServiceInArchimedes(urlParsed.Host)
 		if err != nil {
 			panic(err)
 		}

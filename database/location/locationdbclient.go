@@ -7,20 +7,24 @@ import (
 
 	"github.com/NOVAPokemon/utils"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
-	archimedes "github.com/bruno-anjos/archimedes/api"
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const databaseName = "NOVAPokemonDB"
-const usersLocationCollectionName = "UsersLocation"
-const gymsLocationCollectionName = "GymsLocation"
-const globalConfigCollectionName = "RegionConfigs"
-const wildPokemonCollectionName = "WildPokemons"
+const (
+	databaseName                = "NOVAPokemonDB"
+	usersLocationCollectionName = "UsersLocation"
+	gymsLocationCollectionName  = "GymsLocation"
+	globalConfigCollectionName  = "RegionConfigs"
+	wildPokemonCollectionName   = "WildPokemons"
+)
 
-var dbClient databaseUtils.DBClientMultipleCollections
+var (
+	dbClient databaseUtils.DBClientMultipleCollections
+)
 
 func InitLocationDBClient(archimedesEnabled bool) {
 	mongoUrl, exists := os.LookupEnv(utils.MongoEnvVar)
@@ -34,7 +38,9 @@ func InitLocationDBClient(archimedesEnabled bool) {
 			panic(err)
 		}
 
-		resolvedHostPort, err := archimedes.ResolveServiceInArchimedes(nil, urlParsed.Host)
+		client := http.Client{}
+
+		resolvedHostPort, err := client.ResolveServiceInArchimedes(urlParsed.Host)
 		if err != nil {
 			panic(err)
 		}
