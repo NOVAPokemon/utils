@@ -33,13 +33,15 @@ type TradeLobbyClient struct {
 	readChannel  chan *ws.WebsocketMsg
 	writeChannel chan *ws.WebsocketMsg
 	commsManager ws.CommunicationManager
+	client       *http.Client
 }
 
 var (
 	defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
 )
 
-func NewTradesClient(config utils.TradesClientConfig, manager ws.CommunicationManager) *TradeLobbyClient {
+func NewTradesClient(config utils.TradesClientConfig, manager ws.CommunicationManager,
+	client *http.Client) *TradeLobbyClient {
 	tradesURL, exists := os.LookupEnv(utils.TradesEnvVar)
 
 	if !exists {
@@ -51,17 +53,18 @@ func NewTradesClient(config utils.TradesClientConfig, manager ws.CommunicationMa
 		TradesAddr:   tradesURL,
 		config:       config,
 		commsManager: manager,
+		client:       client,
 	}
 }
 
-func (client *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
-	req, err := BuildRequest("GET", client.TradesAddr, api.GetTradesPath, nil)
+func (t *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
+	req, err := BuildRequest("GET", t.TradesAddr, api.GetTradesPath, nil)
 	if err != nil {
 		return nil, errors.WrapGetTradeLobbiesError(err)
 	}
 
 	var tradesArray []utils.Lobby
-	_, err = DoRequest(&http.Client{}, req, &tradesArray, client.commsManager)
+	_, err = DoRequest(t.client, req, &tradesArray, t.commsManager)
 	if err != nil {
 		return nil, errors.WrapGetTradeLobbiesError(err)
 	}
@@ -69,10 +72,10 @@ func (client *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
 	return tradesArray, nil
 }
 
-func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken string,
+func (t *TradeLobbyClient) CreateTradeLobby(username string, authToken string,
 	itemsToken string) (*primitive.ObjectID, *string, error) {
 	body := api.CreateLobbyRequest{Username: username}
-	req, err := BuildRequest("POST", client.TradesAddr, api.StartTradePath, &body)
+	req, err := BuildRequest("POST", t.TradesAddr, api.StartTradePath, &body)
 	if err != nil {
 		return nil, nil, errors.WrapCreateTradeLobbyError(err)
 	}
@@ -85,7 +88,7 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	req.Header.Set(ws.TrackInfoHeaderName, trackInfo.SerializeToJSON())
 
 	var resp api.CreateLobbyResponse
-	_, err = DoRequest(&http.Client{}, req, &resp, client.commsManager)
+	_, err = DoRequest(t.client, req, &resp, t.commsManager)
 	if err != nil {
 		return nil, nil, errors.WrapCreateTradeLobbyError(err)
 	}
@@ -98,7 +101,7 @@ func (client *TradeLobbyClient) CreateTradeLobby(username string, authToken stri
 	return &lobbyId, &resp.ServerName, nil
 }
 
-func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
+func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	serverHostname string, authToken string, itemsToken string) (*string, error) {
 	u := url.URL{
 		Scheme: "ws",
@@ -126,21 +129,21 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 			log.Error(err)
 		}
 	}()
-	client.conn = conn
+	t.conn = conn
 
 	items, err := tokens.ExtractItemsToken(itemsToken)
 	if err != nil {
 		return nil, errors.WrapJoinTradeLobbyError(err)
 	}
 
-	client.started = make(chan struct{})
-	client.rejected = make(chan struct{})
-	client.finished = make(chan struct{})
-	client.finishOnce = sync.Once{}
-	client.readChannel = make(chan *ws.WebsocketMsg, 10)
-	client.writeChannel = make(chan *ws.WebsocketMsg, 10)
+	t.started = make(chan struct{})
+	t.rejected = make(chan struct{})
+	t.finished = make(chan struct{})
+	t.finishOnce = sync.Once{}
+	t.readChannel = make(chan *ws.WebsocketMsg, 10)
+	t.writeChannel = make(chan *ws.WebsocketMsg, 10)
 
-	go ReadMessagesFromConnToChan(conn, client.readChannel, client.finished, client.commsManager)
+	go ReadMessagesFromConnToChan(conn, t.readChannel, t.finished, t.commsManager)
 
 	itemIds := make([]string, len(items.Items))
 	i := 0
@@ -149,52 +152,52 @@ func (client *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 		i++
 	}
 
-	client.WaitForStart()
+	t.WaitForStart()
 	select {
-	case <-client.rejected:
+	case <-t.rejected:
 		log.Infof("trade was rejected")
 		return nil, nil
-	case <-client.finished:
+	case <-t.finished:
 		log.Warn("session finished before starting")
 		return nil, nil
 	default:
 		break
 	}
 
-	go WriteTextMessagesFromChanToConn(conn, client.commsManager, client.writeChannel, client.finished)
+	go WriteTextMessagesFromChanToConn(conn, t.commsManager, t.writeChannel, t.finished)
 
-	itemTokens, err := client.autoTrader(itemIds)
+	itemTokens, err := t.autoTrader(itemIds)
 
 	log.Info("Finishing trade...")
 
 	return itemTokens, errors.WrapJoinTradeLobbyError(err)
 }
 
-func (client *TradeLobbyClient) WaitForStart() {
+func (t *TradeLobbyClient) WaitForStart() {
 	log.Info("waiting for start...")
 
-	initialMessage, ok := <-client.readChannel
+	initialMessage, ok := <-t.readChannel
 
 	if ok {
-		_, err := client.HandleReceivedMessage(initialMessage)
+		_, err := t.HandleReceivedMessage(initialMessage)
 		if err != nil {
 			log.Error(err)
 		}
 	}
 
 	select {
-	case <-client.started:
-	case <-client.rejected:
-	case <-client.readChannel:
-		client.finishOnce.Do(func() { close(client.finished) })
-	case <-client.writeChannel:
-		client.finishOnce.Do(func() { close(client.finished) })
-	case <-client.finished:
+	case <-t.started:
+	case <-t.rejected:
+	case <-t.readChannel:
+		t.finishOnce.Do(func() { close(t.finished) })
+	case <-t.writeChannel:
+		t.finishOnce.Do(func() { close(t.finished) })
+	case <-t.finished:
 	}
 
 }
 
-func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostname, authToken,
+func (t *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostname, authToken,
 	itemsToken string) error {
 	addr := fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort)
 
@@ -206,7 +209,7 @@ func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverH
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 	req.Header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
-	_, err = DoRequest(&http.Client{}, req, nil, client.commsManager)
+	_, err = DoRequest(t.client, req, nil, t.commsManager)
 	if err != nil {
 		if strings.Contains(err.Error(), fmt.Sprintf("got status code %d", http.StatusNotFound)) {
 			log.Warn(errors.WrapRejectTradeLobbyError(err))
@@ -218,7 +221,7 @@ func (client *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverH
 	return nil
 }
 
-func (client *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*string, error) {
+func (t *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*string, error) {
 
 	wsMsgContent := wsMsg.Content
 
@@ -226,9 +229,9 @@ func (client *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*
 
 	switch wsMsgContent.AppMsgType {
 	case trades.StartTrade:
-		close(client.started)
+		close(t.started)
 	case trades.RejectTrade:
-		close(client.rejected)
+		close(t.rejected)
 	case trades.Update:
 		updateMsg := &trades.UpdateMessage{}
 		if err := mapstructure.Decode(msgData, updateMsg); err != nil {
@@ -252,22 +255,22 @@ func (client *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*
 			panic(err)
 		}
 		log.Info("Finished, Success: ", finishMsg.Success)
-		client.finishOnce.Do(func() { close(client.finished) })
+		t.finishOnce.Do(func() { close(t.finished) })
 	}
 
 	return nil, nil
 }
 
-func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, error) {
+func (t *TradeLobbyClient) autoTrader(availableItems []string) (*string, error) {
 	var finalItemTokens *string
 
 	numItems := len(availableItems)
 
 	var maxItemsToTrade int
-	if client.config.MaxItemsToTrade < 0 || client.config.MaxItemsToTrade > numItems {
+	if t.config.MaxItemsToTrade < 0 || t.config.MaxItemsToTrade > numItems {
 		maxItemsToTrade = numItems
-	} else if client.config.MaxItemsToTrade <= numItems {
-		maxItemsToTrade = client.config.MaxItemsToTrade
+	} else if t.config.MaxItemsToTrade <= numItems {
+		maxItemsToTrade = t.config.MaxItemsToTrade
 	}
 
 	var numItemsToAdd int
@@ -281,24 +284,24 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 
 	syncChannel := make(chan struct{})
 
-	go client.sendTradeMessages(numItemsToAdd, availableItems, syncChannel)
+	go t.sendTradeMessages(numItemsToAdd, availableItems, syncChannel)
 
 	for {
 		select {
-		case <-client.finished:
+		case <-t.finished:
 			<-syncChannel
 			return finalItemTokens, nil
-		case msgString, ok := <-client.readChannel:
+		case msgString, ok := <-t.readChannel:
 			if !ok {
 				select {
-				case <-client.finished:
+				case <-t.finished:
 					return finalItemTokens, nil
 				default:
 					return nil, nil
 				}
 			}
 
-			itemTokens, err := client.HandleReceivedMessage(msgString)
+			itemTokens, err := t.HandleReceivedMessage(msgString)
 			if err != nil {
 				return nil, err
 			}
@@ -311,28 +314,28 @@ func (client *TradeLobbyClient) autoTrader(availableItems []string) (*string, er
 	}
 }
 
-func (client *TradeLobbyClient) sendTradeMessages(numItemsToAdd int, availableItems []string,
+func (t *TradeLobbyClient) sendTradeMessages(numItemsToAdd int, availableItems []string,
 	syncChannel chan<- struct{}) {
 	itemsTraded := 0
 
-	timer := client.setTimerRandSleepTime(nil)
+	timer := t.setTimerRandSleepTime(nil)
 	if numItemsToAdd == 0 {
 		if !timer.Stop() {
 			<-timer.C
 		}
 
-		client.writeChannel <- trades.AcceptMessage{}.ConvertToWSMessage()
+		t.writeChannel <- trades.AcceptMessage{}.ConvertToWSMessage()
 	}
 
 	for {
 		select {
-		case <-client.finished:
+		case <-t.finished:
 			close(syncChannel)
 			return
 		case <-timer.C:
 			randomItemIdx := rand.Intn(len(availableItems))
 
-			client.writeChannel <- trades.TradeMessage{
+			t.writeChannel <- trades.TradeMessage{
 				ItemId: availableItems[randomItemIdx],
 			}.ConvertToWSMessage()
 
@@ -344,18 +347,18 @@ func (client *TradeLobbyClient) sendTradeMessages(numItemsToAdd int, availableIt
 			itemsTraded++
 
 			if itemsTraded < numItemsToAdd {
-				client.setTimerRandSleepTime(timer)
+				t.setTimerRandSleepTime(timer)
 			} else {
-				client.writeChannel <- trades.AcceptMessage{}.ConvertToWSMessage()
+				t.writeChannel <- trades.AcceptMessage{}.ConvertToWSMessage()
 			}
 		}
 	}
 }
 
-func (client *TradeLobbyClient) setTimerRandSleepTime(timer *time.Timer) *time.Timer {
+func (t *TradeLobbyClient) setTimerRandSleepTime(timer *time.Timer) *time.Timer {
 	var randSleep int
-	if client.config.ThinkTime > 0 {
-		randSleep = rand.Intn(client.config.ThinkTime)
+	if t.config.ThinkTime > 0 {
+		randSleep = rand.Intn(t.config.ThinkTime)
 	}
 
 	log.Infof("sleeping %d milliseconds", randSleep)

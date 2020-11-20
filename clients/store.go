@@ -22,7 +22,7 @@ type StoreClient struct {
 
 var defaultStoreURL = fmt.Sprintf("%s:%d", utils.Host, utils.StorePort)
 
-func NewStoreClient(commsManager websockets.CommunicationManager) *StoreClient {
+func NewStoreClient(commsManager websockets.CommunicationManager, client *http.Client) *StoreClient {
 	storeURL, exists := os.LookupEnv(utils.StoreEnvVar)
 
 	if !exists {
@@ -32,7 +32,7 @@ func NewStoreClient(commsManager websockets.CommunicationManager) *StoreClient {
 
 	return &StoreClient{
 		StoreAddr:    storeURL,
-		httpClient:   &http.Client{},
+		httpClient:   client,
 		commsManager: commsManager,
 	}
 }
