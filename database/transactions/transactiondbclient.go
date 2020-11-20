@@ -8,6 +8,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/database"
 	http "github.com/bruno-anjos/archimedesHTTPClient"
+	"github.com/golang/geo/s2"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,7 +33,15 @@ func InitTransactionsDBClient(archimedesEnabled bool) {
 			panic(err)
 		}
 
-		client := http.Client{}
+		var location string
+		location, exists = os.LookupEnv("LOCATION")
+		if !exists {
+			log.Fatalf("no location in environment")
+		}
+
+		client := &http.Client{}
+		client.InitArchimedesClient("localhost", http.DefaultArchimedesPort, s2.CellIDFromToken(location).LatLng())
+
 		resolvedHostPort, err := client.ResolveServiceInArchimedes(urlParsed.Host)
 		if err != nil {
 			panic(err)
