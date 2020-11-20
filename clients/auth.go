@@ -3,8 +3,9 @@ package clients
 import (
 	"errors"
 	"fmt"
-	http "github.com/bruno-anjos/archimedesHTTPClient"
 	"os"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -23,7 +24,7 @@ type AuthClient struct {
 
 var defaultAuthURL = fmt.Sprintf("%s:%d", utils.Host, utils.AuthenticationPort)
 
-func NewAuthClient(commsManager websockets.CommunicationManager) *AuthClient {
+func NewAuthClient(commsManager websockets.CommunicationManager, httpClient *http.Client) *AuthClient {
 	authURL, exists := os.LookupEnv(utils.AuthenticationEnvVar)
 
 	if !exists {
@@ -33,7 +34,7 @@ func NewAuthClient(commsManager websockets.CommunicationManager) *AuthClient {
 
 	return &AuthClient{
 		AuthAddr:     authURL,
-		httpClient:   &http.Client{},
+		httpClient:   httpClient,
 		commsManager: commsManager,
 	}
 }

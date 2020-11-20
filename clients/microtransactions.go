@@ -21,7 +21,7 @@ type MicrotransactionsClient struct {
 
 var defaultMicrotransactionsURL = fmt.Sprintf("%s:%d", utils.Host, utils.MicrotransactionsPort)
 
-func NewMicrotransactionsClient(manager websockets.CommunicationManager) *MicrotransactionsClient {
+func NewMicrotransactionsClient(manager websockets.CommunicationManager, httpCLient *http.Client) *MicrotransactionsClient {
 	microtransactionsURL, exists := os.LookupEnv(utils.MicrotransactionsEnvVar)
 
 	if !exists {
@@ -31,7 +31,7 @@ func NewMicrotransactionsClient(manager websockets.CommunicationManager) *Microt
 
 	return &MicrotransactionsClient{
 		MicrotransactionsAddr: microtransactionsURL,
-		httpClient:            &http.Client{},
+		httpClient:            httpCLient,
 		commsManager:          manager,
 	}
 }

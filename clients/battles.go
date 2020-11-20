@@ -22,13 +22,13 @@ import (
 
 type BattleLobbyClient struct {
 	BattlesAddr  string
-	httpClient   http.Client
+	httpClient   *http.Client
 	commsManager websockets.CommunicationManager
 }
 
 var defaultBattleURL = fmt.Sprintf("%s:%d", utils.Host, utils.BattlesPort)
 
-func NewBattlesClient(commsManager websockets.CommunicationManager) *BattleLobbyClient {
+func NewBattlesClient(commsManager websockets.CommunicationManager, httpClient *http.Client) *BattleLobbyClient {
 	battlesURL, exists := os.LookupEnv(utils.BattlesEnvVar)
 
 	if !exists {
@@ -38,7 +38,7 @@ func NewBattlesClient(commsManager websockets.CommunicationManager) *BattleLobby
 
 	return &BattleLobbyClient{
 		BattlesAddr:  battlesURL,
-		httpClient:   http.Client{},
+		httpClient:   httpClient,
 		commsManager: commsManager,
 	}
 }

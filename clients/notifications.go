@@ -31,7 +31,7 @@ var (
 )
 
 func NewNotificationClient(notificationsChannel chan utils.Notification,
-	manager ws.CommunicationManager) *NotificationClient {
+	manager ws.CommunicationManager, client *http.Client) *NotificationClient {
 	notificationsURL, exists := os.LookupEnv(utils.NotificationsEnvVar)
 
 	if !exists {
@@ -41,7 +41,7 @@ func NewNotificationClient(notificationsChannel chan utils.Notification,
 
 	return &NotificationClient{
 		NotificationsAddr:    notificationsURL,
-		httpClient:           &http.Client{},
+		httpClient:           client,
 		NotificationsChannel: notificationsChannel,
 		readChannel:          make(chan *ws.WebsocketMsg),
 		commsManager:         manager,

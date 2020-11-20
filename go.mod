@@ -3,7 +3,7 @@ module github.com/NOVAPokemon/utils
 go 1.13
 
 require (
-	github.com/bruno-anjos/archimedesHTTPClient latest
+	github.com/bruno-anjos/archimedesHTTPClient v0.0.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/golang/geo v0.0.0-20200319012246-673a6f80352d
 	github.com/gorilla/mux v1.7.4
@@ -17,5 +17,5 @@ require (
 )
 
 replace (
-	github.com/bruno-anjos/archimedesHTTPClient latest => ./../../bruno-anjos/archimedesHTTPClient
+	github.com/bruno-anjos/archimedesHTTPClient v0.0.2 => ./../../bruno-anjos/archimedesHTTPClient
 )

@@ -76,8 +76,8 @@ var (
 	catchPokemonResponses chan *location.CatchWildPokemonMessageResponse
 )
 
-func NewLocationClient(config utils.LocationClientConfig,
-	region string, manager ws.CommunicationManager) *LocationClient {
+func NewLocationClient(config utils.LocationClientConfig, region string,
+	manager ws.CommunicationManager, httpClient *http.Client) *LocationClient {
 	locationURL, exists := os.LookupEnv(utils.LocationEnvVar)
 
 	if !exists {
@@ -102,7 +102,7 @@ func NewLocationClient(config utils.LocationClientConfig,
 		config:              config,
 		pokemonsLock:        sync.Mutex{},
 		gyms:                sync.Map{},
-		HttpClient:          &http.Client{},
+		HttpClient:          httpClient,
 		CurrentLocation:     startingLocation,
 		LocationParameters:  config.Parameters,
 		DistanceToStartLat:  0.0,
@@ -356,6 +356,7 @@ func (c *LocationClient) updateLocation() {
 		Location: c.CurrentLocation,
 	}
 
+	c.HttpClient.SetLocation(c.CurrentLocation)
 	log.Info("updating location: ", c.CurrentLocation)
 
 	// Only runs once
