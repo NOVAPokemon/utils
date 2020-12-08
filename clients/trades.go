@@ -104,9 +104,14 @@ func (t *TradeLobbyClient) CreateTradeLobby(username string, authToken string,
 
 func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	serverHostname string, authToken string, itemsToken string) (*string, error) {
+	resolvedAddr, _, err := t.client.ResolveServiceInArchimedes(fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort))
+	if err != nil {
+		log.Panic(err)
+	}
+
 	u := url.URL{
 		Scheme: "ws",
-		Host:   fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort),
+		Host:   resolvedAddr,
 		Path:   fmt.Sprintf(api.JoinTradePath, tradeId.Hex()),
 	}
 	log.Infof("Connecting to: %s", u.String())

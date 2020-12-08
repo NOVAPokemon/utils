@@ -44,7 +44,12 @@ func NewBattlesClient(commsManager websockets.CommunicationManager, httpClient *
 }
 
 func (client *BattleLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
-	u := url.URL{Scheme: "http", Host: client.BattlesAddr, Path: "/battles"}
+	resolvedAddr, _, err := client.httpClient.ResolveServiceInArchimedes(client.BattlesAddr)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	u := url.URL{Scheme: "http", Host: resolvedAddr, Path: "/battles"}
 
 	resp, err := http.Get(u.String())
 	if err != nil {
@@ -62,7 +67,9 @@ func (client *BattleLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
 
 func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens []string, statsToken string,
 	itemsToken string) (*websocket.Conn, *battles.BattleChannels, error) {
-	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: api.QueueForBattlePath}
+	resolvedAddr, _, err := client.httpClient.ResolveServiceInArchimedes(client.BattlesAddr)
+
+	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: api.QueueForBattlePath}
 	log.Infof("Queuing for battle: %s", u.String())
 
 	dialer := &websocket.Dialer{
@@ -103,7 +110,9 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 
 func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, statsToken string,
 	itemsToken string, targetPlayer string) (*websocket.Conn, *battles.BattleChannels, int64, error) {
-	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.ChallengeToBattlePath, targetPlayer)}
+	resolvedAddr, _, err := client.httpClient.ResolveServiceInArchimedes(client.BattlesAddr)
+
+	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: fmt.Sprintf(api.ChallengeToBattlePath, targetPlayer)}
 	log.Infof("Connecting to: %s", u.String())
 
 	header := http.Header{}
@@ -145,8 +154,13 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 
 func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string,
 	itemsToken string, battleId string, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
+	resolvedAddr, _, err := client.httpClient.ResolveServiceInArchimedes(fmt.Sprintf("%s:%d", serverHostname,
+		utils.BattlesPort))
+	if err != nil {
+		log.Panic(err)
+	}
 
-	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.BattlesPort), Path: fmt.Sprintf(api.AcceptChallengePath, battleId)}
+	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: fmt.Sprintf(api.AcceptChallengePath, battleId)}
 	log.Infof("Accepting challenge: %s", u.String())
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)

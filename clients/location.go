@@ -308,7 +308,12 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 
 func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg,
 	authToken string) (*websocket.Conn, error) {
-	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverUrl, utils.LocationPort), Path: api.UserLocationPath}
+	resolvedAddr, _, err := c.HttpClient.ResolveServiceInArchimedes(fmt.Sprintf("%s:%d", serverUrl, utils.LocationPort))
+	if err != nil {
+		log.Panic(err)
+	}
+
+	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: api.UserLocationPath}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
@@ -444,7 +449,12 @@ func (c *LocationClient) AddGymLocation(gym utils.GymWithServer) error {
 }
 
 func (c *LocationClient) GetServerForLocation(loc s2.LatLng) (*string, error) {
-	u := url.URL{Scheme: "http", Host: c.LocationAddr, Path: fmt.Sprintf(api.GetServerForLocationPath)}
+	resolvedAddr, _, err := c.HttpClient.ResolveServiceInArchimedes(c.LocationAddr)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	u := url.URL{Scheme: "http", Host: resolvedAddr, Path: fmt.Sprintf(api.GetServerForLocationPath)}
 	q := u.Query()
 	q.Set(api.LatitudeQueryParam, fmt.Sprintf("%f", loc.Lat.Degrees()))
 	q.Set(api.LongitudeQueryParam, fmt.Sprintf("%f", loc.Lng.Degrees()))

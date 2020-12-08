@@ -2,10 +2,11 @@ package clients
 
 import (
 	"fmt"
-	http "github.com/bruno-anjos/archimedesHTTPClient"
 	"net/url"
 	"os"
 	"time"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -50,7 +51,12 @@ func NewNotificationClient(notificationsChannel chan utils.Notification,
 
 func (client *NotificationClient) ListenToNotifications(authToken string,
 	receiveFinish chan struct{}, emitFinish chan bool) error {
-	u := url.URL{Scheme: "ws", Host: client.NotificationsAddr, Path: api.SubscribeNotificationPath}
+	resolvedAddr, _ , err := client.httpClient.ResolveServiceInArchimedes(client.NotificationsAddr)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: api.SubscribeNotificationPath}
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,

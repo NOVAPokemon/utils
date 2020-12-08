@@ -77,7 +77,12 @@ func (g *GymClient) CreateRaid(serverHostname string, gymName string) error {
 
 func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsToken string, itemsToken string,
 	gymId string, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
-	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.GymPort), Path: fmt.Sprintf(api.JoinRaidPath, gymId)}
+	resolvedAddr, _, err := g.HttpClient.ResolveServiceInArchimedes(fmt.Sprintf("%s:%d", serverHostname, utils.GymPort))
+	if err != nil {
+		log.Panic(err)
+	}
+
+	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: fmt.Sprintf(api.JoinRaidPath, gymId)}
 	log.Infof("Connecting to: %s", u.String())
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
