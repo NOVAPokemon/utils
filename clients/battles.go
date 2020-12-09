@@ -207,7 +207,7 @@ func (client *BattleLobbyClient) RejectChallenge(authToken, battleId, serverHost
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
-	_, err = DoRequest(&http.Client{}, req, nil, client.commsManager)
+	_, err = DoRequest(client.httpClient, req, nil, client.commsManager)
 	if err != nil {
 		if strings.Contains(err.Error(), fmt.Sprintf("got status code %d", http.StatusNotFound)) {
 			log.Warn(errors.WrapRejectBattleChallengeError(err))

@@ -40,7 +40,6 @@ const (
 	TradesEnvVar            = "TRADES_URL"
 	TrainersEnvVar          = "TRAINERS_URL"
 
-	HeadlessServiceNameEnvVar = "HEADLESS_SERVICE_NAME"
 	HostnameEnvVar            = "HOSTNAME"
 	MongoEnvVar               = "MONGODB_URL"
 

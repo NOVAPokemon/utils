@@ -2,8 +2,9 @@ package clients
 
 import (
 	"fmt"
-	http "github.com/bruno-anjos/archimedesHTTPClient"
 	"os"
+
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
