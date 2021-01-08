@@ -104,14 +104,9 @@ func (t *TradeLobbyClient) CreateTradeLobby(username string, authToken string,
 
 func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	serverHostname string, authToken string, itemsToken string) (*string, error) {
-	resolvedAddr, _, err := t.client.ResolveServiceInArchimedes(fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort))
-	if err != nil {
-		log.Panic(err)
-	}
-
 	u := url.URL{
 		Scheme: "ws",
-		Host:   resolvedAddr,
+		Host:   serverHostname,
 		Path:   fmt.Sprintf(api.JoinTradePath, tradeId.Hex()),
 	}
 	log.Infof("Connecting to: %s", u.String())
@@ -205,9 +200,7 @@ func (t *TradeLobbyClient) WaitForStart() {
 
 func (t *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostname, authToken,
 	itemsToken string) error {
-	addr := fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort)
-
-	req, err := BuildRequest("POST", addr, fmt.Sprintf(api.RejectTradePath, lobbyId.Hex()), nil)
+	req, err := BuildRequest("POST", serverHostname, fmt.Sprintf(api.RejectTradePath, lobbyId.Hex()), nil)
 	if err != nil {
 		return errors.WrapRejectTradeLobbyError(err)
 	}

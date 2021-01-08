@@ -1,6 +1,10 @@
 package comms_manager
 
 import (
+	"os"
+	"sync/atomic"
+	"time"
+
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 	log "github.com/sirupsen/logrus"
 
@@ -8,7 +12,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type DefaultCommsManager struct{}
+const (
+	timeBetweenRetries = 5 * time.Second
+)
+
+type DefaultCommsManager struct {
+	RetriesCount  int64
+	RequestsCount int64
+}
 
 func (d *DefaultCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *websockets.WebsocketMsg {
 	if msg.MsgType == websocket.TextMessage && msg.Content.MsgKind == websockets.Reply {
@@ -53,7 +64,36 @@ func (d *DefaultCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websoc
 func (d *DefaultCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 	log.Debugf("doing req: %+v", req)
 	log.Debug("host in dohttprequest: ", req.Host)
-	return client.Do(req)
+
+	var (
+		resp    *http.Response
+		err     error
+		timer   time.Timer
+		retried = false
+	)
+
+	for {
+		resp, err = client.Do(req)
+		log.Infof("Requests count: %d", atomic.AddInt64(&d.RequestsCount, 1))
+
+		if os.IsTimeout(err) {
+			log.Infof("Retries count: %d", atomic.AddInt64(&d.RetriesCount, 1))
+		} else {
+			break
+		}
+
+		retried = true
+		timer.Reset(timeBetweenRetries)
+		<-timer.C
+	}
+
+	if retried {
+		if !timer.Stop() {
+			<-timer.C
+		}
+	}
+
+	return resp, err
 }
 
 func (d *DefaultCommsManager) HTTPRequestInterceptor(next http.Handler) http.Handler {

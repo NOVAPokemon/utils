@@ -2,7 +2,9 @@ package comms_manager
 
 import (
 	"fmt"
+	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/NOVAPokemon/utils/websockets"
@@ -14,40 +16,40 @@ import (
 )
 
 type S2DelayedCommsManager struct {
-	CellId       s2.CellID
-	DelaysMatrix *DelaysMatrixType
-	ClientDelays *ClientDelays
+	CellId        s2.CellID
+	DelaysMatrix  *DelaysMatrixType
+	ClientDelays  *ClientDelays
+	RetriesCount  int64
+	RequestsCount int64
 	CommsManagerWithClient
 }
 
-var (
-	cellsToRegion = map[s2.CellID]string{
-		s2.CellIDFromToken("54"): "ca-central-1",
-		s2.CellIDFromToken("4c"): "eu-west-1",
-		s2.CellIDFromToken("44"): "eu-central-1",
-		s2.CellIDFromToken("5c"): "ap-northeast-2",
-		s2.CellIDFromToken("7c"): "us-west-2",
-		s2.CellIDFromToken("84"): "us-west-1",
-		s2.CellIDFromToken("8c"): "us-east-1",
-		s2.CellIDFromToken("0c"): "eu-west-3",
-		s2.CellIDFromToken("14"): "eu-south-1",
-		s2.CellIDFromToken("3c"): "me-south-1",
-		s2.CellIDFromToken("34"): "ap-east-1",
-		s2.CellIDFromToken("64"): "ap-northeast-1",
-		s2.CellIDFromToken("74"): "ap-southeast-2",
-		s2.CellIDFromToken("9c"): "sa-east-1",
-		s2.CellIDFromToken("94"): "us-west-1",
-		s2.CellIDFromToken("04"): "sa-east-1",
-		s2.CellIDFromToken("1c"): "af-south-1",
-		s2.CellIDFromToken("24"): "ap-south-1",
-		s2.CellIDFromToken("2c"): "ap-southeast-1",
-		s2.CellIDFromToken("6c"): "ap-southeast-2",
-		s2.CellIDFromToken("a4"): "sa-east-1",
-		s2.CellIDFromToken("bc"): "sa-east-1",
-		s2.CellIDFromToken("b4"): "af-south-1",
-		s2.CellIDFromToken("ac"): "ap-southeast-2",
-	}
-)
+var cellsToRegion = map[s2.CellID]string{
+	s2.CellIDFromToken("54"): "ca-central-1",
+	s2.CellIDFromToken("4c"): "eu-west-1",
+	s2.CellIDFromToken("44"): "eu-central-1",
+	s2.CellIDFromToken("5c"): "ap-northeast-2",
+	s2.CellIDFromToken("7c"): "us-west-2",
+	s2.CellIDFromToken("84"): "us-west-1",
+	s2.CellIDFromToken("8c"): "us-east-1",
+	s2.CellIDFromToken("0c"): "eu-west-3",
+	s2.CellIDFromToken("14"): "eu-south-1",
+	s2.CellIDFromToken("3c"): "me-south-1",
+	s2.CellIDFromToken("34"): "ap-east-1",
+	s2.CellIDFromToken("64"): "ap-northeast-1",
+	s2.CellIDFromToken("74"): "ap-southeast-2",
+	s2.CellIDFromToken("9c"): "sa-east-1",
+	s2.CellIDFromToken("94"): "us-west-1",
+	s2.CellIDFromToken("04"): "sa-east-1",
+	s2.CellIDFromToken("1c"): "af-south-1",
+	s2.CellIDFromToken("24"): "ap-south-1",
+	s2.CellIDFromToken("2c"): "ap-southeast-1",
+	s2.CellIDFromToken("6c"): "ap-southeast-2",
+	s2.CellIDFromToken("a4"): "sa-east-1",
+	s2.CellIDFromToken("bc"): "sa-east-1",
+	s2.CellIDFromToken("b4"): "af-south-1",
+	s2.CellIDFromToken("ac"): "ap-southeast-2",
+}
 
 func (d *S2DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *websockets.WebsocketMsg {
 	if msg.MsgType != websocket.TextMessage || msg.Content.MsgKind != websockets.Wrapper {
@@ -119,7 +121,36 @@ func (d *S2DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*webs
 func (d *S2DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 	req.Header.Set(locationTagKey, d.CellId.ToToken())
 	req.Header.Set(tagIsClientKey, strconv.FormatBool(d.IsClient))
-	return client.Do(req)
+
+	var (
+		resp    *http.Response
+		err     error
+		timer   time.Timer
+		retried = false
+	)
+
+	for {
+		resp, err = client.Do(req)
+		log.Infof("Requests count: %d", atomic.AddInt64(&d.RequestsCount, 1))
+
+		if os.IsTimeout(err) {
+			log.Infof("Retries count: %d", atomic.AddInt64(&d.RetriesCount, 1))
+		} else {
+			break
+		}
+
+		retried = true
+		timer.Reset(timeBetweenRetries)
+		<-timer.C
+	}
+
+	if retried {
+		if !timer.Stop() {
+			<-timer.C
+		}
+	}
+
+	return resp, err
 }
 
 func (d *S2DelayedCommsManager) HTTPRequestInterceptor(next http.Handler) http.Handler {

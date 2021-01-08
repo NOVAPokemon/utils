@@ -19,6 +19,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	originalHTTP "net/http"
+	"github.com/NOVAPokemon/utils/clients"
 )
 
 const databaseName = "NOVAPokemonDB"
@@ -55,7 +57,7 @@ func InitTrainersDBClient(archimedesEnabled bool) {
 	}
 
 
-		client := &http.Client{}
+		client := &http.Client{Client: originalHTTP.Client{Timeout: clients.RequestTimeout}}
 		client.InitArchimedesClient(node, http.DefaultArchimedesPort, s2.CellIDFromToken(location).LatLng())
 
 		var (

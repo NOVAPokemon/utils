@@ -60,9 +60,12 @@ type LocationClient struct {
 	finishConnChans  sync.Map
 	connections      sync.Map
 
+	username string
+
 	commsManager ws.CommunicationManager
 
 	updateConnectionsLock sync.Mutex
+	restart               chan struct{}
 }
 
 const (
@@ -74,10 +77,11 @@ var (
 	timeoutInDuration     time.Duration
 	defaultLocationURL    = fmt.Sprintf("%s:%d", utils.Host, utils.LocationPort)
 	catchPokemonResponses chan *location.CatchWildPokemonMessageResponse
+	useConnLock           sync.Mutex
 )
 
-func NewLocationClient(config utils.LocationClientConfig, region string,
-	manager ws.CommunicationManager, httpClient *http.Client) *LocationClient {
+func NewLocationClient(config utils.LocationClientConfig, region string, manager ws.CommunicationManager,
+	username string, httpClient *http.Client) *LocationClient {
 	locationURL, exists := os.LookupEnv(utils.LocationEnvVar)
 
 	if !exists {
@@ -113,6 +117,7 @@ func NewLocationClient(config utils.LocationClientConfig, region string,
 		connections:         sync.Map{},
 		toConnsChans:        sync.Map{},
 		commsManager:        manager,
+		username:            username,
 	}
 }
 
@@ -130,6 +135,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	}
 
 	go c.updateLocationLoop()
+	go c.restartConnections(authToken)
 
 	for {
 		msgString, ok := <-c.fromConnChan
@@ -167,6 +173,52 @@ func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) e
 	log.Info("handling connection to ", serverUrl)
 
 	return nil
+}
+
+func (c *LocationClient) restartConnections(authToken string) {
+	for {
+		<-c.restart
+
+		useConnLock.Lock()
+
+		c.finishConnChans.Range(func(key, value interface{}) bool {
+			finishChan := value.(chan struct{})
+			close(finishChan)
+
+			return true
+		})
+
+		c.connections.Range(func(key, value interface{}) bool {
+			server := key.(string)
+			conn := value.(connectionsValueType)
+			err := conn.Close()
+			if err != nil {
+				log.Panic(err)
+			}
+
+			log.Infof("closing connection to %s", server)
+
+			return true
+		})
+
+		c.gyms = sync.Map{}
+		c.toConnsChans = sync.Map{}
+
+		c.finishConnChans = sync.Map{}
+		c.connections = sync.Map{}
+		c.serversConnected = nil
+
+		serverUrl, err := c.GetServerForLocation(c.CurrentLocation)
+		if err != nil {
+			log.Panic(errors2.WrapStartLocationUpdatesError(err))
+		}
+
+		err = c.handleLocationConnection(*serverUrl, authToken)
+		if err != nil {
+			log.Panic(errors2.WrapStartLocationUpdatesError(err))
+		}
+		useConnLock.Unlock()
+	}
 }
 
 func (c *LocationClient) handleLocationMsg(wsMsg *ws.WebsocketMsg, authToken string) error {
@@ -217,6 +269,16 @@ func (c *LocationClient) handleLocationMsg(wsMsg *ws.WebsocketMsg, authToken str
 		}
 
 		c.updateLocationWithCells(cellsMsg.CellsPerServer, cellsMsg.OriginServer)
+	case location.Disconnect:
+
+		discMsg := &location.DisconnectMessage{}
+		if err := mapstructure.Decode(msgData, discMsg); err != nil {
+			panic(err)
+		}
+
+		log.Infof("got disconnect message from %s", discMsg.Addr)
+
+		c.restart <- struct{}{}
 	case ws.Error:
 		errMsg := &ws.ErrorMessage{}
 		if err := mapstructure.Decode(msgData, errMsg); err != nil {
@@ -238,9 +300,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 	c.updateConnectionsLock.Lock()
 	defer c.updateConnectionsLock.Unlock()
 
-	var (
-		isNewServer bool
-	)
+	var isNewServer bool
 
 	var toRemove []string
 	var newServers []string
@@ -308,7 +368,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 
 func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg,
 	authToken string) (*websocket.Conn, error) {
-	resolvedAddr, _, err := c.HttpClient.ResolveServiceInArchimedes(fmt.Sprintf("%s:%d", serverUrl, utils.LocationPort))
+	resolvedAddr, _, err := c.HttpClient.ResolveServiceInArchimedes(serverUrl)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -351,8 +411,33 @@ func (c *LocationClient) updateLocationLoop() {
 
 			if rand.Float64() <= c.LocationParameters.MovingProbability {
 				c.CurrentLocation = c.move(c.config.UpdateInterval)
+				if c.username != "" {
+					c.writeLocationToFile()
+				}
 			}
 		}
+	}
+}
+
+func (c *LocationClient) writeLocationToFile() {
+	log.Info("writing location to file")
+
+	file, err := os.Create(fmt.Sprintf("/services/%s", c.username))
+	if err != nil {
+		log.Panic(err)
+	}
+
+	latLng := struct {
+		Lat float64 `json:"lat"`
+		Lng float64 `json:"lng"`
+	}{
+		Lat: c.CurrentLocation.Lat.Degrees(),
+		Lng: c.CurrentLocation.Lng.Degrees(),
+	}
+
+	err = json.NewEncoder(file).Encode(latLng)
+	if err != nil {
+		log.Panic(err)
 	}
 }
 
@@ -363,6 +448,8 @@ func (c *LocationClient) updateLocation() {
 
 	c.HttpClient.SetLocation(c.CurrentLocation)
 	log.Info("updating location: ", c.CurrentLocation)
+
+	useConnLock.Lock()
 
 	// Only runs once
 	c.toConnsChans.Range(func(serverUrl, toConnChanValue interface{}) bool {
@@ -385,6 +472,8 @@ func (c *LocationClient) updateLocation() {
 
 		return false
 	})
+
+	useConnLock.Unlock()
 }
 
 func (c *LocationClient) updateLocationWithCells(tilesPerServer map[string]s2.CellUnion, excludeServer string) {
@@ -404,7 +493,7 @@ func (c *LocationClient) updateLocationWithCells(tilesPerServer map[string]s2.Ce
 
 		connValue, ok := c.connections.Load(serverUrl)
 		if !ok {
-			panic("tried to write to a connection that is not in the map")
+			panic("tried to write cells to a connection that is not in the map")
 		}
 
 		log.Info("sending precomputed tiles to ", serverUrl)

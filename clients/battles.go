@@ -154,13 +154,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 
 func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string,
 	itemsToken string, battleId string, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
-	resolvedAddr, _, err := client.httpClient.ResolveServiceInArchimedes(fmt.Sprintf("%s:%d", serverHostname,
-		utils.BattlesPort))
-	if err != nil {
-		log.Panic(err)
-	}
-
-	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: fmt.Sprintf(api.AcceptChallengePath, battleId)}
+	u := url.URL{Scheme: "ws", Host: serverHostname, Path: fmt.Sprintf(api.AcceptChallengePath, battleId)}
 	log.Infof("Accepting challenge: %s", u.String())
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
@@ -198,9 +192,7 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 }
 
 func (client *BattleLobbyClient) RejectChallenge(authToken, battleId, serverHostname string) error {
-	addr := fmt.Sprintf("%s:%d", serverHostname, utils.BattlesPort)
-
-	req, err := BuildRequest("POST", addr, fmt.Sprintf(api.RejectChallengePath, battleId), nil)
+	req, err := BuildRequest("POST", serverHostname, fmt.Sprintf(api.RejectChallengePath, battleId), nil)
 	if err != nil {
 		return errors.WrapRejectBattleChallengeError(err)
 	}

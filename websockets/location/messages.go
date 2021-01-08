@@ -17,6 +17,7 @@ const (
 	CatchPokemonResponse    = "CATCH_POKEMON_RESPONSE"
 	ServersResponse         = "SERVERS_RESPONSE"
 	CellsResponse           = "TILES_RESPONSE"
+	Disconnect              = "DISCONNECT"
 )
 
 type UpdateLocationMessage struct {
@@ -85,4 +86,12 @@ type CatchWildPokemonMessageResponse struct {
 
 func (cMsgResp CatchWildPokemonMessageResponse) ConvertToWSMessage(info ws.TrackedInfo) *ws.WebsocketMsg {
 	return ws.NewReplyMsg(CatchPokemonResponse, cMsgResp, info)
+}
+
+type DisconnectMessage struct {
+	Addr string
+}
+
+func (m DisconnectMessage) ConvertToWSMessage() *ws.WebsocketMsg {
+	return ws.NewStandardMsg(Disconnect, m)
 }

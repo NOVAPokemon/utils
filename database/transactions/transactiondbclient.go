@@ -9,6 +9,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/database"
 	http "github.com/bruno-anjos/archimedesHTTPClient"
+	originalHTTP "net/http"
 	cedUtils "github.com/bruno-anjos/cloud-edge-deployment/pkg/utils"
 	"github.com/golang/geo/s2"
 	log "github.com/sirupsen/logrus"
@@ -16,6 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/NOVAPokemon/utils/clients"
 )
 
 const databaseName = "NOVAPokemonDB"
@@ -45,13 +47,13 @@ func InitTransactionsDBClient(archimedesEnabled bool) {
 
 		var node string
 		node, exists = os.LookupEnv(cedUtils.NodeIPEnvVarName)
-	if !exists {
-		log.Panicf("no NODE_IP env var")
-	} else {
-		log.Infof("Node IP: %s", node)
-	}
+		if !exists {
+			log.Panicf("no NODE_IP env var")
+		} else {
+			log.Infof("Node IP: %s", node)
+		}
 
-		client := &http.Client{}
+		client := &http.Client{Client: originalHTTP.Client{Timeout: clients.RequestTimeout}}
 		client.InitArchimedesClient(node, http.DefaultArchimedesPort, s2.CellIDFromToken(location).LatLng())
 
 		var (

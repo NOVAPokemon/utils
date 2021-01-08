@@ -2,7 +2,9 @@ package comms_manager
 
 import (
 	"fmt"
+	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	http "github.com/bruno-anjos/archimedesHTTPClient"
@@ -28,9 +30,11 @@ type (
 )
 
 type DelayedCommsManager struct {
-	LocationTag  string
-	DelaysMatrix *DelaysMatrixType
-	ClientDelays *ClientDelays
+	LocationTag   string
+	DelaysMatrix  *DelaysMatrixType
+	ClientDelays  *ClientDelays
+	RetriesCount  int64
+	RequestsCount int64
 	CommsManagerWithClient
 }
 
@@ -104,7 +108,36 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websoc
 func (d *DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 	req.Header.Set(locationTagKey, d.LocationTag)
 	req.Header.Set(tagIsClientKey, strconv.FormatBool(d.IsClient))
-	return client.Do(req)
+
+	var (
+		resp    *http.Response
+		err     error
+		timer   time.Timer
+		retried = false
+	)
+
+	for {
+		resp, err = client.Do(req)
+		log.Infof("Requests count: %d", atomic.AddInt64(&d.RequestsCount, 1))
+
+		if os.IsTimeout(err) {
+			log.Infof("Retries count: %d", atomic.AddInt64(&d.RetriesCount, 1))
+		} else {
+			break
+		}
+
+		retried = true
+		timer.Reset(timeBetweenRetries)
+		<-timer.C
+	}
+
+	if retried {
+		if !timer.Stop() {
+			<-timer.C
+		}
+	}
+
+	return resp, err
 }
 
 func (d *DelayedCommsManager) HTTPRequestInterceptor(next http.Handler) http.Handler {

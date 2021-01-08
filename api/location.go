@@ -13,6 +13,7 @@ const (
 	GetServerForLocationPath = "/location/server"
 	GetActiveCells           = "/location/active/cells/%s"
 	GetActivePokemons        = "/location/active/pokemons/%s"
+	BeingRemoved             = "/location/removing_instance"
 
 	ServerNamePathVar   = "serverName"
 	LatitudeQueryParam  = "latitude"
@@ -20,7 +21,7 @@ const (
 )
 
 var (
-	GetAllConfigsRoute = GetAllConfigsPath
+	GetAllConfigsRoute        = GetAllConfigsPath
 	SetServerConfigRoute      = fmt.Sprintf(SetServerConfigPath, fmt.Sprintf("{%s}", ServerNamePathVar))
 	GetServerForLocationRoute = GetServerForLocationPath
 
@@ -31,6 +32,8 @@ var (
 
 	UserLocationRoute = UserLocationPath
 	GymLocationRoute  = GymLocationPath
+
+	BeingRemovedRoute = BeingRemoved
 )
 
 // var CatchWildPokemonRoute = CatchWildPokemonPath

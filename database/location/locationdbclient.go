@@ -15,6 +15,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	originalHTTP "net/http"
+	"github.com/NOVAPokemon/utils/clients"
 )
 
 const (
@@ -25,9 +27,7 @@ const (
 	wildPokemonCollectionName   = "WildPokemons"
 )
 
-var (
-	dbClient databaseUtils.DBClientMultipleCollections
-)
+var dbClient databaseUtils.DBClientMultipleCollections
 
 func InitLocationDBClient(archimedesEnabled bool) {
 	mongoUrl, exists := os.LookupEnv(utils.MongoEnvVar)
@@ -51,13 +51,13 @@ func InitLocationDBClient(archimedesEnabled bool) {
 
 		var node string
 		node, exists = os.LookupEnv(cedUtils.NodeIPEnvVarName)
-	if !exists {
-		log.Panicf("no NODE_IP env var")
-	} else {
-		log.Infof("Node IP: %s", node)
-	}
+		if !exists {
+			log.Panicf("no NODE_IP env var")
+		} else {
+			log.Infof("Node IP: %s", node)
+		}
 
-		client := &http.Client{}
+		client := &http.Client{Client: originalHTTP.Client{Timeout: clients.RequestTimeout}}
 		client.InitArchimedesClient(node, http.DefaultArchimedesPort, s2.CellIDFromToken(location).LatLng())
 
 		var (
@@ -143,13 +143,14 @@ func GetGyms() ([]utils.GymWithServer, error) {
 	if err != nil {
 		return nil, wrapGetGymsError(err)
 	}
+
 	return gymsWithSrv, nil
 }
 
 func UpdateServerConfig(serverName string, config utils.LocationServerCells) error {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[globalConfigCollectionName]
-	var filter = bson.D{{"servername:", serverName}}
+	ctx := dbClient.Ctx
+	collection := dbClient.Collections[globalConfigCollectionName]
+	filter := bson.D{{"servername:", serverName}}
 	upsert := true
 	updateOptions := options.ReplaceOptions{
 		Upsert: &upsert,
@@ -164,9 +165,11 @@ func UpdateServerConfig(serverName string, config utils.LocationServerCells) err
 }
 
 func GetServerConfig(serverName string) (*utils.LocationServerCells, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[globalConfigCollectionName]
-	var filter = bson.D{{"servername", serverName}}
+	var (
+		ctx        = dbClient.Ctx
+		collection = dbClient.Collections[globalConfigCollectionName]
+		filter     = bson.D{{"servername", serverName}}
+	)
 
 	res := collection.FindOne(*ctx, filter)
 
@@ -174,7 +177,7 @@ func GetServerConfig(serverName string) (*utils.LocationServerCells, error) {
 		return nil, wrapGetServerConfig(res.Err(), serverName)
 	}
 
-	var regionConfig = &utils.LocationServerCells{}
+	regionConfig := &utils.LocationServerCells{}
 	if err := res.Decode(regionConfig); err != nil {
 		return nil, wrapGetServerConfig(res.Err(), serverName)
 	}
@@ -182,17 +185,16 @@ func GetServerConfig(serverName string) (*utils.LocationServerCells, error) {
 }
 
 func GetAllServerConfigs() (map[string]utils.LocationServerCells, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collections[globalConfigCollectionName]
-	var filter = bson.M{}
+	ctx := dbClient.Ctx
+	collection := dbClient.Collections[globalConfigCollectionName]
+	filter := bson.M{}
 
 	cursor, err := collection.Find(*ctx, filter)
-
 	if err != nil {
 		return nil, wrapGetGlobalServerConfigs(err)
 	}
 
-	var out = make(map[string]utils.LocationServerCells, 0)
+	out := make(map[string]utils.LocationServerCells, 0)
 	for cursor.Next(*ctx) {
 		var serverCells utils.LocationServerCells
 		if err = cursor.Decode(&serverCells); err != nil {
