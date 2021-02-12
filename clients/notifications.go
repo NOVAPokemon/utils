@@ -27,9 +27,7 @@ type NotificationClient struct {
 	commsManager         ws.CommunicationManager
 }
 
-var (
-	defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
-)
+var defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
 
 func NewNotificationClient(notificationsChannel chan utils.Notification,
 	manager ws.CommunicationManager, client *http.Client) *NotificationClient {
@@ -51,7 +49,7 @@ func NewNotificationClient(notificationsChannel chan utils.Notification,
 
 func (client *NotificationClient) ListenToNotifications(authToken string,
 	receiveFinish chan struct{}, emitFinish chan bool) error {
-	resolvedAddr, _ , err := client.httpClient.ResolveServiceInArchimedes(client.NotificationsAddr)
+	resolvedAddr, _, err := client.httpClient.ResolveServiceInArchimedes(client.NotificationsAddr)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -129,6 +127,7 @@ func (client *NotificationClient) AddNotification(notificationMsg *notificationM
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
+	log.Infof("adding notification %+v", notificationMsg)
 	_, err = DoRequest(client.httpClient, req, nil, client.commsManager)
 	return errors.WrapAddNotificationError(err)
 }
