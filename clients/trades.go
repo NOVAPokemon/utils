@@ -37,9 +37,7 @@ type TradeLobbyClient struct {
 	client       *http.Client
 }
 
-var (
-	defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
-)
+var defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
 
 func NewTradesClient(config utils.TradesClientConfig, manager ws.CommunicationManager,
 	client *http.Client) *TradeLobbyClient {
@@ -73,7 +71,7 @@ func (t *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
 	return tradesArray, nil
 }
 
-func (t *TradeLobbyClient) CreateTradeLobby(username string, authToken string,
+func (t *TradeLobbyClient) CreateTradeLobby(username, authToken string,
 	itemsToken string) (*primitive.ObjectID, *string, error) {
 	body := api.CreateLobbyRequest{Username: username}
 	req, err := BuildRequest("POST", t.TradesAddr, api.StartTradePath, &body)
@@ -103,7 +101,7 @@ func (t *TradeLobbyClient) CreateTradeLobby(username string, authToken string,
 }
 
 func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
-	serverHostname string, authToken string, itemsToken string) (*string, error) {
+	serverHostname, authToken, itemsToken string) (*string, error) {
 	u := url.URL{
 		Scheme: "ws",
 		Host:   serverHostname,
@@ -195,7 +193,6 @@ func (t *TradeLobbyClient) WaitForStart() {
 		t.finishOnce.Do(func() { close(t.finished) })
 	case <-t.finished:
 	}
-
 }
 
 func (t *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostname, authToken,
@@ -221,7 +218,6 @@ func (t *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostna
 }
 
 func (t *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*string, error) {
-
 	wsMsgContent := wsMsg.Content
 
 	msgData := wsMsg.Content.Data
@@ -369,5 +365,4 @@ func (t *TradeLobbyClient) setTimerRandSleepTime(timer *time.Timer) *time.Timer 
 		timer.Reset(time.Duration(randSleep) * time.Millisecond)
 		return nil
 	}
-
 }
