@@ -1,8 +1,6 @@
 package comms_manager
 
 import (
-	"os"
-	"sync/atomic"
 	"time"
 
 	http "github.com/bruno-anjos/archimedesHTTPClient"
@@ -17,8 +15,7 @@ const (
 )
 
 type DefaultCommsManager struct {
-	RetriesCount  int64
-	RequestsCount int64
+	websockets.CommsManagerWithCounter
 }
 
 func (d *DefaultCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *websockets.WebsocketMsg {
@@ -74,11 +71,7 @@ func (d *DefaultCommsManager) DoHTTPRequest(client *http.Client, req *http.Reque
 
 	for {
 		resp, err = client.Do(req)
-		log.Infof("Requests count: %d", atomic.AddInt64(&d.RequestsCount, 1))
-
-		if os.IsTimeout(err) {
-			log.Infof("Retries count: %d", atomic.AddInt64(&d.RetriesCount, 1))
-		} else {
+		if d.CommsManagerWithCounter.LogRequestAndRetry(err) {
 			break
 		}
 
