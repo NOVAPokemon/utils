@@ -44,7 +44,7 @@ func (d *CommsManagerWithCounter) LogRequestAndRetry(err error) (success bool) {
 }
 
 func checkErr(err error) bool {
-	if err != nil {
+	if err == nil {
 		return false
 	}
 

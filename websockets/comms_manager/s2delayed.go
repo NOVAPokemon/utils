@@ -65,7 +65,8 @@ func (d *S2DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) 
 	cellId := s2.CellIDFromToken(taggedMessage.LocationTag)
 	myRegionTag, requesterRegionTag, delay := d.getDelay(cellId, taggedMessage.IsClient)
 
-	log.Infof("i am at %s got request from %s sleeping %f", myRegionTag, requesterRegionTag, delay)
+	log.Infof("i am at %s got ws message from %s sleeping %f (isClient: %t)", myRegionTag, requesterRegionTag,
+		delay, taggedMessage.IsClient)
 
 	sleepDuration := time.Duration(delay) * time.Millisecond
 	time.Sleep(sleepDuration)
@@ -173,20 +174,9 @@ func (d *S2DelayedCommsManager) getDelay(requesterCell s2.CellID, isClient bool)
 	requesterRegionTag = TranslateCellToRegion(requesterCell)
 
 	var ok bool
-	if !isClient {
-		delay, ok = (*d.DelaysMatrix)[requesterRegionTag][myRegionTag]
-		if !ok {
-			panic(fmt.Sprintf("could not delay WS message from %s to %s", requesterRegionTag, myRegionTag))
-		}
-	} else {
-		var multiplier float64
-		multiplier, ok = (*d.ClientDelays).Multipliers[myRegionTag]
-		if !ok {
-			panic(fmt.Sprintf("could not delay WS message from client %s to %s",
-				requesterRegionTag, myRegionTag))
-		}
-
-		delay = (*d.ClientDelays).Default * multiplier
+	delay, ok = (*d.DelaysMatrix)[requesterRegionTag][myRegionTag]
+	if !ok {
+		panic(fmt.Sprintf("could not delay WS message from %s to %s", requesterRegionTag, myRegionTag))
 	}
 
 	return
