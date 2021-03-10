@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	locationTagKey = "Location_tag"
-	tagIsClientKey = "Tag_is_client"
+	LocationTagKey       = "Location_tag"
+	serverLocationTagKey = "Server_Location_tag"
+	TagIsClientKey       = "Tag_is_client"
 )
 
 type (
@@ -103,8 +104,8 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websoc
 }
 
 func (d *DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
-	req.Header.Set(locationTagKey, d.LocationTag)
-	req.Header.Set(tagIsClientKey, strconv.FormatBool(d.IsClient))
+	req.Header.Set(LocationTagKey, d.LocationTag)
+	req.Header.Set(TagIsClientKey, strconv.FormatBool(d.IsClient))
 
 	var (
 		resp    *http.Response
@@ -135,12 +136,12 @@ func (d *DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Reque
 
 func (d *DelayedCommsManager) HTTPRequestInterceptor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requesterLocationTag := r.Header.Get(locationTagKey)
+		requesterLocationTag := r.Header.Get(LocationTagKey)
 		if requesterLocationTag == "" {
 			next.ServeHTTP(w, r)
 			return
 		}
-		requesterIsClient, err := strconv.ParseBool(r.Header.Get(tagIsClientKey))
+		requesterIsClient, err := strconv.ParseBool(r.Header.Get(TagIsClientKey))
 		if err != nil {
 			panic(fmt.Sprintf("could not parse %+v to bool", requesterIsClient))
 		}
