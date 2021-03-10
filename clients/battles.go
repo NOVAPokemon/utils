@@ -109,7 +109,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 }
 
 func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, statsToken string,
-	itemsToken string, targetPlayer string) (*websocket.Conn, *battles.BattleChannels, int64, error) {
+	itemsToken, targetPlayer string) (*websocket.Conn, *battles.BattleChannels, int64, error) {
 	resolvedAddr, _, err := client.httpClient.ResolveServiceInArchimedes(client.BattlesAddr)
 
 	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: fmt.Sprintf(api.ChallengeToBattlePath, targetPlayer)}
@@ -153,7 +153,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 }
 
 func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string,
-	itemsToken string, battleId string, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
+	itemsToken, battleId, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
 	u := url.URL{Scheme: "ws", Host: serverHostname, Path: fmt.Sprintf(api.AcceptChallengePath, battleId)}
 	log.Infof("Accepting challenge: %s", u.String())
 	header := http.Header{}
