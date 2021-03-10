@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
+	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
@@ -83,6 +85,12 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
 	websockets.AddTrackInfoToHeader(&header, battles.Queue)
+
+	switch castedManager := client.commsManager.(type) {
+	case *comms_manager.S2DelayedCommsManager:
+		header.Set(comms_manager.LocationTagKey, castedManager.GetCellID().ToToken())
+		header.Set(comms_manager.TagIsClientKey, strconv.FormatBool(true))
+	}
 
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
