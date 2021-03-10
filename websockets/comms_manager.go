@@ -1,9 +1,8 @@
 package websockets
 
 import (
-	"net"
+	"strings"
 	"sync/atomic"
-	"syscall"
 
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 
@@ -43,28 +42,20 @@ func (d *CommsManagerWithCounter) LogRequestAndRetry(err error) (success bool) {
 	return
 }
 
+const (
+	errConnRefused = "connection refused"
+	errTimeout1    = "timeout"
+	errTimeout2    = "Timeout"
+)
+
 func checkErr(err error) bool {
 	if err == nil {
 		return false
 	}
 
-	if netError, ok := err.(net.Error); ok && netError.Timeout() {
+	if strings.Contains(err.Error(), errConnRefused) || strings.Contains(err.Error(), errTimeout1) ||
+		strings.Contains(err.Error(), errTimeout2) {
 		return true
-	}
-
-	switch t := err.(type) {
-	case *net.OpError:
-		if t.Op == "dial" {
-			log.Panic(err.Error())
-		} else if t.Op == "read" {
-			return true
-		}
-	case syscall.Errno:
-		if t == syscall.ECONNREFUSED {
-			return true
-		}
-	default:
-		log.Panic(err.Error())
 	}
 
 	return false
