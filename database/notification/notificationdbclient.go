@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/clients"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 	cedUtils "github.com/bruno-anjos/cloud-edge-deployment/pkg/utils"
@@ -17,11 +18,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	originalHTTP "net/http"
-	"github.com/NOVAPokemon/utils/clients"
 )
 
-const databaseName = "NOVAPokemonDB"
-const collectionName = "Notifications"
+const (
+	databaseName   = "NOVAPokemonDB"
+	collectionName = "Notifications"
+)
 
 var dbClient databaseUtils.DBClient
 
@@ -48,11 +50,11 @@ func InitNotificationDBClient(archimedesEnabled bool) {
 
 		var node string
 		node, exists = os.LookupEnv(cedUtils.NodeIPEnvVarName)
-	if !exists {
-		log.Panicf("no NODE_IP env var")
-	} else {
-		log.Infof("Node IP: %s", node)
-	}
+		if !exists {
+			log.Panicf("no NODE_IP env var")
+		} else {
+			log.Infof("Node IP: %s", node)
+		}
 
 		client := &http.Client{Client: originalHTTP.Client{Timeout: clients.RequestTimeout}}
 		client.InitArchimedesClient(node, http.DefaultArchimedesPort, s2.CellIDFromToken(location).LatLng())
@@ -82,7 +84,6 @@ func InitNotificationDBClient(archimedesEnabled bool) {
 	}
 
 	client, err := mongo.NewClient(options.Client().ApplyURI(mongoUrl))
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,11 +112,7 @@ func AddNotification(notification utils.Notification) error {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
-	notificationId := primitive.NewObjectID()
-	notification.Id = notificationId.Hex()
-
 	_, err := collection.InsertOne(*ctx, notification)
-
 	if err != nil {
 		return wrapAddNotificationError(err, notification.Username)
 	}
@@ -129,7 +126,6 @@ func RemoveNotification(id primitive.ObjectID) error {
 	collection := dbClient.Collection
 
 	res, err := collection.DeleteOne(*ctx, id)
-
 	if err != nil {
 		return wrapRemoveNotificationError(err, id.Hex())
 	}
