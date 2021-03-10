@@ -8,13 +8,14 @@ import (
 const (
 	// HTTP requests
 	CreateTrade = "CREATE_TRADE"
+	JoinTrade   = "JOIN_TRADE"
 
-	StartTrade   = "START_TRADE"
-	RejectTrade  = "REJECT_TRADE"
-	ErrorTrade   = "ERROR_TRADE"
-	Trade  = "TRADE"
-	Accept = "ACCEPT"
-	Update = "UPDATE_TRADE"
+	StartTrade  = "START_TRADE"
+	RejectTrade = "REJECT_TRADE"
+	ErrorTrade  = "ERROR_TRADE"
+	Trade       = "TRADE"
+	Accept      = "ACCEPT"
+	Update      = "UPDATE_TRADE"
 )
 
 type StartTradeMessage struct{}
@@ -29,7 +30,7 @@ func (s RejectTradeMessage) ConvertToWSMessage(info ws.TrackedInfo) *ws.Websocke
 	return ws.NewReplyMsg(RejectTrade, nil, info)
 }
 
-type ErrorTradeMessage struct{
+type ErrorTradeMessage struct {
 	Info  string
 	Fatal bool
 }
