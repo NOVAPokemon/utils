@@ -64,9 +64,9 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn,
 
 	select {
 	case <-lobby.Started:
-		return - 1, NewLobbyStartedError(lobby.Id)
+		return -1, NewLobbyStartedError(lobby.Id)
 	case <-lobby.Finished:
-		return - 1, NewLobbyFinishedError(lobby.Id)
+		return -1, NewLobbyFinishedError(lobby.Id)
 	default:
 		trainerNum := lobby.TrainersJoined
 		trainerChanIn := make(chan *WebsocketMsg)
@@ -135,7 +135,7 @@ func RecvFromConnToChann(lobby *Lobby, trainerNum int, manager CommunicationMana
 			}
 			select {
 			case <-lobby.Finished:
-				log.Infof("Could not send message %s because finish channel ended meanwhile", wsMsg)
+				log.Infof("Could not send message %+v because finish channel ended meanwhile", wsMsg)
 				return
 			case inChannel <- wsMsg:
 				log.Debugf("Received message from Websockets")
@@ -152,9 +152,11 @@ func StartLobby(lobby *Lobby) {
 func FinishLobby(lobby *Lobby) {
 	lobby.finishOnce.Do(func() {
 		lobby.changeLobbyLock.Lock()
+		log.Infof("finishing lobby %s", lobby.Id)
 		defer lobby.changeLobbyLock.Unlock()
 		close(lobby.Finished)
 		for i := 0; i < lobby.TrainersJoined; i++ {
+			log.Infof("Closing connection for %s at lobby %s", lobby.TrainerUsernames[i], lobby.Id)
 			if err := lobby.trainerConnections[i].Close(); err != nil {
 				log.Error(err)
 			}
