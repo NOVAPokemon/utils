@@ -58,7 +58,6 @@ func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.Commu
 			}
 
 			err := commsManager.WriteGenericMessageToConn(conn, msg)
-
 			if err != nil {
 				log.Warn(err)
 				return
@@ -69,6 +68,8 @@ func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.Commu
 
 func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan *ws.WebsocketMsg,
 	finished chan struct{}, manager ws.CommunicationManager) {
+	defer log.Info("closing read without chan routine")
+
 	for {
 		select {
 		case <-finished:
