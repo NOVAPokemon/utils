@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -139,7 +140,9 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	go c.restartConnections(authToken)
 
 	for {
+		log.Info("waiting for message...")
 		msgString, ok := <-c.fromConnChan
+		log.Info("got message")
 		if !ok {
 			break
 		}
@@ -168,10 +171,10 @@ func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) e
 
 	SetDefaultPingHandler(conn, outChan)
 
+	log.Info("handling connection to ", serverUrl)
+
 	go ReadMessagesFromConnToChanWithoutClosing(conn, c.fromConnChan, finishChan, c.commsManager)
 	go WriteTextMessagesFromChanToConn(conn, c.commsManager, outChan, finishChan)
-
-	log.Info("handling connection to ", serverUrl)
 
 	return nil
 }
@@ -182,6 +185,8 @@ func (c *LocationClient) restartConnections(authToken string) {
 
 		useConnLock.Lock()
 
+		log.Info("restarting location connections")
+
 		c.finishConnChans.Range(func(key, _ interface{}) bool {
 			chanKey := key.(string)
 
@@ -189,6 +194,7 @@ func (c *LocationClient) restartConnections(authToken string) {
 			if ok {
 				finishChan := value.(chan struct{})
 				close(finishChan)
+				log.Info("closing finish chan to %s", chanKey)
 			}
 
 			return true
@@ -219,10 +225,13 @@ func (c *LocationClient) restartConnections(authToken string) {
 			log.Panic(errors2.WrapStartLocationUpdatesError(err))
 		}
 
+		log.Info("establishing connection to %s", serverUrl)
+
 		err = c.handleLocationConnection(serverUrl, authToken)
 		if err != nil {
 			log.Panic(errors2.WrapStartLocationUpdatesError(err))
 		}
+
 		useConnLock.Unlock()
 	}
 }
@@ -303,12 +312,15 @@ func (c *LocationClient) handleLocationMsg(wsMsg *ws.WebsocketMsg, authToken str
 }
 
 func (c *LocationClient) updateConnections(servers []string, authToken string) error {
+	log.Info("will update connections...")
+
 	c.updateConnectionsLock.Lock()
 	defer c.updateConnectionsLock.Unlock()
 
+	log.Info("updating connections")
+
 	var isNewServer bool
 
-	var toRemove []string
 	var newServers []string
 
 	// Add new connections
@@ -330,6 +342,8 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 		}
 	}
 
+	var toRemove []string
+
 	// Remove unused connections
 	remove := true
 	for i := range c.serversConnected {
@@ -342,11 +356,11 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 		}
 
 		if remove {
+			log.Info("finishing connection to ", c.serversConnected[i])
 			finishChanValue, ok := c.finishConnChans.LoadAndDelete(c.serversConnected[i])
 			if !ok {
 				return errors.New("tried to finish location connection without a finish chan")
 			}
-			log.Info("finishing connection to ", c.serversConnected[i])
 			close(finishChanValue.(finishConnChansValueType))
 			c.toConnsChans.Delete(c.serversConnected[i])
 			toRemove = append(toRemove, c.serversConnected[i])
@@ -368,6 +382,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 	}
 
 	c.serversConnected = newServers
+	log.Info("new servers connected %+v", newServers)
 
 	return nil
 }
@@ -382,6 +397,12 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: api.UserLocationPath}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
+
+	switch castedManager := c.commsManager.(type) {
+	case *comms_manager.S2DelayedCommsManager:
+		header.Set(comms_manager.LocationTagKey, castedManager.GetCellID().ToToken())
+		header.Set(comms_manager.TagIsClientKey, strconv.FormatBool(true))
+	}
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
