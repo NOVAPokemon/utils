@@ -104,7 +104,6 @@ func createDelayedCommunicationManager(delayedCommsFilename, clientDelaysFilenam
 	}
 
 	delaysConfig := getDelayedConfig(delayedCommsFilename)
-	clientDelays := getClientDelays(clientDelaysFilename)
 
 	log.Infof("starting delayed comms with region tag %s",
 		comms_manager.TranslateCellToRegion(optConfigs.CellID))
@@ -112,7 +111,6 @@ func createDelayedCommunicationManager(delayedCommsFilename, clientDelaysFilenam
 	return &comms_manager.S2DelayedCommsManager{
 		CellId:                  optConfigs.CellID,
 		DelaysMatrix:            delaysConfig,
-		ClientDelays:            clientDelays,
 		CommsManagerWithCounter: websockets.CommsManagerWithCounter{},
 		CommsManagerWithClient: comms_manager.CommsManagerWithClient{
 			IsClient: isClient,
