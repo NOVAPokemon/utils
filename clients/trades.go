@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
 	ws "github.com/NOVAPokemon/utils/websockets"
+	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -81,6 +83,7 @@ func (t *TradeLobbyClient) CreateTradeLobby(username, authToken string,
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 	req.Header.Set(tokens.ItemsTokenHeaderName, itemsToken)
+
 	trackInfo := ws.NewTrackedInfo(primitive.NewObjectID())
 	trackInfo.Emit(ws.MakeTimestamp())
 	trackInfo.LogEmit(trades.CreateTrade)
@@ -339,6 +342,11 @@ func (t *TradeLobbyClient) sendTradeMessages(numItemsToAdd int, availableItems [
 			close(syncChannel)
 			return
 		case <-timer.C:
+			if itemsTraded == numItemsToAdd {
+				t.writeChannel <- trades.AcceptMessage{}.ConvertToWSMessage()
+				break
+			}
+
 			randomItemIdx := rand.Intn(len(availableItems))
 
 			t.writeChannel <- trades.TradeMessage{
@@ -352,11 +360,7 @@ func (t *TradeLobbyClient) sendTradeMessages(numItemsToAdd int, availableItems [
 
 			itemsTraded++
 
-			if itemsTraded < numItemsToAdd {
-				t.setTimerRandSleepTime(timer)
-			} else {
-				t.writeChannel <- trades.AcceptMessage{}.ConvertToWSMessage()
-			}
+			t.setTimerRandSleepTime(timer)
 		}
 	}
 }
