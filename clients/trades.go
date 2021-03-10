@@ -113,10 +113,21 @@ func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
+	switch castedManager := t.commsManager.(type) {
+	case *comms_manager.S2DelayedCommsManager:
+		header.Set(comms_manager.LocationTagKey, castedManager.GetCellID().ToToken())
+		header.Set(comms_manager.TagIsClientKey, strconv.FormatBool(true))
+	}
+
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
 	}
+
+	trackInfo := ws.NewTrackedInfo(primitive.NewObjectID())
+	trackInfo.Emit(ws.MakeTimestamp())
+	trackInfo.LogEmit(trades.JoinTrade)
+	header.Set(ws.TrackInfoHeaderName, trackInfo.SerializeToJSON())
 
 	conn, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
