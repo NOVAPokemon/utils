@@ -79,20 +79,18 @@ func SetLogFile(serviceName string) {
 	log.SetOutput(logFile)
 }
 
-func CreateDefaultDelayedManager(locationTag string, isClient bool) websockets.CommunicationManager {
-	return createDelayedCommunicationManager(DefaultDelayConfigFilename, DefaultClientDelaysFilename, locationTag,
-		isClient)
+func CreateDefaultDelayedManager(isClient bool) websockets.CommunicationManager {
+	return createDelayedCommunicationManager(DefaultDelayConfigFilename, DefaultClientDelaysFilename, isClient)
 }
 
 func createDelayedCommunicationManager(delayedCommsFilename, clientDelaysFilename string,
-	locationTag string, isClient bool) websockets.CommunicationManager {
+	isClient bool) websockets.CommunicationManager {
 	log.Info("using DELAYED communication manager")
 
 	delaysConfig := getDelayedConfig(delayedCommsFilename)
 	clientDelays := getClientDelays(clientDelaysFilename)
 
-	return &comms_manager.DelayedCommsManager{
-		LocationTag:  locationTag,
+	return &comms_manager.S2DelayedCommsManager{
 		DelaysMatrix: delaysConfig,
 		ClientDelays: clientDelays,
 		CommsManagerWithClient: comms_manager.CommsManagerWithClient{

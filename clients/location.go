@@ -451,7 +451,7 @@ func (c *LocationClient) GetServerForLocation(loc s2.LatLng) (*string, error) {
 	log.Info(u.String())
 	req, err := http.NewRequest("GET", u.String(), nil)
 	var servername string
-	_, err = DoRequest(http.DefaultClient, req, &servername, c.commsManager)
+	_, err = DoRequest(c.HttpClient, req, &servername, c.commsManager)
 	if err != nil {
 		return nil, errors2.WrapGetServerForLocationError(err)
 	}
