@@ -225,14 +225,6 @@ func (d *S2DelayedCommsManager) getDelay(requesterCell s2.CellID, isClient bool)
 	return
 }
 
-func (d *S2DelayedCommsManager) GetCellID() s2.CellID {
-	d.RLock()
-	cellID := d.CellId
-	d.RUnlock()
-
-	return cellID
-}
-
 func TranslateCellToRegion(c s2.CellID) (locationTag string) {
 	var ok bool
 	locationTag, ok = cellsToRegion[c.Parent(1)]
@@ -241,6 +233,14 @@ func TranslateCellToRegion(c s2.CellID) (locationTag string) {
 	}
 
 	return
+}
+
+func (d *S2DelayedCommsManager) GetCellID() s2.CellID {
+	d.RLock()
+	cellID := d.CellId
+	d.RUnlock()
+
+	return cellID
 }
 
 func (d *S2DelayedCommsManager) SetCellID(cellID s2.CellID) {

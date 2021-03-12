@@ -12,8 +12,9 @@ const (
 // Notification
 type NotificationMessage struct {
 	Notification utils.Notification
+	Info         ws.TrackedInfo
 }
 
 func (nMsg NotificationMessage) ConvertToWSMessage() *ws.WebsocketMsg {
-	return ws.NewReplyMsg(Notification, nMsg.Info)
+	return ws.NewReplyMsg(Notification, nMsg, nMsg.Info)
 }
