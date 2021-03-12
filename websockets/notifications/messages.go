@@ -15,5 +15,5 @@ type NotificationMessage struct {
 }
 
 func (nMsg NotificationMessage) ConvertToWSMessage() *ws.WebsocketMsg {
-	return ws.NewStandardMsg(Notification, nMsg)
+	return ws.NewReplyMsg(Notification, nMsg.Info)
 }

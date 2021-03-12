@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
+	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
@@ -76,6 +78,12 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
 	websockets.AddTrackInfoToHeader(&header, battles.Queue)
 
+	switch castedManager := client.commsManager.(type) {
+	case *comms_manager.S2DelayedCommsManager:
+		header.Set(comms_manager.LocationTagKey, castedManager.GetCellID().ToToken())
+		header.Set(comms_manager.TagIsClientKey, strconv.FormatBool(true))
+	}
+
 	c, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
 		err = errors.WrapQueueForBattleError(websockets.WrapDialingError(err, u.String()))
@@ -101,7 +109,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 }
 
 func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokemonsTokens []string, statsToken string,
-	itemsToken string, targetPlayer string) (*websocket.Conn, *battles.BattleChannels, int64, error) {
+	itemsToken, targetPlayer string) (*websocket.Conn, *battles.BattleChannels, int64, error) {
 	u := url.URL{Scheme: "ws", Host: client.BattlesAddr, Path: fmt.Sprintf(api.ChallengeToBattlePath, targetPlayer)}
 	log.Infof("Connecting to: %s", u.String())
 
@@ -143,8 +151,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 }
 
 func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string,
-	itemsToken string, battleId string, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
-
+	itemsToken, battleId, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
 	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.BattlesPort), Path: fmt.Sprintf(api.AcceptChallengePath, battleId)}
 	log.Infof("Accepting challenge: %s", u.String())
 	header := http.Header{}

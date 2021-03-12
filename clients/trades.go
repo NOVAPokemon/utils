@@ -2,20 +2,23 @@ package clients
 
 import (
 	"fmt"
-	"github.com/mitchellh/mapstructure"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
 	"github.com/NOVAPokemon/utils/clients/errors"
 	"github.com/NOVAPokemon/utils/tokens"
 	ws "github.com/NOVAPokemon/utils/websockets"
+	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 	"github.com/NOVAPokemon/utils/websockets/trades"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -36,9 +39,7 @@ type TradeLobbyClient struct {
 	client       *http.Client
 }
 
-var (
-	defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
-)
+var defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
 
 func NewTradesClient(config utils.TradesClientConfig, manager ws.CommunicationManager,
 	client *http.Client) *TradeLobbyClient {
@@ -72,7 +73,7 @@ func (t *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
 	return tradesArray, nil
 }
 
-func (t *TradeLobbyClient) CreateTradeLobby(username string, authToken string,
+func (t *TradeLobbyClient) CreateTradeLobby(username, authToken string,
 	itemsToken string) (*primitive.ObjectID, *string, error) {
 	body := api.CreateLobbyRequest{Username: username}
 	req, err := BuildRequest("POST", t.TradesAddr, api.StartTradePath, &body)
@@ -102,7 +103,7 @@ func (t *TradeLobbyClient) CreateTradeLobby(username string, authToken string,
 }
 
 func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
-	serverHostname string, authToken string, itemsToken string) (*string, error) {
+	serverHostname, authToken, itemsToken string) (*string, error) {
 	u := url.URL{
 		Scheme: "ws",
 		Host:   fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort),
@@ -114,10 +115,21 @@ func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
+	switch castedManager := t.commsManager.(type) {
+	case *comms_manager.S2DelayedCommsManager:
+		header.Set(comms_manager.LocationTagKey, castedManager.GetCellID().ToToken())
+		header.Set(comms_manager.TagIsClientKey, strconv.FormatBool(true))
+	}
+
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
 	}
+
+	trackInfo := ws.NewTrackedInfo(primitive.NewObjectID())
+	trackInfo.Emit(ws.MakeTimestamp())
+	trackInfo.LogEmit(trades.JoinTrade)
+	header.Set(ws.TrackInfoHeaderName, trackInfo.SerializeToJSON())
 
 	conn, _, err := dialer.Dial(u.String(), header)
 	if err != nil {
@@ -194,7 +206,6 @@ func (t *TradeLobbyClient) WaitForStart() {
 		t.finishOnce.Do(func() { close(t.finished) })
 	case <-t.finished:
 	}
-
 }
 
 func (t *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostname, authToken,
@@ -222,7 +233,6 @@ func (t *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostna
 }
 
 func (t *TradeLobbyClient) HandleReceivedMessage(wsMsg *ws.WebsocketMsg) (*string, error) {
-
 	wsMsgContent := wsMsg.Content
 
 	msgData := wsMsg.Content.Data
@@ -333,6 +343,11 @@ func (t *TradeLobbyClient) sendTradeMessages(numItemsToAdd int, availableItems [
 			close(syncChannel)
 			return
 		case <-timer.C:
+			if itemsTraded == numItemsToAdd {
+				t.writeChannel <- trades.AcceptMessage{}.ConvertToWSMessage()
+				break
+			}
+
 			randomItemIdx := rand.Intn(len(availableItems))
 
 			t.writeChannel <- trades.TradeMessage{
@@ -346,11 +361,7 @@ func (t *TradeLobbyClient) sendTradeMessages(numItemsToAdd int, availableItems [
 
 			itemsTraded++
 
-			if itemsTraded < numItemsToAdd {
-				t.setTimerRandSleepTime(timer)
-			} else {
-				t.writeChannel <- trades.AcceptMessage{}.ConvertToWSMessage()
-			}
+			t.setTimerRandSleepTime(timer)
 		}
 	}
 }
@@ -370,5 +381,4 @@ func (t *TradeLobbyClient) setTimerRandSleepTime(timer *time.Timer) *time.Timer 
 		timer.Reset(time.Duration(randSleep) * time.Millisecond)
 		return nil
 	}
-
 }

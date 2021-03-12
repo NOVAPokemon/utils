@@ -2,12 +2,21 @@ package comms_manager
 
 import (
 	"net/http"
+	"sync/atomic"
+	"time"
 
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
-type DefaultCommsManager struct{}
+const (
+	timeBetweenRetries = 5 * time.Second
+)
+
+type DefaultCommsManager struct {
+	websockets.CommsManagerWithCounter
+}
 
 func (d *DefaultCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *websockets.WebsocketMsg {
 	if msg.MsgType == websocket.TextMessage && msg.Content.MsgKind == websockets.Reply {
@@ -50,7 +59,33 @@ func (d *DefaultCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websoc
 }
 
 func (d *DefaultCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
-	return client.Do(req)
+	var (
+		resp    *http.Response
+		err     error
+		timer   time.Timer
+		retried = false
+	)
+
+	for {
+		resp, err = client.Do(req)
+		log.Infof("Requests count: %d", atomic.AddInt64(&d.RequestsCount, 1))
+
+		if d.CommsManagerWithCounter.LogRequestAndRetry(err) {
+			break
+		}
+
+		retried = true
+		timer.Reset(timeBetweenRetries)
+		<-timer.C
+	}
+
+	if retried {
+		if !timer.Stop() {
+			<-timer.C
+		}
+	}
+
+	return resp, err
 }
 
 func (d *DefaultCommsManager) HTTPRequestInterceptor(next http.Handler) http.Handler {

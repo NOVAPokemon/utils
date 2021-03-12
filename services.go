@@ -88,11 +88,10 @@ func createDelayedCommunicationManager(delayedCommsFilename, clientDelaysFilenam
 	log.Info("using DELAYED communication manager")
 
 	delaysConfig := getDelayedConfig(delayedCommsFilename)
-	clientDelays := getClientDelays(clientDelaysFilename)
 
 	return &comms_manager.S2DelayedCommsManager{
-		DelaysMatrix: delaysConfig,
-		ClientDelays: clientDelays,
+		DelaysMatrix:            delaysConfig,
+		CommsManagerWithCounter: websockets.CommsManagerWithCounter{},
 		CommsManagerWithClient: comms_manager.CommsManagerWithClient{
 			IsClient: isClient,
 		},

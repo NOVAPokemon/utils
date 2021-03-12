@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mitchellh/mapstructure"
 	"io/ioutil"
 	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"sync"
 	"time"
+
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -21,6 +23,7 @@ import (
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/tokens"
 	ws "github.com/NOVAPokemon/utils/websockets"
+	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 	"github.com/NOVAPokemon/utils/websockets/location"
 	"github.com/golang/geo/s2"
 	"github.com/gorilla/websocket"
@@ -75,7 +78,7 @@ var (
 	catchPokemonResponses chan *location.CatchWildPokemonMessageResponse
 )
 
-func NewLocationClient(config utils.LocationClientConfig, region string,
+func NewLocationClient(config utils.LocationClientConfig, startLocation s2.CellID,
 	manager ws.CommunicationManager, httpClient *http.Client) *LocationClient {
 	locationURL, exists := os.LookupEnv(utils.LocationEnvVar)
 
@@ -91,9 +94,9 @@ func NewLocationClient(config utils.LocationClientConfig, region string,
 		log.Info("starting location enabled")
 		startingLocation = s2.LatLngFromDegrees(config.Parameters.StartingLocationLat,
 			config.Parameters.StartingLocationLon)
-	} else if region != "" {
+	} else if startLocation.ToToken() != "X" {
 		log.Info("starting location disabled")
-		startingLocation = getRandomLatLng(region)
+		startingLocation = startLocation.LatLng()
 	}
 
 	return &LocationClient{
@@ -123,7 +126,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
 
-	err = c.handleLocationConnection(*serverUrl, authToken)
+	err = c.handleLocationConnection(serverUrl, authToken)
 	if err != nil {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
@@ -237,9 +240,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 	c.updateConnectionsLock.Lock()
 	defer c.updateConnectionsLock.Unlock()
 
-	var (
-		isNewServer bool
-	)
+	var isNewServer bool
 
 	var toRemove []string
 	var newServers []string
@@ -311,6 +312,12 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
+	switch castedManager := c.commsManager.(type) {
+	case *comms_manager.S2DelayedCommsManager:
+		header.Set(comms_manager.LocationTagKey, castedManager.GetCellID().ToToken())
+		header.Set(comms_manager.TagIsClientKey, strconv.FormatBool(true))
+	}
+
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
@@ -356,6 +363,10 @@ func (c *LocationClient) updateLocation() {
 	}
 
 	c.HttpClient.SetLocation(c.CurrentLocation)
+	switch delayedComms := c.commsManager.(type) {
+	case *comms_manager.S2DelayedCommsManager:
+		delayedComms.SetCellID(s2.CellIDFromLatLng(c.CurrentLocation))
+	}
 	log.Info("updating location: ", c.CurrentLocation)
 
 	// Only runs once
@@ -442,7 +453,7 @@ func (c *LocationClient) AddGymLocation(gym utils.GymWithServer) error {
 	return errors2.WrapAddGymLocationError(err)
 }
 
-func (c *LocationClient) GetServerForLocation(loc s2.LatLng) (*string, error) {
+func (c *LocationClient) GetServerForLocation(loc s2.LatLng) (string, error) {
 	u := url.URL{Scheme: "http", Host: c.LocationAddr, Path: fmt.Sprintf(api.GetServerForLocationPath)}
 	q := u.Query()
 	q.Set(api.LatitudeQueryParam, fmt.Sprintf("%f", loc.Lat.Degrees()))
@@ -453,9 +464,12 @@ func (c *LocationClient) GetServerForLocation(loc s2.LatLng) (*string, error) {
 	var servername string
 	_, err = DoRequest(c.HttpClient, req, &servername, c.commsManager)
 	if err != nil {
-		return nil, errors2.WrapGetServerForLocationError(err)
+		return "", errors2.WrapGetServerForLocationError(err)
 	}
-	return &servername, nil
+
+	log.Infof("got server %s", servername)
+
+	return servername, nil
 }
 
 func (c *LocationClient) CatchWildPokemon(trainersClient *TrainersClient) error {
@@ -528,7 +542,7 @@ func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error
 	return pokeballs[rand.Intn(len(pokeballs))], nil
 }
 
-func getRandomLatLng(region string) s2.LatLng {
+func GetRandomLatLng(region string) s2.LatLng {
 	regionsToArea := loadRegionsToArea(defaultRegionsToAreaFilename)
 	areas := regionsToArea.Regions[region]
 	randArea := areas[rand.Intn(len(areas))]
