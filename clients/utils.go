@@ -12,6 +12,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	RequestTimeout = 5 * time.Second
+)
+
 func Send(conn *websocket.Conn, msg *ws.WebsocketMsg, writer ws.CommunicationManager) error {
 	return ws.WrapWritingMessageError(writer.WriteGenericMessageToConn(conn, msg))
 }
@@ -53,7 +57,6 @@ func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.Commu
 			}
 
 			err := commsManager.WriteGenericMessageToConn(conn, msg)
-
 			if err != nil {
 				log.Warn(err)
 				return
