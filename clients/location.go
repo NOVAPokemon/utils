@@ -473,7 +473,6 @@ func (c *LocationClient) updateLocation() {
 		Location: c.CurrentLocation,
 	}
 
-	c.HttpClient.SetLocation(c.CurrentLocation)
 	switch delayedComms := c.commsManager.(type) {
 	case *comms_manager.S2DelayedCommsManager:
 		delayedComms.SetCellID(s2.CellIDFromLatLng(c.CurrentLocation))
