@@ -8,10 +8,12 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/comms_manager"
+	"github.com/golang/geo/s2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
@@ -56,6 +58,12 @@ const (
 	DefaultClientDelaysFilename = "client_delays.json"
 )
 
+type (
+	OptionalConfigs struct {
+		CellID s2.CellID
+	}
+)
+
 func StartServer(serviceName, host string, port int, routes Routes, manager websockets.CommunicationManager) {
 	rand.Seed(time.Now().UnixNano())
 	addr := fmt.Sprintf("%s:%d", host, port)
@@ -79,22 +87,33 @@ func SetLogFile(serviceName string) {
 	log.SetOutput(logFile)
 }
 
-func CreateDefaultDelayedManager(isClient bool) websockets.CommunicationManager {
-	return createDelayedCommunicationManager(DefaultDelayConfigFilename, DefaultClientDelaysFilename, isClient)
+func CreateDefaultDelayedManager(isClient bool, optConfigs *OptionalConfigs) websockets.CommunicationManager {
+	return createDelayedCommunicationManager(DefaultDelayConfigFilename, DefaultClientDelaysFilename, isClient,
+		optConfigs)
 }
 
 func createDelayedCommunicationManager(delayedCommsFilename, clientDelaysFilename string,
-	isClient bool) websockets.CommunicationManager {
+	isClient bool, optConfigs *OptionalConfigs) websockets.CommunicationManager {
 	log.Info("using DELAYED communication manager")
+
+	if optConfigs == nil {
+		panic("optConfigs is nil and s2delayed needs cellID")
+	}
+
+	if optConfigs.CellID.ToToken() == "X" {
+		log.Panicf("invalid cellID %s", optConfigs.CellID.ToToken())
+	}
 
 	delaysConfig := getDelayedConfig(delayedCommsFilename)
 
 	return &comms_manager.S2DelayedCommsManager{
+		CellId:                  optConfigs.CellID,
 		DelaysMatrix:            delaysConfig,
 		CommsManagerWithCounter: websockets.CommsManagerWithCounter{},
 		CommsManagerWithClient: comms_manager.CommsManagerWithClient{
 			IsClient: isClient,
 		},
+		RWMutex: sync.RWMutex{},
 	}
 }
 
@@ -153,7 +172,7 @@ func SetDelayedFlag() *bool {
 func ParseFlags(serviceName string) Flags {
 	flag.Usage = func() {
 		fmt.Println("Usage:")
-		fmt.Printf("%s -l -d delays_config_filename\n", serviceName)
+		fmt.Printf("%s -l -d\n", serviceName)
 	}
 
 	logToStdOut := setLogFlag()
