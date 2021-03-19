@@ -40,8 +40,9 @@ func NewGymClient(httpClient *http.Client, commsManager websockets.Communication
 	}
 }
 
-func (g *GymClient) GetGymInfo(serverHostname string, gymName string) (*utils.Gym, error) {
-	req, err := BuildRequest("GET", fmt.Sprintf("%s:%d", serverHostname, utils.GymPort), fmt.Sprintf(api.GetGymInfoPath, gymName), nil)
+func (g *GymClient) GetGymInfo(serverHostname, gymName string) (*utils.Gym, error) {
+	req, err := BuildRequest("GET", fmt.Sprintf("%s:%d", serverHostname, utils.GymPort),
+		fmt.Sprintf(api.GetGymInfoPath, gymName), nil)
 	if err != nil {
 		return nil, errors.WrapGetGymInfoError(err)
 	}
@@ -62,8 +63,9 @@ func (g *GymClient) CreateGym(toCreate utils.Gym) (*utils.Gym, error) {
 	return createdGym, errors.WrapCreateGymError(err)
 }
 
-func (g *GymClient) CreateRaid(serverHostname string, gymName string) error {
-	req, err := BuildRequest("POST", fmt.Sprintf("%s:%d", serverHostname, utils.GymPort), fmt.Sprintf(api.CreateRaidPath, gymName), nil)
+func (g *GymClient) CreateRaid(serverHostname, gymName string) error {
+	req, err := BuildRequest("POST", fmt.Sprintf("%s:%d", serverHostname, utils.GymPort),
+		fmt.Sprintf(api.CreateRaidPath, gymName), nil)
 	if err != nil {
 		return errors.WrapCreateRaidError(err)
 	}
@@ -74,9 +76,12 @@ func (g *GymClient) CreateRaid(serverHostname string, gymName string) error {
 	return errors.WrapCreateRaidError(err)
 }
 
-func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsToken string, itemsToken string,
-	gymId string, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
-	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.GymPort), Path: fmt.Sprintf(api.JoinRaidPath, gymId)}
+func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsToken, itemsToken string,
+	gymId, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
+	u := url.URL{
+		Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.GymPort),
+		Path: fmt.Sprintf(api.JoinRaidPath, gymId),
+	}
 	log.Infof("Connecting to: %s", u.String())
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
@@ -96,7 +101,7 @@ func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsTo
 	}
 
 	outChannel := make(chan *websockets.WebsocketMsg)
-	inChannel := make(chan *websockets.WebsocketMsg)
+	inChannel := make(chan *websockets.WebsocketMsg, chanSize)
 	finished := make(chan struct{})
 
 	SetDefaultPingHandler(c, outChannel)

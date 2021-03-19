@@ -1,15 +1,18 @@
 package comms_manager
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/NOVAPokemon/utils/websockets"
+	"github.com/golang/geo/s1"
 	"github.com/golang/geo/s2"
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
@@ -22,6 +25,8 @@ type S2DelayedCommsManager struct {
 	websockets.CommsManagerWithCounter
 	CommsManagerWithClient
 	sync.RWMutex
+
+	MyClosestNode int
 }
 
 const (
@@ -29,7 +34,10 @@ const (
 	delayAppliedKey       = "Delay_applied"
 )
 
-var cellsToRegion = map[s2.CellID]string{}
+var (
+	cellsToRegion = map[s2.CellID]string{}
+	latencies     map[int][]float64
+)
 
 func init() {
 	f, err := os.Open(cellsToRegionFilePath)
@@ -49,6 +57,46 @@ func init() {
 	for cellToken, region := range cellTokensToRegion {
 		cellsToRegion[s2.CellIDFromToken(cellToken)] = region
 	}
+
+	log.Info("loading node latencies...")
+	latencies = loadNodeLatencies()
+
+	log.Info("Done!")
+}
+
+const (
+	nodeNumEnvVar = "NODE_NUM"
+)
+
+func NewS2DelayedCommsManager(cellID s2.CellID, delaysConfig *DelaysMatrixType, isClient bool) *S2DelayedCommsManager {
+	closestNode := -1
+	if isClient {
+		closestNode = getClosestNode(cellID)
+	} else {
+		nodeNumString, ok := os.LookupEnv(nodeNumEnvVar)
+		if !ok {
+			log.Panic("missing NODE_NUM env var")
+		}
+
+		var err error
+		closestNode, err = strconv.Atoi(nodeNumString)
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
+	manager := &S2DelayedCommsManager{
+		CellId:                  cellID,
+		DelaysMatrix:            delaysConfig,
+		CommsManagerWithCounter: websockets.CommsManagerWithCounter{},
+		CommsManagerWithClient: CommsManagerWithClient{
+			IsClient: isClient,
+		},
+		MyClosestNode: closestNode,
+		RWMutex:       sync.RWMutex{},
+	}
+
+	return manager
 }
 
 func (d *S2DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) *websockets.WebsocketMsg {
@@ -64,7 +112,8 @@ func (d *S2DelayedCommsManager) ApplyReceiveLogic(msg *websockets.WebsocketMsg) 
 	}
 
 	cellId := s2.CellIDFromToken(taggedMessage.LocationTag)
-	myRegionTag, requesterRegionTag, delay := d.getDelay(cellId, taggedMessage.IsClient)
+
+	myRegionTag, requesterRegionTag, delay := d.getWSDelay(cellId, taggedMessage.NodeNum)
 
 	splitDelay := delay / 2
 
@@ -86,6 +135,7 @@ func (d *S2DelayedCommsManager) ApplySendLogic(msg *websockets.WebsocketMsg) *we
 			LocationTag: d.GetCellID().ToToken(),
 			IsClient:    d.IsClient,
 			Content:     *msg.Content,
+			NodeNum:     d.MyClosestNode,
 		}
 		d.RUnlock()
 		wrapperGenericMsg := taggedMsg.ConvertToWSMessage()
@@ -128,6 +178,7 @@ func (d *S2DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*webs
 func (d *S2DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 	req.Header.Set(LocationTagKey, d.GetCellID().ToToken())
 	req.Header.Set(TagIsClientKey, strconv.FormatBool(d.IsClient))
+	req.Header.Set(ClosestNodeKey, strconv.Itoa(d.MyClosestNode))
 
 	var (
 		resp *http.Response
@@ -182,11 +233,16 @@ func (d *S2DelayedCommsManager) HTTPRequestInterceptor(next http.Handler) http.H
 
 		requesterIsClient, err := strconv.ParseBool(r.Header.Get(TagIsClientKey))
 		if err != nil {
-			panic(fmt.Sprintf("could not parse %+v to bool", requesterIsClient))
+			log.Panic("could not parse to bool")
 		}
 
-		myRegionTag, requesterRegionTag, delay := d.getDelay(s2.CellIDFromToken(requestLocationToken),
-			requesterIsClient)
+		closestNode, err := strconv.Atoi(r.Header.Get(ClosestNodeKey))
+		if err != nil {
+			log.Panic("could not parse to int %+v", closestNode)
+		}
+
+		myRegionTag, requesterRegionTag, delay := d.getHTTPDelay(s2.CellIDFromToken(requestLocationToken),
+			requesterIsClient, closestNode)
 
 		splitDelay := delay / 2
 
@@ -200,26 +256,46 @@ func (d *S2DelayedCommsManager) HTTPRequestInterceptor(next http.Handler) http.H
 	})
 }
 
-func (d *S2DelayedCommsManager) getDelay(requesterCell s2.CellID, isClient bool) (myRegionTag,
-	requesterRegionTag string, delay float64) {
+func (d *S2DelayedCommsManager) getHTTPDelay(requesterCell s2.CellID, requesterIsClient bool,
+	requesterClosestNode int) (myRegionTag, requesterRegionTag string, delay float64) {
 	d.RLock()
 	myRegionTag = TranslateCellToRegion(d.GetCellID())
 	d.RUnlock()
 	requesterRegionTag = TranslateCellToRegion(requesterCell)
 
-	if isClient {
+	if requesterIsClient {
+		// we will apply the delay from client -> closestNode and if closest node is not the one being used
+		// add the delay from closestNode -> targetNode
+
 		delay = 2 * (*d.DelaysMatrix)[requesterRegionTag][requesterRegionTag]
 		log.Infof("adding %f ms from client to node", delay)
 
 		if requesterRegionTag != myRegionTag {
-			delay += (*d.DelaysMatrix)[requesterRegionTag][myRegionTag]
+			delay += latencies[requesterClosestNode][d.MyClosestNode] + latencies[d.MyClosestNode][requesterClosestNode]
 		}
 	} else {
-		var ok bool
-		delay, ok = (*d.DelaysMatrix)[requesterRegionTag][myRegionTag]
-		if !ok {
-			panic(fmt.Sprintf("could not delay WS message from %s to %s", requesterRegionTag, myRegionTag))
-		}
+		// requests between nodes are already being delay at the OS level
+		delay = 0
+	}
+
+	return
+}
+
+func (d *S2DelayedCommsManager) getWSDelay(requesterCell s2.CellID,
+	requesterClosestNode int) (myRegionTag, requesterRegionTag string, delay float64) {
+	d.RLock()
+	myRegionTag = TranslateCellToRegion(d.GetCellID())
+	d.RUnlock()
+	requesterRegionTag = TranslateCellToRegion(requesterCell)
+
+	// we will apply the delay from client -> closestNode and if closest node is not the one being used
+	// add the delay from closestNode -> targetNode
+
+	delay = 2 * (*d.DelaysMatrix)[requesterRegionTag][requesterRegionTag]
+	log.Infof("adding %f ms from client to node", delay)
+
+	if requesterRegionTag != myRegionTag {
+		delay += latencies[requesterClosestNode][d.MyClosestNode] + latencies[d.MyClosestNode][requesterClosestNode]
 	}
 
 	return
@@ -247,4 +323,99 @@ func (d *S2DelayedCommsManager) SetCellID(cellID s2.CellID) {
 	d.Lock()
 	d.CellId = cellID
 	d.Unlock()
+}
+
+const (
+	nodeLatenciesPath = "/service/lat.txt"
+)
+
+func loadNodeLatencies() (latencies map[int][]float64) {
+	latencies = map[int][]float64{}
+
+	f, err := os.Open(nodeLatenciesPath)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanLines)
+
+	number := 0
+	for scanner.Scan() {
+		line := scanner.Text()
+		line = strings.TrimSpace(line)
+		lats := strings.Split(line, " ")
+
+		nodeLats := make([]float64, len(lats))
+		for i, lat := range lats {
+			nodeLats[i], err = strconv.ParseFloat(lat, 64)
+			if err != nil {
+				log.Panic(err)
+			}
+		}
+
+		latencies[number] = nodeLats
+
+		number++
+	}
+
+	return
+}
+
+const (
+	nodeLocationsPath = "/service/locations.json"
+)
+
+func getClosestNode(cellID s2.CellID) int {
+	f, err := os.Open(nodeLocationsPath)
+	if err != nil {
+		log.Panic(err)
+	}
+	defer f.Close()
+
+	var locations map[string]struct {
+		Lat float64
+		Lng float64
+	}
+
+	var data map[string]interface{}
+
+	err = json.NewDecoder(f).Decode(&data)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	err = mapstructure.Decode(data, &locations)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	myCell := s2.CellFromCellID(cellID)
+	minDist := -1.
+	closestNode := -1
+
+	for nodeNumString, latLng := range locations {
+		nodeCell := s2.CellFromLatLng(s2.LatLngFromDegrees(latLng.Lat, latLng.Lng))
+		dist := chordAngleToKM(myCell.DistanceToCell(nodeCell))
+
+		if minDist == -1 || dist < minDist {
+			minDist = dist
+			closestNode, err = strconv.Atoi(nodeNumString)
+			if err != nil {
+				log.Panic(err)
+			}
+		}
+	}
+
+	return closestNode
+}
+
+const (
+	earthRadius = 6_378
+)
+
+func chordAngleToKM(angle s1.ChordAngle) float64 {
+	return angle.Angle().Radians() * earthRadius
 }

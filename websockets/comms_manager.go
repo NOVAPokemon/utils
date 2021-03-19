@@ -27,7 +27,9 @@ func (d *CommsManagerWithCounter) LogRequestAndRetry(err error) (success bool) {
 	success = true
 	failed := false
 
-	log.Infof("Requests count: %d", atomic.AddInt64(&d.RequestsCount, 1))
+	ts := MakeTimestamp()
+
+	log.Infof("[REQ] %d %d", ts, atomic.AddInt64(&d.RequestsCount, 1))
 
 	if hasErr := checkErr(err); hasErr {
 		success = false
@@ -35,7 +37,7 @@ func (d *CommsManagerWithCounter) LogRequestAndRetry(err error) (success bool) {
 	}
 
 	if failed {
-		log.Infof("Retries count: %d", atomic.AddInt64(&d.RetriesCount, 1))
+		log.Infof("[RET] %d %d", ts, atomic.AddInt64(&d.RetriesCount, 1))
 	}
 
 	return

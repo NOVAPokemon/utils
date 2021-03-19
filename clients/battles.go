@@ -27,6 +27,10 @@ type BattleLobbyClient struct {
 	commsManager websockets.CommunicationManager
 }
 
+const (
+	chanSize = 10
+)
+
 var defaultBattleURL = fmt.Sprintf("%s:%d", utils.Host, utils.BattlesPort)
 
 func NewBattlesClient(commsManager websockets.CommunicationManager, httpClient *http.Client) *BattleLobbyClient {
@@ -82,6 +86,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	case *comms_manager.S2DelayedCommsManager:
 		header.Set(comms_manager.LocationTagKey, castedManager.GetCellID().ToToken())
 		header.Set(comms_manager.TagIsClientKey, strconv.FormatBool(true))
+		header.Set(comms_manager.ClosestNodeKey, strconv.Itoa(castedManager.MyClosestNode))
 	}
 
 	c, _, err := dialer.Dial(u.String(), header)
@@ -91,7 +96,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 	}
 
 	outChannel := make(chan *websockets.WebsocketMsg)
-	inChannel := make(chan *websockets.WebsocketMsg)
+	inChannel := make(chan *websockets.WebsocketMsg, chanSize)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 
@@ -132,7 +137,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 		return nil, nil, 0, err
 	}
 
-	inChannel := make(chan *websockets.WebsocketMsg)
+	inChannel := make(chan *websockets.WebsocketMsg, chanSize)
 	outChannel := make(chan *websockets.WebsocketMsg)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
@@ -172,7 +177,7 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 	}
 
 	outChannel := make(chan *websockets.WebsocketMsg)
-	inChannel := make(chan *websockets.WebsocketMsg)
+	inChannel := make(chan *websockets.WebsocketMsg, chanSize)
 	rejectedChannel := make(chan struct{})
 	finished := make(chan struct{})
 

@@ -107,6 +107,7 @@ const Tagged = "TAGGED"
 type TaggedMessage struct {
 	LocationTag string
 	IsClient    bool
+	NodeNum     int
 	Content     WebsocketMsgContent
 }
 

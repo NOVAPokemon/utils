@@ -119,6 +119,7 @@ func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	case *comms_manager.S2DelayedCommsManager:
 		header.Set(comms_manager.LocationTagKey, castedManager.GetCellID().ToToken())
 		header.Set(comms_manager.TagIsClientKey, strconv.FormatBool(true))
+		header.Set(comms_manager.ClosestNodeKey, strconv.Itoa(castedManager.MyClosestNode))
 	}
 
 	dialer := &websocket.Dialer{
@@ -152,8 +153,8 @@ func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	t.rejected = make(chan struct{})
 	t.finished = make(chan struct{})
 	t.finishOnce = sync.Once{}
-	t.readChannel = make(chan *ws.WebsocketMsg, 10)
-	t.writeChannel = make(chan *ws.WebsocketMsg, 10)
+	t.readChannel = make(chan *ws.WebsocketMsg, chanSize)
+	t.writeChannel = make(chan *ws.WebsocketMsg, chanSize)
 
 	go ReadMessagesFromConnToChan(conn, t.readChannel, t.finished, t.commsManager)
 

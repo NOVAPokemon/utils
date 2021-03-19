@@ -26,9 +26,7 @@ type NotificationClient struct {
 	commsManager         ws.CommunicationManager
 }
 
-var (
-	defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
-)
+var defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
 
 func NewNotificationClient(notificationsChannel chan utils.Notification,
 	manager ws.CommunicationManager, client *http.Client) *NotificationClient {
@@ -43,7 +41,7 @@ func NewNotificationClient(notificationsChannel chan utils.Notification,
 		NotificationsAddr:    notificationsURL,
 		httpClient:           client,
 		NotificationsChannel: notificationsChannel,
-		readChannel:          make(chan *ws.WebsocketMsg),
+		readChannel:          make(chan *ws.WebsocketMsg, chanSize),
 		commsManager:         manager,
 	}
 }
@@ -63,8 +61,10 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 
 	conn, _, err := dialer.Dial(u.String(), header)
 	defer func() {
-		if err = conn.Close(); err != nil {
-			log.Error(err)
+		if conn != nil {
+			if err = conn.Close(); err != nil {
+				log.Error(err)
+			}
 		}
 	}()
 

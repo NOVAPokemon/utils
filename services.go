@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/NOVAPokemon/utils/websockets"
@@ -106,15 +105,7 @@ func createDelayedCommunicationManager(delayedCommsFilename, clientDelaysFilenam
 
 	delaysConfig := getDelayedConfig(delayedCommsFilename)
 
-	return &comms_manager.S2DelayedCommsManager{
-		CellId:                  optConfigs.CellID,
-		DelaysMatrix:            delaysConfig,
-		CommsManagerWithCounter: websockets.CommsManagerWithCounter{},
-		CommsManagerWithClient: comms_manager.CommsManagerWithClient{
-			IsClient: isClient,
-		},
-		RWMutex: sync.RWMutex{},
-	}
+	return comms_manager.NewS2DelayedCommsManager(optConfigs.CellID, delaysConfig, isClient)
 }
 
 func CreateDefaultCommunicationManager() websockets.CommunicationManager {

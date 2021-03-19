@@ -17,6 +17,7 @@ const (
 	LocationTagKey       = "Location_tag"
 	serverLocationTagKey = "Server_Location_tag"
 	TagIsClientKey       = "Tag_is_client"
+	ClosestNodeKey       = "Closest_node"
 )
 
 type (
