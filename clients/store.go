@@ -18,11 +18,13 @@ type StoreClient struct {
 	StoreAddr    string
 	httpClient   *http.Client
 	commsManager websockets.CommunicationManager
+	*BasicClient
 }
 
 var defaultStoreURL = fmt.Sprintf("%s:%d", utils.Host, utils.StorePort)
 
-func NewStoreClient(commsManager websockets.CommunicationManager, client *http.Client) *StoreClient {
+func NewStoreClient(commsManager websockets.CommunicationManager, httpClient *http.Client,
+	client *BasicClient) *StoreClient {
 	storeURL, exists := os.LookupEnv(utils.StoreEnvVar)
 
 	if !exists {
@@ -32,13 +34,14 @@ func NewStoreClient(commsManager websockets.CommunicationManager, client *http.C
 
 	return &StoreClient{
 		StoreAddr:    storeURL,
-		httpClient:   client,
+		httpClient:   httpClient,
 		commsManager: commsManager,
+		BasicClient:  client,
 	}
 }
 
 func (c *StoreClient) GetItems(authToken string) ([]*items.StoreItem, error) {
-	req, err := BuildRequest("GET", c.StoreAddr, api.GetShopItemsPath, nil)
+	req, err := c.BuildRequest("GET", c.StoreAddr, api.GetShopItemsPath, nil)
 	if err != nil {
 		return nil, errors.WrapGetItemsError(err)
 	}
@@ -51,7 +54,7 @@ func (c *StoreClient) GetItems(authToken string) ([]*items.StoreItem, error) {
 }
 
 func (c *StoreClient) BuyItem(itemName, authToken, statsToken string) (string, string, error) {
-	req, err := BuildRequest("POST", c.StoreAddr, fmt.Sprintf(api.BuyItemPath, itemName), nil)
+	req, err := c.BuildRequest("POST", c.StoreAddr, fmt.Sprintf(api.BuyItemPath, itemName), nil)
 	if err != nil {
 		return "", "", errors.WrapBuyItemError(err)
 	}

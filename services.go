@@ -30,6 +30,7 @@ const (
 )
 
 const (
+	IngressEnvVar           = "INGRESS_URL"
 	AuthenticationEnvVar    = "AUTHENTICATION_URL"
 	BattlesEnvVar           = "BATTLES_URL"
 	GymEnvVar               = "GYM_URL"
@@ -52,7 +53,6 @@ const (
 
 const (
 	logDir                      = "/logs"
-	DefaultLocationTagsFilename = "location_tags.json"
 	DefaultDelayConfigFilename  = "delays_config.json"
 	DefaultClientDelaysFilename = "client_delays.json"
 )
@@ -87,7 +87,21 @@ func SetLogFile(serviceName string) {
 }
 
 func CreateDefaultDelayedManager(isClient bool, optConfigs *OptionalConfigs) websockets.CommunicationManager {
-	return createDelayedCommunicationManager(DefaultDelayConfigFilename, DefaultClientDelaysFilename, isClient,
+	var (
+		delaysConfig string
+		clientDelays string
+		ok           bool
+	)
+
+	if delaysConfig, ok = os.LookupEnv("DELAYS_CONFIG"); !ok {
+		delaysConfig = DefaultDelayConfigFilename
+	}
+
+	if clientDelays, ok = os.LookupEnv("CLIENT_DELAYS"); !ok {
+		clientDelays = DefaultClientDelaysFilename
+	}
+
+	return createDelayedCommunicationManager(delaysConfig, clientDelays, isClient,
 		optConfigs)
 }
 

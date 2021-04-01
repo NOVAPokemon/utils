@@ -65,6 +65,8 @@ type LocationClient struct {
 	commsManager ws.CommunicationManager
 
 	updateConnectionsLock sync.Mutex
+
+	*BasicClient
 }
 
 const (
@@ -79,7 +81,7 @@ var (
 )
 
 func NewLocationClient(config utils.LocationClientConfig, startLocation s2.CellID,
-	manager ws.CommunicationManager, httpClient *http.Client) *LocationClient {
+	manager ws.CommunicationManager, httpClient *http.Client, client *BasicClient) *LocationClient {
 	locationURL, exists := os.LookupEnv(utils.LocationEnvVar)
 
 	if !exists {
@@ -115,6 +117,7 @@ func NewLocationClient(config utils.LocationClientConfig, startLocation s2.CellI
 		connections:         sync.Map{},
 		toConnsChans:        sync.Map{},
 		commsManager:        manager,
+		BasicClient:         client,
 	}
 }
 
@@ -308,9 +311,14 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 
 func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg,
 	authToken string) (*websocket.Conn, error) {
-	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverUrl, utils.LocationPort), Path: api.UserLocationPath}
+	u := url.URL{
+		Scheme: "ws",
+		Host:   c.LocationAddr,
+		Path:   api.UserLocationPath,
+	}
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
+	header.Set("Host", serverUrl)
 
 	switch castedManager := c.commsManager.(type) {
 	case *comms_manager.S2DelayedCommsManager:
@@ -445,7 +453,7 @@ func (c *LocationClient) move(timePassed int) s2.LatLng {
 }
 
 func (c *LocationClient) AddGymLocation(gym utils.GymWithServer) error {
-	req, err := BuildRequest("POST", c.LocationAddr, api.GymLocationRoute, gym)
+	req, err := c.BuildRequest("POST", c.LocationAddr, api.GymLocationRoute, gym)
 	if err != nil {
 		return errors2.WrapAddGymLocationError(err)
 	}
@@ -543,7 +551,15 @@ func getRandomPokeball(itemsFromToken map[string]items.Item) (*items.Item, error
 }
 
 func GetRandomLatLng(region string) s2.LatLng {
-	regionsToArea := loadRegionsToArea(defaultRegionsToAreaFilename)
+	var (
+		regionsToAreaPath string
+		ok                bool
+	)
+	if regionsToAreaPath, ok = os.LookupEnv("REGIONS_TO_AREA"); !ok {
+		regionsToAreaPath = defaultRegionsToAreaFilename
+	}
+
+	regionsToArea := loadRegionsToArea(regionsToAreaPath)
 	areas := regionsToArea.Regions[region]
 	randArea := areas[rand.Intn(len(areas))]
 

@@ -37,12 +37,13 @@ type TradeLobbyClient struct {
 	writeChannel chan *ws.WebsocketMsg
 	commsManager ws.CommunicationManager
 	client       *http.Client
+	*BasicClient
 }
 
 var defaultTradesURL = fmt.Sprintf("%s:%d", utils.Host, utils.TradesPort)
 
 func NewTradesClient(config utils.TradesClientConfig, manager ws.CommunicationManager,
-	client *http.Client) *TradeLobbyClient {
+	httpClient *http.Client, client *BasicClient) *TradeLobbyClient {
 	tradesURL, exists := os.LookupEnv(utils.TradesEnvVar)
 
 	if !exists {
@@ -54,12 +55,13 @@ func NewTradesClient(config utils.TradesClientConfig, manager ws.CommunicationMa
 		TradesAddr:   tradesURL,
 		config:       config,
 		commsManager: manager,
-		client:       client,
+		client:       httpClient,
+		BasicClient:  client,
 	}
 }
 
 func (t *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
-	req, err := BuildRequest("GET", t.TradesAddr, api.GetTradesPath, nil)
+	req, err := t.BuildRequest("GET", t.TradesAddr, api.GetTradesPath, nil)
 	if err != nil {
 		return nil, errors.WrapGetTradeLobbiesError(err)
 	}
@@ -76,7 +78,7 @@ func (t *TradeLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
 func (t *TradeLobbyClient) CreateTradeLobby(username, authToken string,
 	itemsToken string) (*primitive.ObjectID, *string, error) {
 	body := api.CreateLobbyRequest{Username: username}
-	req, err := BuildRequest("POST", t.TradesAddr, api.StartTradePath, &body)
+	req, err := t.BuildRequest("POST", t.TradesAddr, api.StartTradePath, &body)
 	if err != nil {
 		return nil, nil, errors.WrapCreateTradeLobbyError(err)
 	}
@@ -106,7 +108,7 @@ func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	serverHostname, authToken, itemsToken string) (*string, error) {
 	u := url.URL{
 		Scheme: "ws",
-		Host:   fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort),
+		Host:   t.TradesAddr,
 		Path:   fmt.Sprintf(api.JoinTradePath, tradeId.Hex()),
 	}
 	log.Infof("Connecting to: %s", u.String())
@@ -114,6 +116,7 @@ func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
+	header.Set("Host", serverHostname)
 
 	switch castedManager := t.commsManager.(type) {
 	case *comms_manager.S2DelayedCommsManager:
@@ -211,9 +214,8 @@ func (t *TradeLobbyClient) WaitForStart() {
 
 func (t *TradeLobbyClient) RejectTrade(lobbyId *primitive.ObjectID, serverHostname, authToken,
 	itemsToken string) error {
-	addr := fmt.Sprintf("%s:%d", serverHostname, utils.TradesPort)
-
-	req, err := BuildRequest("POST", addr, fmt.Sprintf(api.RejectTradePath, lobbyId.Hex()), nil)
+	req, err := t.BuildRequestForHost("POST", t.TradesAddr, serverHostname, fmt.Sprintf(api.RejectTradePath,
+		lobbyId.Hex()), nil)
 	if err != nil {
 		return errors.WrapRejectTradeLobbyError(err)
 	}

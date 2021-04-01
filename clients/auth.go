@@ -19,11 +19,13 @@ type AuthClient struct {
 	AuthAddr     string
 	httpClient   *http.Client
 	commsManager websockets.CommunicationManager
+	*BasicClient
 }
 
 var defaultAuthURL = fmt.Sprintf("%s:%d", utils.Host, utils.AuthenticationPort)
 
-func NewAuthClient(commsManager websockets.CommunicationManager, httpClient *http.Client) *AuthClient {
+func NewAuthClient(commsManager websockets.CommunicationManager, httpClient *http.Client,
+	client *BasicClient) *AuthClient {
 	authURL, exists := os.LookupEnv(utils.AuthenticationEnvVar)
 
 	if !exists {
@@ -35,12 +37,13 @@ func NewAuthClient(commsManager websockets.CommunicationManager, httpClient *htt
 		AuthAddr:     authURL,
 		httpClient:   httpClient,
 		commsManager: commsManager,
+		BasicClient:  client,
 	}
 }
 
 func (client *AuthClient) LoginWithUsernameAndPassword(username, password string) error {
 	userJSON := utils.UserJSON{Username: username, Password: password}
-	req, err := BuildRequest("POST", client.AuthAddr, api.LoginPath, userJSON)
+	req, err := client.BuildRequest("POST", client.AuthAddr, api.LoginPath, userJSON)
 
 	resp, err := DoRequest(client.httpClient, req, nil, client.commsManager)
 	if err != nil {
@@ -52,9 +55,9 @@ func (client *AuthClient) LoginWithUsernameAndPassword(username, password string
 	return nil
 }
 
-func (client *AuthClient) Register(username string, password string) error {
+func (client *AuthClient) Register(username, password string) error {
 	userJSON := utils.UserJSON{Username: username, Password: password}
-	req, err := BuildRequest("POST", client.AuthAddr, api.RegisterPath, userJSON)
+	req, err := client.BuildRequest("POST", client.AuthAddr, api.RegisterPath, userJSON)
 
 	resp, err := DoRequest(client.httpClient, req, nil, client.commsManager)
 	if err != nil {
@@ -65,7 +68,7 @@ func (client *AuthClient) Register(username string, password string) error {
 }
 
 func (client *AuthClient) RefreshAuthToken() error {
-	req, err := BuildRequest("GET", client.AuthAddr, api.RefreshPath, nil)
+	req, err := client.BuildRequest("GET", client.AuthAddr, api.RefreshPath, nil)
 	if err != nil {
 		return errors2.WrapRefreshAuthTokenError(err)
 	}

@@ -17,11 +17,13 @@ type MicrotransactionsClient struct {
 	MicrotransactionsAddr string
 	httpClient            *http.Client
 	commsManager          websockets.CommunicationManager
+	*BasicClient
 }
 
 var defaultMicrotransactionsURL = fmt.Sprintf("%s:%d", utils.Host, utils.MicrotransactionsPort)
 
-func NewMicrotransactionsClient(manager websockets.CommunicationManager, httpCLient *http.Client) *MicrotransactionsClient {
+func NewMicrotransactionsClient(manager websockets.CommunicationManager, httpCLient *http.Client,
+	client *BasicClient) *MicrotransactionsClient {
 	microtransactionsURL, exists := os.LookupEnv(utils.MicrotransactionsEnvVar)
 
 	if !exists {
@@ -33,11 +35,12 @@ func NewMicrotransactionsClient(manager websockets.CommunicationManager, httpCLi
 		MicrotransactionsAddr: microtransactionsURL,
 		httpClient:            httpCLient,
 		commsManager:          manager,
+		BasicClient:           client,
 	}
 }
 
 func (c *MicrotransactionsClient) GetOffers() ([]utils.TransactionTemplate, error) {
-	req, err := BuildRequest("GET", c.MicrotransactionsAddr, api.GetTransactionOffersPath, nil)
+	req, err := c.BuildRequest("GET", c.MicrotransactionsAddr, api.GetTransactionOffersPath, nil)
 	if err != nil {
 		return nil, errors.WrapGetOffersError(err)
 	}
@@ -49,7 +52,7 @@ func (c *MicrotransactionsClient) GetOffers() ([]utils.TransactionTemplate, erro
 }
 
 func (c *MicrotransactionsClient) GetTransactionRecords(authToken string) ([]utils.TransactionRecord, error) {
-	req, err := BuildRequest("GET", c.MicrotransactionsAddr, api.GetPerformedTransactionsPath, nil)
+	req, err := c.BuildRequest("GET", c.MicrotransactionsAddr, api.GetPerformedTransactionsPath, nil)
 	if err != nil {
 		return nil, errors.WrapGetTransactionsRecordsError(err)
 	}
@@ -64,7 +67,7 @@ func (c *MicrotransactionsClient) GetTransactionRecords(authToken string) ([]uti
 
 func (c *MicrotransactionsClient) PerformTransaction(offerName, authToken, statsToken string) (*string,
 	string, error) {
-	req, err := BuildRequest("POST", c.MicrotransactionsAddr,
+	req, err := c.BuildRequest("POST", c.MicrotransactionsAddr,
 		fmt.Sprintf(api.MakeTransactionPath, offerName), nil)
 	if err != nil {
 		return nil, "", errors.WrapPerformTransactionError(err)

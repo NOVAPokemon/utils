@@ -16,6 +16,102 @@ const (
 	RequestTimeout = 5 * time.Second
 )
 
+type BasicClient struct {
+	usingIngress bool
+	ingress      string
+}
+
+func NewBasicClient(usingIngress bool, ingressURL string) *BasicClient {
+	return &BasicClient{
+		usingIngress: usingIngress,
+		ingress:      ingressURL,
+	}
+}
+
+func (b *BasicClient) BuildRequest(method, serverAddr, path string, body interface{}) (*http.Request, error) {
+	var addr string
+	if b.usingIngress {
+		addr = b.ingress
+	} else {
+		addr = serverAddr
+	}
+
+	hostUrl := url.URL{
+		Scheme: "http",
+		Host:   addr,
+		Path:   path,
+	}
+
+	var (
+		err        error
+		request    *http.Request
+		bodyBuffer *bytes.Buffer
+	)
+
+	if body != nil {
+		var jsonStr []byte
+		jsonStr, err = json.Marshal(body)
+		if err != nil {
+			return nil, wrapBuildRequestError(err)
+		}
+		bodyBuffer = bytes.NewBuffer(jsonStr)
+	} else {
+		bodyBuffer = new(bytes.Buffer)
+	}
+
+	request, err = http.NewRequest(method, hostUrl.String(), bodyBuffer)
+	if err != nil {
+		return nil, wrapBuildRequestError(err)
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+
+	return request, nil
+}
+
+func (b *BasicClient) BuildRequestForHost(method, serverAddr, host, path string, body interface{}) (*http.Request,
+	error) {
+	var addr string
+	if b.usingIngress {
+		addr = b.ingress
+	} else {
+		addr = serverAddr
+	}
+
+	hostUrl := url.URL{
+		Scheme: "http",
+		Host:   addr,
+		Path:   path,
+	}
+
+	var (
+		err        error
+		request    *http.Request
+		bodyBuffer *bytes.Buffer
+	)
+
+	if body != nil {
+		var jsonStr []byte
+		jsonStr, err = json.Marshal(body)
+		if err != nil {
+			return nil, wrapBuildRequestError(err)
+		}
+		bodyBuffer = bytes.NewBuffer(jsonStr)
+	} else {
+		bodyBuffer = new(bytes.Buffer)
+	}
+
+	request, err = http.NewRequest(method, hostUrl.String(), bodyBuffer)
+	if err != nil {
+		return nil, wrapBuildRequestError(err)
+	}
+
+	request.Host = host
+	request.Header.Set("Content-Type", "application/json")
+
+	return request, nil
+}
+
 func Send(conn *websocket.Conn, msg *ws.WebsocketMsg, writer ws.CommunicationManager) error {
 	return ws.WrapWritingMessageError(writer.WriteGenericMessageToConn(conn, msg))
 }
@@ -92,6 +188,8 @@ func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan *ws.Websocket
 	})
 }
 
+// REQUESTS
+
 func Read(conn *websocket.Conn, manager ws.CommunicationManager) (*ws.WebsocketMsg, error) {
 	wsMsg, err := manager.ReadMessageFromConn(conn)
 	if err != nil {
@@ -99,42 +197,6 @@ func Read(conn *websocket.Conn, manager ws.CommunicationManager) (*ws.WebsocketM
 	}
 
 	return wsMsg, nil
-}
-
-// REQUESTS
-
-func BuildRequest(method, host, path string, body interface{}) (*http.Request, error) {
-	hostUrl := url.URL{
-		Scheme: "http",
-		Host:   host,
-		Path:   path,
-	}
-
-	var (
-		err        error
-		request    *http.Request
-		bodyBuffer *bytes.Buffer
-	)
-
-	if body != nil {
-		var jsonStr []byte
-		jsonStr, err = json.Marshal(body)
-		if err != nil {
-			return nil, wrapBuildRequestError(err)
-		}
-		bodyBuffer = bytes.NewBuffer(jsonStr)
-	} else {
-		bodyBuffer = new(bytes.Buffer)
-	}
-
-	request, err = http.NewRequest(method, hostUrl.String(), bodyBuffer)
-	if err != nil {
-		return nil, wrapBuildRequestError(err)
-	}
-
-	request.Header.Set("Content-Type", "application/json")
-
-	return request, nil
 }
 
 // For now this function assumes that a response should always have 200 code

@@ -24,12 +24,13 @@ type NotificationClient struct {
 	NotificationsChannel chan utils.Notification
 	readChannel          chan *ws.WebsocketMsg
 	commsManager         ws.CommunicationManager
+	*BasicClient
 }
 
 var defaultNotificationsURL = fmt.Sprintf("%s:%d", utils.Host, utils.NotificationsPort)
 
 func NewNotificationClient(notificationsChannel chan utils.Notification,
-	manager ws.CommunicationManager, client *http.Client) *NotificationClient {
+	manager ws.CommunicationManager, httpClient *http.Client, client *BasicClient) *NotificationClient {
 	notificationsURL, exists := os.LookupEnv(utils.NotificationsEnvVar)
 
 	if !exists {
@@ -39,10 +40,11 @@ func NewNotificationClient(notificationsChannel chan utils.Notification,
 
 	return &NotificationClient{
 		NotificationsAddr:    notificationsURL,
-		httpClient:           client,
+		httpClient:           httpClient,
 		NotificationsChannel: notificationsChannel,
 		readChannel:          make(chan *ws.WebsocketMsg, chanSize),
 		commsManager:         manager,
+		BasicClient:          client,
 	}
 }
 
@@ -103,7 +105,7 @@ Loop:
 }
 
 func (client *NotificationClient) StopListening(authToken string) error {
-	req, err := BuildRequest("GET", client.NotificationsAddr, api.UnsubscribeNotificationPath, nil)
+	req, err := client.BuildRequest("GET", client.NotificationsAddr, api.UnsubscribeNotificationPath, nil)
 	if err != nil {
 		return errors.WrapStopListeningError(err)
 	}
@@ -116,7 +118,7 @@ func (client *NotificationClient) StopListening(authToken string) error {
 
 func (client *NotificationClient) AddNotification(notificationMsg *notificationMessages.NotificationMessage,
 	authToken string) error {
-	req, err := BuildRequest("POST", client.NotificationsAddr, api.NotificationPath, notificationMsg)
+	req, err := client.BuildRequest("POST", client.NotificationsAddr, api.NotificationPath, notificationMsg)
 	if err != nil {
 		return errors.WrapAddNotificationError(err)
 	}
@@ -128,7 +130,7 @@ func (client *NotificationClient) AddNotification(notificationMsg *notificationM
 }
 
 func (client *NotificationClient) GetOthersListening(authToken string) ([]string, error) {
-	req, err := BuildRequest("GET", client.NotificationsAddr, api.GetListenersPath, nil)
+	req, err := client.BuildRequest("GET", client.NotificationsAddr, api.GetListenersPath, nil)
 	if err != nil {
 		return nil, errors.WrapGetOthersListeningError(err)
 	}

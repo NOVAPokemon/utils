@@ -30,16 +30,22 @@ type S2DelayedCommsManager struct {
 }
 
 const (
-	cellsToRegionFilePath = "/service/cells_to_region.json"
-	delayAppliedKey       = "Delay_applied"
+	delayAppliedKey = "Delay_applied"
 )
 
 var (
+	cellsToRegionFilePath string
+
 	cellsToRegion = map[s2.CellID]string{}
 	latencies     map[int][]float64
 )
 
 func init() {
+	var ok bool
+	if cellsToRegionFilePath, ok = os.LookupEnv("CELLS_TO_REGION"); !ok {
+		cellsToRegionFilePath = "/service/cells_to_region.json"
+	}
+
 	f, err := os.Open(cellsToRegionFilePath)
 	if err != nil {
 		log.Panic(err)
@@ -326,11 +332,20 @@ func (d *S2DelayedCommsManager) SetCellID(cellID s2.CellID) {
 }
 
 const (
-	nodeLatenciesPath = "/service/lat.txt"
+	defaultNodeLatenciesPath = "/service/lat.txt"
 )
 
 func loadNodeLatencies() (latencies map[int][]float64) {
 	latencies = map[int][]float64{}
+
+	var (
+		nodeLatenciesPath string
+		ok                bool
+	)
+
+	if nodeLatenciesPath, ok = os.LookupEnv("LAT"); !ok {
+		nodeLatenciesPath = defaultNodeLatenciesPath
+	}
 
 	f, err := os.Open(nodeLatenciesPath)
 	if err != nil {
@@ -365,10 +380,19 @@ func loadNodeLatencies() (latencies map[int][]float64) {
 }
 
 const (
-	nodeLocationsPath = "/service/locations.json"
+	defaultNodeLocationsPath = "/service/locations.json"
 )
 
 func getClosestNode(cellID s2.CellID) int {
+	var (
+		nodeLocationsPath string
+		ok                bool
+	)
+
+	if nodeLocationsPath, ok = os.LookupEnv("LOCATIONS"); !ok {
+		nodeLocationsPath = defaultNodeLocationsPath
+	}
+
 	f, err := os.Open(nodeLocationsPath)
 	if err != nil {
 		log.Panic(err)

@@ -1,12 +1,10 @@
 package clients
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -16,15 +14,18 @@ import (
 	"github.com/NOVAPokemon/utils/tokens"
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
-	"github.com/NOVAPokemon/utils/websockets/comms_manager"
+
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"strconv"
+	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 )
 
 type BattleLobbyClient struct {
 	BattlesAddr  string
 	httpClient   *http.Client
 	commsManager websockets.CommunicationManager
+	*BasicClient
 }
 
 const (
@@ -33,7 +34,8 @@ const (
 
 var defaultBattleURL = fmt.Sprintf("%s:%d", utils.Host, utils.BattlesPort)
 
-func NewBattlesClient(commsManager websockets.CommunicationManager, httpClient *http.Client) *BattleLobbyClient {
+func NewBattlesClient(commsManager websockets.CommunicationManager, httpClient *http.Client,
+	basicClient *BasicClient) *BattleLobbyClient {
 	battlesURL, exists := os.LookupEnv(utils.BattlesEnvVar)
 
 	if !exists {
@@ -45,19 +47,18 @@ func NewBattlesClient(commsManager websockets.CommunicationManager, httpClient *
 		BattlesAddr:  battlesURL,
 		httpClient:   httpClient,
 		commsManager: commsManager,
+		BasicClient:  basicClient,
 	}
 }
 
 func (client *BattleLobbyClient) GetAvailableLobbies() ([]utils.Lobby, error) {
-	u := url.URL{Scheme: "http", Host: client.BattlesAddr, Path: "/battles"}
-
-	resp, err := http.Get(u.String())
+	req, err := client.BuildRequest(http.MethodGet, client.BattlesAddr, "/battles", nil)
 	if err != nil {
 		return nil, errors.WrapGetBattleLobbiesError(err)
 	}
 
 	var availableBattles []utils.Lobby
-	err = json.NewDecoder(resp.Body).Decode(&availableBattles)
+	_, err = DoRequest(client.httpClient, req, &availableBattles, client.commsManager)
 	if err != nil {
 		return nil, errors.WrapGetBattleLobbiesError(err)
 	}
@@ -157,12 +158,17 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 
 func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsTokens []string, statsToken string,
 	itemsToken, battleId, serverHostname string) (*websocket.Conn, *battles.BattleChannels, error) {
-	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", serverHostname, utils.BattlesPort), Path: fmt.Sprintf(api.AcceptChallengePath, battleId)}
+	u := url.URL{
+		Scheme: "ws",
+		Host:   client.BattlesAddr,
+		Path:   fmt.Sprintf(api.AcceptChallengePath, battleId),
+	}
 	log.Infof("Accepting challenge: %s", u.String())
 	header := http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 	header.Set(tokens.StatsTokenHeaderName, statsToken)
 	header[tokens.PokemonsTokenHeaderName] = pokemonsTokens
+	header.Set("Host", serverHostname)
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 
 	dialer := &websocket.Dialer{
@@ -195,9 +201,8 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 }
 
 func (client *BattleLobbyClient) RejectChallenge(authToken, battleId, serverHostname string) error {
-	addr := fmt.Sprintf("%s:%d", serverHostname, utils.BattlesPort)
-
-	req, err := BuildRequest("POST", addr, fmt.Sprintf(api.RejectChallengePath, battleId), nil)
+	req, err := client.BuildRequestForHost("POST", client.BattlesAddr, serverHostname,
+		fmt.Sprintf(api.RejectChallengePath, battleId), nil)
 	if err != nil {
 		return errors.WrapRejectBattleChallengeError(err)
 	}
