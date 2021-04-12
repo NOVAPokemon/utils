@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,10 +16,9 @@ import (
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/battles"
 
+	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"strconv"
-	"github.com/NOVAPokemon/utils/websockets/comms_manager"
 )
 
 type BattleLobbyClient struct {
