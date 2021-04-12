@@ -64,9 +64,9 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn,
 
 	select {
 	case <-lobby.Started:
-		return - 1, NewLobbyStartedError(lobby.Id)
+		return -1, NewLobbyStartedError(lobby.Id)
 	case <-lobby.Finished:
-		return - 1, NewLobbyFinishedError(lobby.Id)
+		return -1, NewLobbyFinishedError(lobby.Id)
 	default:
 		trainerNum := lobby.TrainersJoined
 		trainerChanIn := make(chan *WebsocketMsg)
@@ -123,22 +123,71 @@ func sendFromChanToConn(lobby *Lobby, trainerNum int, writer CommunicationManage
 
 func RecvFromConnToChann(lobby *Lobby, trainerNum int, manager CommunicationManager) (done chan interface{}) {
 	done = make(chan interface{})
+
+	messagesQueue := make(chan (<-chan *WebsocketMsg), 10)
+
+	inChannel := lobby.TrainerInChannels[trainerNum]
+
+	cancel := make(chan struct{})
+
 	go func() {
-		conn := lobby.trainerConnections[trainerNum]
-		inChannel := lobby.TrainerInChannels[trainerNum]
-		defer close(done)
+		log.Infof("(%s, %s) started message queue routine",
+			lobby.Id, lobby.TrainerUsernames[trainerNum])
+		defer func() {
+			log.Infof("(%s, %s) finished message queue routine",
+				lobby.Id, lobby.TrainerUsernames[trainerNum])
+			close(done)
+		}()
 		for {
-			wsMsg, err := manager.ReadMessageFromConn(conn)
-			if err != nil {
-				log.Info("Receive routine finishing because connection was closed")
-				return
-			}
 			select {
 			case <-lobby.Finished:
-				log.Infof("Could not send message %s because finish channel ended meanwhile", wsMsg)
+				log.Infof("(%s, %s) could not send message because finish channel ended meanwhile in message queue",
+					lobby.Id, lobby.TrainerUsernames[trainerNum])
 				return
-			case inChannel <- wsMsg:
-				log.Debugf("Received message from Websockets")
+			case <-cancel:
+				log.Infof("(%s, %s) triggered cancel",
+					lobby.Id, lobby.TrainerUsernames[trainerNum])
+				return
+			case chanToWait := <-messagesQueue:
+				log.Infof("(%s, %s) waiting for message",
+					lobby.Id, lobby.TrainerUsernames[trainerNum])
+				msg := <-chanToWait
+				log.Infof("(%s, %s) got message %+v",
+					lobby.Id, lobby.TrainerUsernames[trainerNum], msg)
+
+				select {
+				case inChannel <- msg:
+					log.Infof("(%s, %s) wrote message %+v",
+						lobby.Id, lobby.TrainerUsernames[trainerNum], msg)
+				case <-lobby.Finished:
+					log.Infof("(%s, %s) lobby finished in the meanwhile",
+						lobby.Id, lobby.TrainerUsernames[trainerNum])
+				}
+			}
+		}
+	}()
+
+	go func() {
+		conn := lobby.trainerConnections[trainerNum]
+
+		defer close(cancel)
+		for {
+			msgChan, err := manager.ReadMessageFromConn(conn)
+			if err != nil {
+				log.Infof("(%s, %s) Receive routine finishing because connection was closed",
+					lobby.Id, lobby.TrainerUsernames[trainerNum])
+				return
+			}
+
+			select {
+			case <-lobby.Finished:
+				log.Infof("(%s, %s) could not send message because finish channel ended meanwhile",
+					lobby.Id, lobby.TrainerUsernames[trainerNum])
+				return
+			default:
+				if msgChan != nil {
+					messagesQueue <- msgChan
+				}
 			}
 		}
 	}()
@@ -151,6 +200,7 @@ func StartLobby(lobby *Lobby) {
 
 func FinishLobby(lobby *Lobby) {
 	lobby.finishOnce.Do(func() {
+		log.Infof("finishing lobby %s", lobby.Id)
 		lobby.changeLobbyLock.Lock()
 		defer lobby.changeLobbyLock.Unlock()
 		close(lobby.Finished)

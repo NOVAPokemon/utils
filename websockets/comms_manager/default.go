@@ -1,6 +1,7 @@
 package comms_manager
 
 import (
+	"math/rand"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -11,7 +12,8 @@ import (
 )
 
 const (
-	timeBetweenRetries = 5 * time.Second
+	minTimeBetweenRetries = 5
+	maxTimeBetweenRetries = 10
 )
 
 type DefaultCommsManager struct {
@@ -42,7 +44,7 @@ func (d *DefaultCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, ms
 	return conn.WriteMessage(msg.MsgType, msg.Content.Serialize())
 }
 
-func (d *DefaultCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websockets.WebsocketMsg, error) {
+func (d *DefaultCommsManager) ReadMessageFromConn(conn *websocket.Conn) (<-chan *websockets.WebsocketMsg, error) {
 	msgType, p, err := conn.ReadMessage()
 	if err != nil {
 		return nil, err
@@ -54,8 +56,13 @@ func (d *DefaultCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websoc
 		Content: content,
 	}
 
-	msg = d.ApplyReceiveLogic(msg)
-	return msg, nil
+	msgChan := make(chan *websockets.WebsocketMsg)
+	go func() {
+		msg = d.ApplyReceiveLogic(msg)
+		msgChan <- msg
+	}()
+
+	return msgChan, nil
 }
 
 func (d *DefaultCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
@@ -70,12 +77,14 @@ func (d *DefaultCommsManager) DoHTTPRequest(client *http.Client, req *http.Reque
 		resp, err = client.Do(req)
 		log.Infof("Requests count: %d", atomic.AddInt64(&d.RequestsCount, 1))
 
-		if d.CommsManagerWithCounter.LogRequestAndRetry(err) {
+		ts := websockets.MakeTimestamp()
+		if d.CommsManagerWithCounter.LogRequestAndRetry(err, ts) {
 			break
 		}
 
 		retried = true
-		timer.Reset(timeBetweenRetries)
+		waitingTime := time.Duration(rand.Int31n(maxTimeBetweenRetries-minTimeBetweenRetries+1)+minTimeBetweenRetries) * time.Second
+		timer.Reset(waitingTime)
 		<-timer.C
 	}
 

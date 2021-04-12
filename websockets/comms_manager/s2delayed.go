@@ -2,8 +2,11 @@ package comms_manager
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,6 +20,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type S2DelayedCommsManager struct {
@@ -31,6 +35,7 @@ type S2DelayedCommsManager struct {
 
 const (
 	delayAppliedKey = "Delay_applied"
+	RequestIDKey    = "Request_id"
 )
 
 var (
@@ -162,7 +167,7 @@ func (d *S2DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, 
 	return conn.WriteMessage(msg.MsgType, msg.Content.Serialize())
 }
 
-func (d *S2DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websockets.WebsocketMsg, error) {
+func (d *S2DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (<-chan *websockets.WebsocketMsg, error) {
 	msgType, p, err := conn.ReadMessage()
 	if err != nil {
 		log.Warn(err)
@@ -174,11 +179,17 @@ func (d *S2DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*webs
 		MsgType: msgType,
 		Content: taggedContent,
 	}
-	msg := d.ApplyReceiveLogic(wsMsg)
 
-	d.DefaultCommsManager.ApplyReceiveLogic(msg)
+	msgChan := make(chan *websockets.WebsocketMsg)
+	go func() {
+		log.Infof("Before logic %+v", wsMsg)
+		msg := d.ApplyReceiveLogic(wsMsg)
+		log.Infof("After logic %+v", msg)
+		d.DefaultCommsManager.ApplyReceiveLogic(msg)
+		msgChan <- msg
+	}()
 
-	return msg, nil
+	return msgChan, nil
 }
 
 func (d *S2DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
@@ -191,16 +202,42 @@ func (d *S2DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Req
 		err  error
 	)
 
+	var bodyBytes []byte
+	if req.Body != nil {
+		bodyBytes, err = ioutil.ReadAll(req.Body)
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
 	for {
+		ts := websockets.MakeTimestamp()
+		if d.IsClient {
+			requestID := primitive.NewObjectID().Hex()
+			req.Header.Set(RequestIDKey, requestID)
+			log.Infof("[SENT_REQ_ID] %d %s", ts, requestID)
+		}
+
+		if req.Body != nil {
+			req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+		}
+
 		resp, err = client.Do(req)
-		if d.CommsManagerWithCounter.LogRequestAndRetry(err) {
+
+		if d.CommsManagerWithCounter.LogRequestAndRetry(err, ts) {
 			break
 		}
 
-		<-time.After(timeBetweenRetries)
+		waitingTime := time.Duration(rand.Int31n(maxTimeBetweenRetries-minTimeBetweenRetries+1)+minTimeBetweenRetries) * time.Second
+		<-time.After(waitingTime)
 	}
 
 	if resp != nil && resp.Header != nil {
+		if d.IsClient {
+			requestID := resp.Header.Get(RequestIDKey)
+			log.Infof("[GOT_RESP_ID] %s", requestID)
+		}
+
 		if responderLocationToken := resp.Header.Get(serverLocationTagKey); responderLocationToken != "" {
 			delayString := resp.Header.Get(delayAppliedKey)
 
@@ -227,6 +264,12 @@ func (d *S2DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Req
 
 func (d *S2DelayedCommsManager) HTTPRequestInterceptor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if requestID := r.Header.Get(RequestIDKey); requestID != "" {
+			ts := websockets.MakeTimestamp()
+			log.Infof("[GOT_REQ_ID] %d %s", ts, requestID)
+			w.Header().Set(RequestIDKey, requestID)
+		}
+
 		requestLocationToken := r.Header.Get(LocationTagKey)
 		if requestLocationToken == "" {
 			log.Infof("request %+v did not have a location tag", r)

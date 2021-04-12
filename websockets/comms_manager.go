@@ -13,7 +13,7 @@ type CommunicationManager interface {
 	ApplyReceiveLogic(msg *WebsocketMsg) *WebsocketMsg
 	ApplySendLogic(msg *WebsocketMsg) *WebsocketMsg
 	WriteGenericMessageToConn(conn *websocket.Conn, msg *WebsocketMsg) error
-	ReadMessageFromConn(conn *websocket.Conn) (*WebsocketMsg, error)
+	ReadMessageFromConn(conn *websocket.Conn) (<-chan *WebsocketMsg, error)
 	DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error)
 	HTTPRequestInterceptor(next http.Handler) http.Handler
 }
@@ -23,20 +23,13 @@ type CommsManagerWithCounter struct {
 	RequestsCount int64
 }
 
-func (d *CommsManagerWithCounter) LogRequestAndRetry(err error) (success bool) {
+func (d *CommsManagerWithCounter) LogRequestAndRetry(err error, ts int64) (success bool) {
 	success = true
-	failed := false
-
-	ts := MakeTimestamp()
 
 	log.Infof("[REQ] %d %d", ts, atomic.AddInt64(&d.RequestsCount, 1))
-
-	if hasErr := checkErr(err); hasErr {
+	if err != nil {
+		log.Warnf("[REQ_ERR] %d %s", ts, err.Error())
 		success = false
-		failed = true
-	}
-
-	if failed {
 		log.Infof("[RET] %d %d", ts, atomic.AddInt64(&d.RetriesCount, 1))
 	}
 
@@ -47,6 +40,7 @@ const (
 	errConnRefused = "connection refused"
 	errTimeout1    = "timeout"
 	errTimeout2    = "Timeout"
+	errBodyLength  = "with Body length"
 )
 
 func checkErr(err error) bool {
@@ -55,7 +49,7 @@ func checkErr(err error) bool {
 	}
 
 	if strings.Contains(err.Error(), errConnRefused) || strings.Contains(err.Error(), errTimeout1) ||
-		strings.Contains(err.Error(), errTimeout2) {
+		strings.Contains(err.Error(), errTimeout2) || strings.Contains(err.Error(), errBodyLength) {
 		return true
 	}
 
