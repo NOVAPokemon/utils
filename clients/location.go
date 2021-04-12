@@ -124,12 +124,12 @@ func NewLocationClient(config utils.LocationClientConfig, startLocation s2.CellI
 func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	catchPokemonResponses = make(chan *location.CatchWildPokemonMessageResponse)
 
-	serverUrl, err := c.GetServerForLocation(c.CurrentLocation)
+	serverURL, err := c.GetServerForLocation(c.CurrentLocation)
 	if err != nil {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
 
-	err = c.handleLocationConnection(serverUrl, authToken)
+	err = c.handleLocationConnection(serverURL, authToken)
 	if err != nil {
 		return errors2.WrapStartLocationUpdatesError(err)
 	}
@@ -141,6 +141,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 		if !ok {
 			break
 		}
+
 		if err = c.handleLocationMsg(msgString, authToken); err != nil {
 			return errors2.WrapStartLocationUpdatesError(err)
 		}
@@ -220,6 +221,8 @@ func (c *LocationClient) handleLocationMsg(wsMsg *ws.WebsocketMsg, authToken str
 		if err := mapstructure.Decode(msgData, cellsMsg); err != nil {
 			panic(err)
 		}
+
+		log.Infof("received tiles from %s", cellsMsg.OriginServer)
 
 		c.updateLocationWithCells(cellsMsg.CellsPerServer, cellsMsg.OriginServer)
 	case ws.Error:
@@ -351,17 +354,13 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 }
 
 func (c *LocationClient) updateLocationLoop() {
-	c.updateLocation()
 	updateTicker := time.NewTicker(time.Duration(c.config.UpdateInterval) * time.Second)
 
-	for {
-		select {
-		case <-updateTicker.C:
-			c.updateLocation()
+	for range updateTicker.C {
+		c.updateLocation()
 
-			if rand.Float64() <= c.LocationParameters.MovingProbability {
-				c.CurrentLocation = c.move(c.config.UpdateInterval)
-			}
+		if rand.Float64() <= c.LocationParameters.MovingProbability {
+			c.CurrentLocation = c.move(c.config.UpdateInterval)
 		}
 	}
 }
@@ -371,15 +370,16 @@ func (c *LocationClient) updateLocation() {
 		Location: c.CurrentLocation,
 	}
 
-	switch delayedComms := c.commsManager.(type) {
-	case *comms_manager.S2DelayedCommsManager:
+	if delayedComms, ok :=
+		c.commsManager.(*comms_manager.S2DelayedCommsManager); ok {
 		delayedComms.SetCellID(s2.CellIDFromLatLng(c.CurrentLocation))
 	}
+
 	log.Info("updating location: ", c.CurrentLocation)
 
 	// Only runs once
 	c.toConnsChans.Range(func(serverUrl, toConnChanValue interface{}) bool {
-		log.Info("updating location to ", serverUrl)
+		log.Infof("updating location to %s", serverUrl)
 
 		toConnChan := toConnChanValue.(toConnChansValueType)
 		log.Infof("sending location msg %v", locationMsg)
