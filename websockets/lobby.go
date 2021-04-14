@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	dry "github.com/ungerik/go-dry"
 )
 
 const (
@@ -14,10 +15,25 @@ const (
 	PingPeriod = (PongWait * 9) / 10
 )
 
+type DebugMutex struct {
+	id string
+	m  sync.Mutex
+}
+
+func (d *DebugMutex) Lock() {
+	log.Infof("%s.Lock() %s\n", d.id, dry.StackTraceLine(3))
+	d.m.Lock()
+}
+
+func (d *DebugMutex) Unlock() {
+	log.Infof("%s.Unlock() %s\n", d.id, dry.StackTraceLine(3))
+	d.m.Unlock()
+}
+
 // Lobby maintains the connections from both trainers and the status of the battle
 type Lobby struct {
 	Id              string
-	changeLobbyLock *sync.Mutex
+	changeLobbyLock *DebugMutex
 	TrainersJoined  int
 	Started         chan struct{}
 	Finished        chan struct{}
@@ -47,7 +63,7 @@ func NewLobby(id string, capacity int, startTrackInfo *TrackedInfo) *Lobby {
 		DoneWritingToConn:     make([]chan interface{}, capacity),
 		Started:               make(chan struct{}),
 		Finished:              make(chan struct{}),
-		changeLobbyLock:       &sync.Mutex{},
+		changeLobbyLock:       &DebugMutex{id: id},
 		finishOnce:            sync.Once{},
 		StartTrackInfo:        startTrackInfo,
 	}
