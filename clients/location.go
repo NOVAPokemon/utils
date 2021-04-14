@@ -402,6 +402,7 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 	case *comms_manager.S2DelayedCommsManager:
 		header.Set(comms_manager.LocationTagKey, castedManager.GetCellID().ToToken())
 		header.Set(comms_manager.TagIsClientKey, strconv.FormatBool(true))
+		header.Set(comms_manager.ClosestNodeKey, strconv.Itoa(castedManager.MyClosestNode))
 	}
 
 	dialer := &websocket.Dialer{
