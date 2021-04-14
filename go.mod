@@ -12,5 +12,6 @@ require (
 	github.com/prometheus/client_golang v1.6.0
 	github.com/sirupsen/logrus v1.5.0
 	github.com/stretchr/testify v1.4.0
+	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
 	go.mongodb.org/mongo-driver v1.3.1
 )
