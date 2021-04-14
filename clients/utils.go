@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	RequestTimeout = 5 * time.Second
+	RequestTimeout = 2 * time.Second
 )
 
 type BasicClient struct {
