@@ -102,7 +102,7 @@ func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsTo
 	}
 
 	outChannel := make(chan *websockets.WebsocketMsg)
-	inChannel := make(chan *websockets.WebsocketMsg)
+	inChannel := make(chan *websockets.WebsocketMsg, chanSize)
 	finished := make(chan struct{})
 
 	SetDefaultPingHandler(c, outChannel)
