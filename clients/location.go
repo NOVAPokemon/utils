@@ -474,8 +474,7 @@ func (c *LocationClient) updateLocation() {
 		Location: c.CurrentLocation,
 	}
 
-	switch delayedComms := c.commsManager.(type) {
-	case *comms_manager.S2DelayedCommsManager:
+	if delayedComms, ok := c.commsManager.(*comms_manager.S2DelayedCommsManager); ok {
 		delayedComms.SetCellID(s2.CellIDFromLatLng(c.CurrentLocation))
 	}
 	log.Info("updating location: ", c.CurrentLocation)
@@ -694,7 +693,6 @@ func loadRegionsToArea(regionsFilename string) *utils.RegionsToAreas {
 	err = json.Unmarshal(fileData, &regionsToArea)
 	if err != nil {
 		panic(err)
-		return nil
 	}
 
 	return &regionsToArea

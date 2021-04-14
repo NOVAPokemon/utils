@@ -102,20 +102,13 @@ func createDelayedCommunicationManager(delayedCommsFilename, clientDelaysFilenam
 	if optConfigs.CellID.ToToken() == "X" {
 		log.Panicf("invalid cellID %s", optConfigs.CellID.ToToken())
 	}
-
+	
 	delaysConfig := getDelayedConfig(delayedCommsFilename)
 
 	log.Infof("starting delayed comms with region tag %s",
 		comms_manager.TranslateCellToRegion(optConfigs.CellID))
 
-	return &comms_manager.S2DelayedCommsManager{
-		CellId:                  optConfigs.CellID,
-		DelaysMatrix:            delaysConfig,
-		CommsManagerWithCounter: websockets.CommsManagerWithCounter{},
-		CommsManagerWithClient: comms_manager.CommsManagerWithClient{
-			IsClient: isClient,
-		},
-	}
+	return comms_manager.NewS2DelayedCommsManager(optConfigs.CellID, delaysConfig, isClient)
 }
 
 func CreateDefaultCommunicationManager() websockets.CommunicationManager {

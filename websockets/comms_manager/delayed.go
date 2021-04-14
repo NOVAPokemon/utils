@@ -2,6 +2,7 @@ package comms_manager
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -17,6 +18,7 @@ const (
 	LocationTagKey       = "Location_tag"
 	serverLocationTagKey = "Server_Location_tag"
 	TagIsClientKey       = "Tag_is_client"
+	ClosestNodeKey       = "Closest_node"
 )
 
 type (
@@ -84,7 +86,7 @@ func (d *DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, ms
 	return conn.WriteMessage(msg.MsgType, msg.Content.Serialize())
 }
 
-func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websockets.WebsocketMsg, error) {
+func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (<-chan *websockets.WebsocketMsg, error) {
 	msgType, p, err := conn.ReadMessage()
 	if err != nil {
 		log.Warn(err)
@@ -100,7 +102,14 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (*websoc
 
 	d.DefaultCommsManager.ApplyReceiveLogic(msg)
 
-	return msg, nil
+	msgChan := make(chan *websockets.WebsocketMsg)
+	go func() {
+		msg := d.ApplyReceiveLogic(wsMsg)
+		d.DefaultCommsManager.ApplyReceiveLogic(msg)
+		msgChan <- msg
+	}()
+
+	return msgChan, nil
 }
 
 func (d *DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
@@ -116,12 +125,14 @@ func (d *DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Reque
 
 	for {
 		resp, err = client.Do(req)
-		if d.CommsManagerWithCounter.LogRequestAndRetry(err) {
+		ts := websockets.MakeTimestamp()
+		if d.CommsManagerWithCounter.LogRequestAndRetry(err, ts) {
 			break
 		}
 
 		retried = true
-		timer.Reset(timeBetweenRetries)
+		waitingTime := time.Duration(rand.Int31n(maxTimeBetweenRetries-minTimeBetweenRetries+1)+minTimeBetweenRetries) * time.Second
+		timer.Reset(waitingTime)
 		<-timer.C
 	}
 

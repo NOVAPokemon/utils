@@ -135,6 +135,13 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 	header.Set(tokens.ItemsTokenHeaderName, itemsToken)
 	websockets.AddTrackInfoToHeader(&header, battles.Challenge)
 
+	switch castedManager := client.commsManager.(type) {
+	case *comms_manager.S2DelayedCommsManager:
+		header.Set(comms_manager.LocationTagKey, castedManager.GetCellID().ToToken())
+		header.Set(comms_manager.TagIsClientKey, strconv.FormatBool(true))
+		header.Set(comms_manager.ClosestNodeKey, strconv.Itoa(castedManager.MyClosestNode))
+	}
+
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,

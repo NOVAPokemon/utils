@@ -8,13 +8,14 @@ import (
 
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 
+	"github.com/NOVAPokemon/utils/websockets"
 	ws "github.com/NOVAPokemon/utils/websockets"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	RequestTimeout = 5 * time.Second
+	RequestTimeout = 2 * time.Second
 )
 
 func Send(conn *websocket.Conn, msg *ws.WebsocketMsg, writer ws.CommunicationManager) error {
@@ -23,22 +24,53 @@ func Send(conn *websocket.Conn, msg *ws.WebsocketMsg, writer ws.CommunicationMan
 
 func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *ws.WebsocketMsg, finished chan struct{},
 	commsManager ws.CommunicationManager) {
+	messagesQueue := make(chan (<-chan *websockets.WebsocketMsg), 10)
+
+	cancel := make(chan struct{})
+
+	go func() {
+		defer func() {
+			close(msgChan)
+		}()
+		for {
+			select {
+			case <-finished:
+				log.Info("finished message queue routine")
+				return
+			case <-cancel:
+				log.Info("canceled message queue routine")
+				return
+			case chanToWait := <-messagesQueue:
+				log.Info("waiting for message")
+				msg := <-chanToWait
+				log.Info("got message")
+
+				select {
+				case <-finished:
+					log.Info("finished message queue routine while waiting")
+				case msgChan <- msg:
+				}
+				log.Info("wrote message")
+			}
+		}
+	}()
+
 	defer func() {
+		close(cancel)
 		log.Info("closing read routine")
-		close(msgChan)
 	}()
 	for {
+		msgChan, err := commsManager.ReadMessageFromConn(conn)
+		if err != nil {
+			log.Warn(err)
+			return
+		}
 		select {
 		case <-finished:
 			return
 		default:
-			wsMsg, err := commsManager.ReadMessageFromConn(conn)
-			if err != nil {
-				log.Warn(err)
-				return
-			}
-			if wsMsg != nil {
-				msgChan <- wsMsg
+			if msgChan != nil {
+				messagesQueue <- msgChan
 			}
 		}
 	}
@@ -68,20 +100,37 @@ func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.Commu
 
 func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan *ws.WebsocketMsg,
 	finished chan struct{}, manager ws.CommunicationManager) {
-	defer log.Info("closing read without chan routine")
+	messagesQueue := make(chan (<-chan *websockets.WebsocketMsg), 10)
+
+	cancel := make(chan struct{})
+
+	go func() {
+		for {
+			select {
+			case <-cancel:
+				return
+			case chanToWait := <-messagesQueue:
+				msgChan <- (<-chanToWait)
+			case <-finished:
+				return
+			}
+		}
+	}()
 
 	for {
 		select {
 		case <-finished:
 			return
 		default:
-			wsMsg, err := manager.ReadMessageFromConn(conn)
+			msgChan, err := manager.ReadMessageFromConn(conn)
 			if err != nil {
 				log.Warn(err)
+				close(cancel)
 				return
 			}
-			if wsMsg != nil {
-				msgChan <- wsMsg
+
+			if msgChan != nil {
+				messagesQueue <- msgChan
 			}
 		}
 	}
@@ -96,12 +145,14 @@ func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan *ws.Websocket
 }
 
 func Read(conn *websocket.Conn, manager ws.CommunicationManager) (*ws.WebsocketMsg, error) {
-	wsMsg, err := manager.ReadMessageFromConn(conn)
+	msgChan, err := manager.ReadMessageFromConn(conn)
 	if err != nil {
 		return nil, ws.WrapReadingMessageError(err)
 	}
 
-	return wsMsg, nil
+	msg := <-msgChan
+
+	return msg, nil
 }
 
 // REQUESTS

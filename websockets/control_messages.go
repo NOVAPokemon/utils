@@ -109,6 +109,7 @@ type TaggedMessage struct {
 	LocationTag string
 	IsClient    bool
 	Content     WebsocketMsgContent
+	NodeNum     int
 }
 
 func (tMsg TaggedMessage) ConvertToWSMessage() *WebsocketMsg {
