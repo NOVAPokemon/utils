@@ -3,6 +3,7 @@ package clients
 import (
 	"bytes"
 	"encoding/json"
+	"net"
 	"net/url"
 	"time"
 
@@ -15,8 +16,27 @@ import (
 )
 
 const (
-	RequestTimeout = 2 * time.Second
+	RequestTimeout = 10 * time.Second
+	maxIdleConns   = 400
 )
+
+func NewTransport() *http.Transport {
+	return &http.Transport{
+		Proxy:             http.ProxyFromEnvironment,
+		DisableKeepAlives: true,
+		DialContext: (&net.Dialer{
+			Timeout:   RequestTimeout,
+			KeepAlive: RequestTimeout,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConns:          maxIdleConns,
+		MaxIdleConnsPerHost:   maxIdleConns,
+		MaxConnsPerHost:       maxIdleConns,
+	}
+}
 
 func Send(conn *websocket.Conn, msg *ws.WebsocketMsg, writer ws.CommunicationManager) error {
 	return ws.WrapWritingMessageError(writer.WriteGenericMessageToConn(conn, msg))
