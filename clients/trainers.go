@@ -310,6 +310,8 @@ func (c *TrainersClient) VerifyItems(username string, hash string, authToken str
 		return nil, errors.WrapVerifyItemsError(err)
 	}
 
+	log.Infof("verify body: %s", hash)
+
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var res bool
@@ -324,6 +326,8 @@ func (c *TrainersClient) VerifyPokemons(username string, hashes map[string]strin
 		return nil, errors.WrapVerifyPokemonsError(err)
 	}
 
+	log.Infof("verify body: %+v", hashes)
+
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	var res bool
@@ -336,6 +340,8 @@ func (c *TrainersClient) VerifyTrainerStats(username string, hash string, authTo
 	if err != nil {
 		return nil, errors.WrapVerifyStatsError(err)
 	}
+
+	log.Infof("verify body: %s", hash)
 
 	req.Header.Set(tokens.AuthTokenHeaderName, authToken)
 
