@@ -408,13 +408,23 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 45 * time.Second,
+		HandshakeTimeout: 10 * time.Second,
 	}
 
-	log.Info("Dialing: ", u.String())
-	conn, _, err := dialer.Dial(u.String(), header)
-	if err != nil {
-		return nil, errors2.WrapConnectError(err)
+	var conn *websocket.Conn
+
+	for {
+		log.Info("Dialing: ", u.String())
+		conn, _, err = dialer.Dial(u.String(), header)
+		if err != nil {
+			if !strings.Contains(err.Error(), "timeout") {
+				return nil, errors2.WrapConnectError(err)
+			} else {
+				break
+			}
+		} else {
+			break
+		}
 	}
 
 	err = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
