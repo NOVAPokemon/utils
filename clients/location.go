@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -182,9 +183,12 @@ func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) e
 
 func (c *LocationClient) restartConnections(authToken string) {
 	for {
+		log.Info("waiting on restart")
 		<-c.restart
 
+		log.Info("acquiring lock")
 		useConnLock.Lock()
+		log.Info("acquired lock")
 
 		log.Info("restarting location connections")
 
@@ -320,33 +324,36 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 
 	log.Info("updating connections")
 
-	var isNewServer bool
-
-	var newServers []string
+	var (
+		isNewServer bool
+		newServers  []string
+	)
 
 	// Add new connections
 	for i := range servers {
 		isNewServer = true
 
 		for j := range c.serversConnected {
+			log.Infof("already connected to %s", c.serversConnected[j])
 			if servers[i] == c.serversConnected[j] {
 				isNewServer = false
 			}
 		}
 
 		if isNewServer {
+			log.Infof("%s is a new server", servers[i])
 			err := c.handleLocationConnection(servers[i], authToken)
 			if err != nil {
 				return errors2.WrapUpdateConnectionsError(err)
 			}
-			newServers = append(newServers, c.serversConnected[i])
+			newServers = append(newServers, servers[i])
 		}
 	}
 
 	var toRemove []string
 
 	// Remove unused connections
-	remove := true
+	var remove bool
 	for i := range c.serversConnected {
 		remove = true
 		for j := range servers {
@@ -364,6 +371,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 			}
 			close(finishChanValue.(finishConnChansValueType))
 			c.toConnsChans.Delete(c.serversConnected[i])
+			log.Infof("finishing connection to %s", c.serversConnected[i])
 			toRemove = append(toRemove, c.serversConnected[i])
 		}
 	}
@@ -383,7 +391,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 	}
 
 	c.serversConnected = newServers
-	log.Info("new servers connected %+v", newServers)
+	log.Infof("servers connected %+v", newServers)
 
 	return nil
 }
