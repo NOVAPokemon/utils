@@ -95,6 +95,8 @@ func NewS2DelayedCommsManager(cellID s2.CellID, delaysConfig *DelaysMatrixType, 
 		}
 	}
 
+	log.Infof("GOT closest node is: %d", closestNode)
+
 	manager := &S2DelayedCommsManager{
 		CellId:                  cellID,
 		DelaysMatrix:            delaysConfig,
@@ -199,12 +201,17 @@ func (d *S2DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Req
 		err  error
 	)
 
-	var bodyBytes []byte
+	var (
+		bodyBytes []byte
+		hasBody   = false
+	)
 	if req.Body != nil {
 		bodyBytes, err = ioutil.ReadAll(req.Body)
 		if err != nil {
 			log.Panic(err)
 		}
+
+		hasBody = true
 	}
 
 	for {
@@ -215,7 +222,7 @@ func (d *S2DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Req
 			log.Infof("[SENT_REQ_ID] %d %s", ts, requestID)
 		}
 
-		if req.Body != nil {
+		if hasBody {
 			req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 		}
 
@@ -471,6 +478,8 @@ func getClosestNode(cellID s2.CellID) int {
 			}
 		}
 	}
+
+	log.Infof("closest node is: %d", closestNode)
 
 	return closestNode
 }
