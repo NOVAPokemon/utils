@@ -301,5 +301,12 @@ func DoRequest(httpClient *http.Client, request *http.Request, responseBody inte
 		}
 	}
 
+	if resp != nil {
+		err = resp.Body.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
 	return resp, nil
 }
