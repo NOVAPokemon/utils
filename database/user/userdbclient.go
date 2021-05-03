@@ -7,7 +7,10 @@ import (
 	"os"
 	"time"
 
+	originalHTTP "net/http"
+
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/clients"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 	cedUtils "github.com/bruno-anjos/cloud-edge-deployment/pkg/utils"
@@ -16,8 +19,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	originalHTTP "net/http"
-	"github.com/NOVAPokemon/utils/clients"
 )
 
 const (
@@ -49,13 +50,18 @@ func InitUsersDBClient(archimedesEnabled bool) {
 
 		var node string
 		node, exists = os.LookupEnv(cedUtils.NodeIPEnvVarName)
-	if !exists {
-		log.Panicf("no NODE_IP env var")
-	} else {
-		log.Infof("Node IP: %s", node)
-	}
+		if !exists {
+			log.Panicf("no NODE_IP env var")
+		} else {
+			log.Infof("Node IP: %s", node)
+		}
 
-		client := &http.Client{Client: originalHTTP.Client{Timeout: clients.RequestTimeout}}
+		client := &http.Client{
+			Client: originalHTTP.Client{
+				Timeout:   clients.RequestTimeout,
+				Transport: clients.NewTransport(),
+			},
+		}
 		client.InitArchimedesClient(node, http.DefaultArchimedesPort, s2.CellIDFromToken(location).LatLng())
 
 		var (
@@ -116,8 +122,8 @@ func InitUsersDBClient(archimedesEnabled bool) {
 }
 
 func GetAllUsers() ([]utils.User, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	var results []utils.User
 
 	cur, err := collection.Find(*ctx, bson.M{})
@@ -143,10 +149,9 @@ func GetAllUsers() ([]utils.User, error) {
 }
 
 func AddUser(user *utils.User) (string, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	_, err := collection.InsertOne(*ctx, *user)
-
 	if err != nil {
 		return "", wrapAddUserError(err, user.Username)
 	}
@@ -155,8 +160,8 @@ func AddUser(user *utils.User) (string, error) {
 }
 
 func CheckIfUserExists(username string) (bool, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	var limit int64 = 1
 
 	filter := bson.M{"username": username}
@@ -171,8 +176,8 @@ func CheckIfUserExists(username string) (bool, error) {
 }
 
 func GetUserByUsername(username string) (*utils.User, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 
 	result := &utils.User{}
 	filter := bson.M{"username": username}
@@ -186,14 +191,12 @@ func GetUserByUsername(username string) (*utils.User, error) {
 }
 
 func UpdateUser(username string, user *utils.User) (*utils.User, error) {
-
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 	filter := bson.M{"username": username}
 	user.Username = username
 
 	res, err := collection.ReplaceOne(*ctx, filter, *user)
-
 	if err != nil {
 		return nil, wrapUpdateUserError(err, username)
 	}
@@ -205,12 +208,11 @@ func UpdateUser(username string, user *utils.User) (*utils.User, error) {
 	}
 
 	return user, nil
-
 }
 
 func DeleteUser(username string) error {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	filter := bson.M{"username": username}
 
 	_, err := collection.DeleteOne(*ctx, filter)
@@ -219,8 +221,8 @@ func DeleteUser(username string) error {
 }
 
 func removeAll() error {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	filter := bson.M{}
 
 	_, err := collection.DeleteMany(*ctx, filter)

@@ -6,7 +6,10 @@ import (
 	"os"
 	"time"
 
+	originalHTTP "net/http"
+
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/clients"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 	cedUtils "github.com/bruno-anjos/cloud-edge-deployment/pkg/utils"
@@ -15,8 +18,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	originalHTTP "net/http"
-	"github.com/NOVAPokemon/utils/clients"
 )
 
 const (
@@ -57,7 +58,13 @@ func InitLocationDBClient(archimedesEnabled bool) {
 			log.Infof("Node IP: %s", node)
 		}
 
-		client := &http.Client{Client: originalHTTP.Client{Timeout: clients.RequestTimeout}}
+		client := &http.Client{
+			Client: originalHTTP.Client{
+				Timeout:   clients.RequestTimeout,
+				Transport: clients.NewTransport(),
+			},
+		}
+
 		client.InitArchimedesClient(node, http.DefaultArchimedesPort, s2.CellIDFromToken(location).LatLng())
 
 		var (

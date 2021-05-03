@@ -6,10 +6,12 @@ import (
 	"os"
 	"time"
 
+	originalHTTP "net/http"
+
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/clients"
 	"github.com/NOVAPokemon/utils/database"
 	http "github.com/bruno-anjos/archimedesHTTPClient"
-	originalHTTP "net/http"
 	cedUtils "github.com/bruno-anjos/cloud-edge-deployment/pkg/utils"
 	"github.com/golang/geo/s2"
 	log "github.com/sirupsen/logrus"
@@ -17,11 +19,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"github.com/NOVAPokemon/utils/clients"
 )
 
-const databaseName = "NOVAPokemonDB"
-const collectionName = "Transactions"
+const (
+	databaseName   = "NOVAPokemonDB"
+	collectionName = "Transactions"
+)
 
 var dbClient database.DBClient
 
@@ -53,7 +56,12 @@ func InitTransactionsDBClient(archimedesEnabled bool) {
 			log.Infof("Node IP: %s", node)
 		}
 
-		client := &http.Client{Client: originalHTTP.Client{Timeout: clients.RequestTimeout}}
+		client := &http.Client{
+			Client: originalHTTP.Client{
+				Timeout:   clients.RequestTimeout,
+				Transport: clients.NewTransport(),
+			},
+		}
 		client.InitArchimedesClient(node, http.DefaultArchimedesPort, s2.CellIDFromToken(location).LatLng())
 
 		var (
@@ -82,7 +90,6 @@ func InitTransactionsDBClient(archimedesEnabled bool) {
 	}
 
 	client, err := mongo.NewClient(options.Client().ApplyURI(mongoUrl))
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -99,8 +106,8 @@ func InitTransactionsDBClient(archimedesEnabled bool) {
 }
 
 func GetTransactionsFromUser(username string) ([]utils.TransactionRecord, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	var result []utils.TransactionRecord
 
 	filter := bson.M{"user": username}
@@ -122,8 +129,8 @@ func GetTransactionsFromUser(username string) ([]utils.TransactionRecord, error)
 func AddTransaction(transaction utils.TransactionRecord) (*string, error) {
 	transaction.Id = primitive.NewObjectID().Hex()
 
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	_, err := collection.InsertOne(*ctx, transaction)
 
 	if err != nil {

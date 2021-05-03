@@ -7,7 +7,10 @@ import (
 	"os"
 	"time"
 
+	originalHTTP "net/http"
+
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/clients"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 	cedUtils "github.com/bruno-anjos/cloud-edge-deployment/pkg/utils"
@@ -16,8 +19,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	originalHTTP "net/http"
-	"github.com/NOVAPokemon/utils/clients"
 )
 
 const (
@@ -49,13 +50,19 @@ func InitGymDBClient(archimedesEnabled bool) {
 
 		var node string
 		node, exists = os.LookupEnv(cedUtils.NodeIPEnvVarName)
-	if !exists {
-		log.Panicf("no NODE_IP env var")
-	} else {
-		log.Infof("Node IP: %s", node)
-	}
+		if !exists {
+			log.Panicf("no NODE_IP env var")
+		} else {
+			log.Infof("Node IP: %s", node)
+		}
 
-		client := &http.Client{Client: originalHTTP.Client{Timeout: clients.RequestTimeout}}
+		client := &http.Client{
+			Client: originalHTTP.Client{
+				Timeout:   clients.RequestTimeout,
+				Transport: clients.NewTransport(),
+			},
+		}
+
 		client.InitArchimedesClient(node, http.DefaultArchimedesPort, s2.CellIDFromToken(location).LatLng())
 
 		log.Info("initialized archimedes client")
@@ -111,7 +118,6 @@ func GetGymsForServer(serverName string) ([]utils.GymWithServer, error) {
 	)
 
 	cursor, err := collection.Find(*ctx, filter)
-
 	if err != nil {
 		return nil, wrapGetServerConfig(err, serverName)
 	}
@@ -124,26 +130,22 @@ func GetGymsForServer(serverName string) ([]utils.GymWithServer, error) {
 	}()
 	if err = cursor.All(*ctx, &gymsForServer); err != nil {
 		return nil, wrapGetServerConfig(err, serverName)
-
 	}
 	if len(gymsForServer) == 0 {
 		return nil, wrapGetServerConfig(errors.New("no gyms found"), serverName)
-
 	}
 	return gymsForServer, nil
-
 }
 
 func AddGymWithServer(gym utils.GymWithServer) error {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	filter := bson.M{"gym.name": gym.Gym.Name}
 	upsert := true
 	updateOptions := &options.ReplaceOptions{
 		Upsert: &upsert,
 	}
 	_, err := collection.ReplaceOne(*ctx, filter, gym, updateOptions)
-
 	if err != nil {
 		return wrapUpdateServerConfig(err, gym.ServerName)
 	}

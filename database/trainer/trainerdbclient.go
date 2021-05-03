@@ -6,7 +6,10 @@ import (
 	"os"
 	"time"
 
+	originalHTTP "net/http"
+
 	"github.com/NOVAPokemon/utils"
+	"github.com/NOVAPokemon/utils/clients"
 	databaseUtils "github.com/NOVAPokemon/utils/database"
 	"github.com/NOVAPokemon/utils/experience"
 	"github.com/NOVAPokemon/utils/items"
@@ -19,12 +22,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	originalHTTP "net/http"
-	"github.com/NOVAPokemon/utils/clients"
 )
 
-const databaseName = "NOVAPokemonDB"
-const collectionName = "Trainers"
+const (
+	databaseName   = "NOVAPokemonDB"
+	collectionName = "Trainers"
+)
 
 var dbClient databaseUtils.DBClient
 
@@ -50,14 +53,18 @@ func InitTrainersDBClient(archimedesEnabled bool) {
 
 		var node string
 		node, exists = os.LookupEnv(cedUtils.NodeIPEnvVarName)
-	if !exists {
-		log.Panicf("no NODE_IP env var")
-	} else {
-		log.Infof("Node IP: %s", node)
-	}
+		if !exists {
+			log.Panicf("no NODE_IP env var")
+		} else {
+			log.Infof("Node IP: %s", node)
+		}
 
-
-		client := &http.Client{Client: originalHTTP.Client{Timeout: clients.RequestTimeout}}
+		client := &http.Client{
+			Client: originalHTTP.Client{
+				Timeout:   clients.RequestTimeout,
+				Transport: clients.NewTransport(),
+			},
+		}
 		client.InitArchimedesClient(node, http.DefaultArchimedesPort, s2.CellIDFromToken(location).LatLng())
 
 		var (
@@ -85,7 +92,6 @@ func InitTrainersDBClient(archimedesEnabled bool) {
 		log.Info("archimedes disabled")
 	}
 
-
 	client, err := mongo.NewClient(options.Client().ApplyURI(mongoUrl))
 	if err != nil {
 		log.Fatal(err)
@@ -111,8 +117,8 @@ func InitTrainersDBClient(archimedesEnabled bool) {
 }
 
 func AddTrainer(trainer utils.Trainer) (string, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 
 	_, err := collection.InsertOne(*ctx, trainer)
 	if err != nil {
@@ -121,13 +127,12 @@ func AddTrainer(trainer utils.Trainer) (string, error) {
 		log.Infof("Added new trainer: %s", trainer.Username)
 		return trainer.Username, nil
 	}
-
 }
 
 func GetAllTrainers() ([]utils.Trainer, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
-	var results = make([]utils.Trainer, 0)
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
+	results := make([]utils.Trainer, 0)
 
 	cur, err := collection.Find(*ctx, bson.M{})
 	if err != nil {
@@ -149,13 +154,12 @@ func GetAllTrainers() ([]utils.Trainer, error) {
 }
 
 func GetTrainerByUsername(username string) (*utils.Trainer, error) {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 	var result utils.Trainer
 
 	filter := bson.M{"username": username}
 	err := collection.FindOne(*ctx, filter).Decode(&result)
-
 	if err != nil {
 		return nil, wrapGetTrainerError(err, username)
 	}
@@ -194,8 +198,8 @@ func UpdateTrainerStats(username string, stats utils.TrainerStats) (*utils.Train
 }
 
 func DeleteTrainer(username string) error {
-	var ctx = dbClient.Ctx
-	var collection = dbClient.Collection
+	ctx := dbClient.Ctx
+	collection := dbClient.Collection
 
 	filter := bson.M{"username": username}
 	_, err := collection.DeleteOne(*ctx, filter)
@@ -330,7 +334,6 @@ func AddPokemonToTrainer(username string, pokemon pokemons.Pokemon) (map[string]
 }
 
 func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon pokemons.Pokemon) (map[string]pokemons.Pokemon, error) {
-
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 
