@@ -120,6 +120,7 @@ func NewLocationClient(config utils.LocationClientConfig, startLocation s2.CellI
 		toConnsChans:        sync.Map{},
 		commsManager:        manager,
 		username:            username,
+		restart:             make(chan struct{}),
 	}
 }
 
