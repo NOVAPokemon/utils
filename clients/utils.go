@@ -16,7 +16,7 @@ import (
 
 const (
 	RequestTimeout = 10 * time.Second
-	maxIdleConns   = 400
+	maxIdleConns   = 5000
 )
 
 type BasicClient struct {
@@ -176,7 +176,7 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *ws.Websocket
 	}()
 
 	for {
-		msgChan, err := commsManager.ReadMessageFromConn(conn)
+		connChan, err := commsManager.ReadMessageFromConn(conn)
 		if err != nil {
 			log.Warn(err)
 			return
@@ -186,8 +186,8 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *ws.Websocket
 		case <-finished:
 			return
 		default:
-			if msgChan != nil {
-				messagesQueue <- msgChan
+			if connChan != nil {
+				messagesQueue <- connChan
 			}
 		}
 	}
@@ -227,7 +227,7 @@ func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan
 			case <-cancel:
 				return
 			case chanToWait := <-messagesQueue:
-				msgChan <- (<-chanToWait)
+				msgChan <- <-chanToWait
 			case <-finished:
 				return
 			}
@@ -239,15 +239,15 @@ func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan
 		case <-finished:
 			return
 		default:
-			msgChan, err := manager.ReadMessageFromConn(conn)
+			connChan, err := manager.ReadMessageFromConn(conn)
 			if err != nil {
 				log.Warn(err)
 				close(cancel)
 				return
 			}
 
-			if msgChan != nil {
-				messagesQueue <- msgChan
+			if connChan != nil {
+				messagesQueue <- connChan
 			}
 		}
 	}
