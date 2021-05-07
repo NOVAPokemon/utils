@@ -398,7 +398,12 @@ func loadNodeLatencies() (latencies map[int][]float64) {
 		log.Panic(err)
 	}
 
-	defer f.Close()
+	defer func(f *os.File) {
+		fErr := f.Close()
+		if fErr != nil {
+			log.Error(fErr)
+		}
+	}(f)
 
 	scanner := bufio.NewScanner(f)
 	scanner.Split(bufio.ScanLines)
@@ -443,7 +448,12 @@ func getClosestNode(cellID s2.CellID) int {
 	if err != nil {
 		log.Panic(err)
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		fErr := f.Close()
+		if fErr != nil {
+			log.Error(fErr)
+		}
+	}(f)
 
 	var locations map[string]struct {
 		Lat float64
