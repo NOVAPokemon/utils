@@ -104,9 +104,9 @@ func (d *DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (<-chan 
 
 	msgChan := make(chan *websockets.WebsocketMsg)
 	go func() {
-		msg := d.ApplyReceiveLogic(wsMsg)
-		d.DefaultCommsManager.ApplyReceiveLogic(msg)
-		msgChan <- msg
+		newMsg := d.ApplyReceiveLogic(wsMsg)
+		d.DefaultCommsManager.ApplyReceiveLogic(newMsg)
+		msgChan <- newMsg
 	}()
 
 	return msgChan, nil
