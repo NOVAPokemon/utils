@@ -39,8 +39,8 @@ func (d *CommsManagerWithCounter) LogRequestAndRetry(err error, ts int64) (succe
 }
 
 const (
-	errConnRefused = "connection refused"
-	errTimeout1    = "timeout"
+	ErrConnRefused = "connection refused"
+	ErrTimeout     = "timeout"
 	errTimeout2    = "Timeout"
 	errBodyLength  = "with Body length"
 )
@@ -50,7 +50,7 @@ func checkErr(err error) bool {
 		return false
 	}
 
-	if strings.Contains(err.Error(), errConnRefused) || strings.Contains(err.Error(), errTimeout1) ||
+	if strings.Contains(err.Error(), ErrConnRefused) || strings.Contains(err.Error(), ErrTimeout) ||
 		strings.Contains(err.Error(), errTimeout2) || strings.Contains(err.Error(), errBodyLength) {
 		return true
 	}
