@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	http "github.com/bruno-anjos/archimedesHTTPClient"
@@ -47,25 +48,50 @@ func NewNotificationClient(notificationsChannel chan utils.Notification,
 	}
 }
 
-func (client *NotificationClient) ListenToNotifications(authToken string,
-	receiveFinish chan struct{}, emitFinish chan bool) error {
+func (client *NotificationClient) prepareForConnect(authToken string) (u *url.URL, header http.Header) {
 	resolvedAddr, _, err := client.httpClient.ResolveServiceInArchimedes(client.NotificationsAddr)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: api.SubscribeNotificationPath}
+	u = &url.URL{Scheme: "ws", Host: resolvedAddr, Path: api.SubscribeNotificationPath}
+
+	header = http.Header{}
+	header.Set(tokens.AuthTokenHeaderName, authToken)
+
+	return
+}
+
+func (client *NotificationClient) ListenToNotifications(authToken string,
+	receiveFinish chan struct{}, emitFinish chan bool) error {
+	u, header := client.prepareForConnect(authToken)
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 45 * time.Second,
+		HandshakeTimeout: 10 * time.Second,
 	}
 
-	log.Info("Dialing: ", u.String())
-	header := http.Header{}
-	header.Set(tokens.AuthTokenHeaderName, authToken)
+	var (
+		conn *websocket.Conn
+		err  error
+	)
 
-	conn, _, err := dialer.Dial(u.String(), header)
+	for {
+		log.Info("Dialing: ", u.String())
+		conn, _, err = dialer.Dial(u.String(), header)
+		if err != nil {
+			if strings.Contains(err.Error(), ws.ErrTimeout) {
+				continue
+			} else if strings.Contains(err.Error(), ws.ErrConnRefused) {
+				client.prepareForConnect(authToken)
+			} else {
+				return errors.WrapConnectError(err)
+			}
+		} else {
+			break
+		}
+	}
+
 	defer func() {
 		if conn != nil {
 			if err = conn.Close(); err != nil {
