@@ -128,14 +128,24 @@ func NewLocationClient(config utils.LocationClientConfig, startLocation s2.CellI
 func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	catchPokemonResponses = make(chan *location.CatchWildPokemonMessageResponse)
 
-	serverUrl, err := c.GetServerForLocation(c.CurrentLocation)
-	if err != nil {
-		return errors2.WrapStartLocationUpdatesError(err)
-	}
+	for {
+		serverUrl, err := c.GetServerForLocation(c.CurrentLocation)
+		if err != nil {
+			return errors2.WrapStartLocationUpdatesError(err)
+		}
 
-	err = c.handleLocationConnection(serverUrl, authToken)
-	if err != nil {
-		return errors2.WrapStartLocationUpdatesError(err)
+		err = c.handleLocationConnection(serverUrl, authToken)
+		if err != nil {
+			if strings.Contains(err.Error(), ws.ErrConnRefused) {
+				log.Warnf("conn refused for server %s", serverUrl)
+				time.Sleep(10 * time.Second)
+				continue
+			} else {
+				return errors2.WrapStartLocationUpdatesError(err)
+			}
+		} else {
+			break
+		}
 	}
 
 	go c.updateLocationLoop()
@@ -148,7 +158,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 		if !ok {
 			break
 		}
-		if err = c.handleLocationMsg(msgString, authToken); err != nil {
+		if err := c.handleLocationMsg(msgString, authToken); err != nil {
 			return errors2.WrapStartLocationUpdatesError(err)
 		}
 	}
@@ -344,7 +354,11 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 			log.Infof("%s is a new server", servers[i])
 			err := c.handleLocationConnection(servers[i], authToken)
 			if err != nil {
-				return errors2.WrapUpdateConnectionsError(err)
+				if strings.Contains(err.Error(), ws.ErrConnRefused) {
+					log.Warnf("location server %s is no longer up. ignoring...", servers[i])
+				} else {
+					return errors2.WrapUpdateConnectionsError(err)
+				}
 			}
 			newServers = append(newServers, servers[i])
 		}
@@ -396,15 +410,14 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 	return nil
 }
 
-func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg,
-	authToken string) (*websocket.Conn, error) {
+func (c *LocationClient) prepareForConnect(serverUrl, authToken string) (u *url.URL, header http.Header) {
 	resolvedAddr, _, err := c.HttpClient.ResolveServiceInArchimedes(serverUrl)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	u := url.URL{Scheme: "ws", Host: resolvedAddr, Path: api.UserLocationPath}
-	header := http.Header{}
+	u = &url.URL{Scheme: "ws", Host: resolvedAddr, Path: api.UserLocationPath}
+	header = http.Header{}
 	header.Set(tokens.AuthTokenHeaderName, authToken)
 
 	switch castedManager := c.commsManager.(type) {
@@ -414,21 +427,31 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 		header.Set(comms_manager.ClosestNodeKey, strconv.Itoa(castedManager.MyClosestNode))
 	}
 
+	return
+}
+
+func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg,
+	authToken string) (*websocket.Conn, error) {
+	u, header := c.prepareForConnect(serverUrl, authToken)
+
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 10 * time.Second,
 	}
 
-	var conn *websocket.Conn
+	var (
+		conn *websocket.Conn
+		err  error
+	)
 
 	for {
 		log.Info("Dialing: ", u.String())
 		conn, _, err = dialer.Dial(u.String(), header)
 		if err != nil {
-			if !strings.Contains(err.Error(), "timeout") {
-				return nil, errors2.WrapConnectError(err)
+			if strings.Contains(err.Error(), ws.ErrTimeout) {
+				continue
 			} else {
-				break
+				return nil, errors2.WrapConnectError(err)
 			}
 		} else {
 			break
@@ -436,6 +459,10 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 	}
 
 	err = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+	if err != nil {
+		log.Error(err)
+	}
+
 	conn.SetPingHandler(func(string) error {
 		if err = conn.SetReadDeadline(time.Now().Add(timeoutInDuration)); err != nil {
 			return err
@@ -450,6 +477,10 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 func (c *LocationClient) updateLocationLoop() {
 	c.updateLocation()
 	updateTicker := time.NewTicker(time.Duration(c.config.UpdateInterval) * time.Second)
+
+	if c.username != "" {
+		c.writeLocationToFile()
+	}
 
 	for {
 		select {
