@@ -77,7 +77,6 @@ const (
 )
 
 var (
-	timeoutInDuration     time.Duration
 	defaultLocationURL    = fmt.Sprintf("%s:%d", utils.Host, utils.LocationPort)
 	catchPokemonResponses chan *location.CatchWildPokemonMessageResponse
 	useConnLock           sync.Mutex
@@ -91,8 +90,6 @@ func NewLocationClient(config utils.LocationClientConfig, startLocation s2.CellI
 		log.Warn("missing ", utils.LocationEnvVar)
 		locationURL = defaultLocationURL
 	}
-
-	timeoutInDuration = time.Duration(config.Timeout) * time.Second
 
 	var startingLocation s2.LatLng
 	if config.Parameters.StartingLocation {
@@ -458,13 +455,13 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 		}
 	}
 
-	err = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+	err = conn.SetReadDeadline(time.Now().Add(utils.Timeout))
 	if err != nil {
 		log.Error(err)
 	}
 
 	conn.SetPingHandler(func(string) error {
-		if err = conn.SetReadDeadline(time.Now().Add(timeoutInDuration)); err != nil {
+		if err = conn.SetReadDeadline(time.Now().Add(utils.Timeout)); err != nil {
 			return err
 		}
 		outChan <- ws.NewControlMsg(websocket.PongMessage)
@@ -545,7 +542,7 @@ func (c *LocationClient) updateLocation() {
 		}
 
 		conn := connValue.(connectionsValueType)
-		err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+		err := conn.SetReadDeadline(time.Now().Add(utils.Timeout))
 		if err != nil {
 			panic("error setting deadline")
 		}
@@ -583,7 +580,7 @@ func (c *LocationClient) updateLocationWithCells(tilesPerServer map[string]s2.Ce
 		log.Info("sending precomputed tiles to ", serverUrl)
 
 		conn := connValue.(connectionsValueType)
-		err := conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+		err := conn.SetReadDeadline(time.Now().Add(utils.Timeout))
 		if err != nil {
 			panic("error setting deadline")
 		}

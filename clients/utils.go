@@ -16,8 +16,7 @@ import (
 )
 
 const (
-	RequestTimeout = 10 * time.Second
-	maxIdleConns   = 5000
+	maxIdleConns = 5000
 )
 
 func NewTransport() *http.Transport {
@@ -25,8 +24,8 @@ func NewTransport() *http.Transport {
 		Proxy:             http.ProxyFromEnvironment,
 		DisableKeepAlives: true,
 		DialContext: (&net.Dialer{
-			Timeout:   RequestTimeout,
-			KeepAlive: RequestTimeout,
+			Timeout:   utils.Timeout,
+			KeepAlive: utils.Timeout,
 		}).DialContext,
 		ForceAttemptHTTP2:     true,
 		IdleConnTimeout:       90 * time.Second,
@@ -157,10 +156,10 @@ func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan
 }
 
 func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan *ws.WebsocketMsg) {
-	_ = conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+	_ = conn.SetReadDeadline(time.Now().Add(utils.Timeout))
 	conn.SetPingHandler(func(string) error {
 		writeChannel <- ws.NewControlMsg(websocket.PongMessage)
-		return conn.SetReadDeadline(time.Now().Add(timeoutInDuration))
+		return conn.SetReadDeadline(time.Now().Add(utils.Timeout))
 	})
 }
 
