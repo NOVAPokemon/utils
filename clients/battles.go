@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -73,7 +72,7 @@ func (client *BattleLobbyClient) QueueForBattle(authToken string, pokemonsTokens
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 45 * time.Second,
+		HandshakeTimeout: websockets.Timeout,
 	}
 
 	header := http.Header{}
@@ -128,7 +127,7 @@ func (client *BattleLobbyClient) ChallengePlayerToBattle(authToken string, pokem
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 45 * time.Second,
+		HandshakeTimeout: websockets.Timeout,
 	}
 
 	requestTimestamp := websockets.MakeTimestamp()
@@ -173,7 +172,7 @@ func (client *BattleLobbyClient) AcceptChallenge(authToken string, pokemonsToken
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 45 * time.Second,
+		HandshakeTimeout: websockets.Timeout,
 	}
 
 	c, _, err := dialer.Dial(u.String(), header)

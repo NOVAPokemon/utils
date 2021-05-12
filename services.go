@@ -73,7 +73,16 @@ func StartServer(serviceName, host string, port int, routes Routes, manager webs
 	r.Use(manager.HTTPRequestInterceptor)
 
 	log.Infof("Starting %s server in port %d...\n", serviceName, port)
-	log.Fatal(http.ListenAndServe(addr, r))
+	server := http.Server{
+		Addr:              addr,
+		Handler:           r,
+		TLSConfig:         nil,
+		ReadTimeout:       websockets.Timeout,
+		ReadHeaderTimeout: websockets.Timeout,
+		WriteTimeout:      websockets.Timeout,
+		IdleTimeout:       websockets.Timeout,
+	}
+	log.Fatal(server.ListenAndServe())
 }
 
 func SetLogFile(serviceName string) {

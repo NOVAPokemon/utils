@@ -127,7 +127,7 @@ func (t *TradeLobbyClient) JoinTradeLobby(tradeId *primitive.ObjectID,
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 45 * time.Second,
+		HandshakeTimeout: ws.Timeout,
 	}
 
 	trackInfo := ws.NewTrackedInfo(primitive.NewObjectID())

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"time"
 
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/api"
@@ -95,7 +94,7 @@ func (g *GymClient) EnterRaid(authToken string, pokemonsTokens []string, statsTo
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 45 * time.Second,
+		HandshakeTimeout: websockets.Timeout,
 	}
 
 	c, _, err := dialer.Dial(u.String(), header)
