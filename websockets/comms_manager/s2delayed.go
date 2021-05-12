@@ -169,7 +169,6 @@ func (d *S2DelayedCommsManager) WriteGenericMessageToConn(conn *websocket.Conn, 
 func (d *S2DelayedCommsManager) ReadMessageFromConn(conn *websocket.Conn) (<-chan *websockets.WebsocketMsg, error) {
 	msgType, p, err := conn.ReadMessage()
 	if err != nil {
-		log.Warn(err)
 		return nil, err
 	}
 
@@ -227,7 +226,8 @@ func (d *S2DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Req
 		}
 
 		resp, err = client.Do(req)
-		if d.CommsManagerWithCounter.LogRequestAndRetry(err, ts) {
+
+		if d.CommsManagerWithCounter.LogRequestAndRetry(resp, err, ts) {
 			break
 		}
 

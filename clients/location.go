@@ -131,19 +131,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 			return errors2.WrapStartLocationUpdatesError(err)
 		}
 
-		err = c.handleLocationConnection(serverUrl, authToken)
-		if err != nil {
-			if strings.Contains(err.Error(), ws.ErrConnRefused) {
-				log.Warnf("conn refused for server %s", serverUrl)
-				time.Sleep(10 * time.Second)
-				continue
-			} else {
-				return errors2.WrapStartLocationUpdatesError(err)
-			}
-		} else {
-			break
-		}
-	}
+	go c.restartConnectionIfFails(serverURL, authToken)
 
 	go c.updateLocationLoop()
 	go c.restartConnections(authToken)
@@ -163,29 +151,70 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	return errors.New("stopped updating location")
 }
 
-func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) error {
+func (c *LocationClient) restartConnectionIfFails(serverUrl, authToken string) {
+	defer func() {
+		log.Infof("stopping conection routine to %s", serverUrl)
+	}()
+
+	for {
+		err, finish, failed := c.handleLocationConnection(serverUrl, authToken)
+		if err != nil {
+			log.Error(err)
+		}
+
+		select {
+		case <-finish:
+			return
+		case <-failed:
+			close(finish)
+			break
+		}
+
+		time.Sleep(ws.Timeout)
+		log.Infof("restarting connection to %s", serverUrl)
+	}
+}
+
+func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) (err error,
+	finish, failed chan struct{}) {
 	outChan := make(toConnChansValueType, bufferSize)
 
 	conn, err := c.connect(serverUrl, outChan, authToken)
 	if err != nil {
-		return errors2.WrapStartLocationUpdatesError(err)
+		return errors2.WrapStartLocationUpdatesError(err), nil, nil
 	}
 
-	finishChan := make(chan struct{})
+	finish = make(chan struct{})
+	failed = make(chan struct{})
 
 	c.toConnsChans.Store(serverUrl, outChan)
-	c.finishConnChans.Store(serverUrl, finishChan)
+	c.finishConnChans.Store(serverUrl, finish)
 	c.connections.Store(serverUrl, conn)
 	c.serversConnected = append(c.serversConnected, serverUrl)
 
 	SetDefaultPingHandler(conn, outChan)
 
+	closeWithFailure := func() {
+		close(failed)
+	}
+	closeFinishOnce := sync.Once{}
+
+	go func() {
+		err := ReadMessagesFromConnToChanWithoutClosing(conn, c.fromConnChan, finish, c.commsManager)
+		if err != nil {
+			closeFinishOnce.Do(closeWithFailure)
+		}
+	}()
+	go func() {
+		err := WriteTextMessagesFromChanToConn(conn, c.commsManager, outChan, finish)
+		if err != nil {
+			closeFinishOnce.Do(closeWithFailure)
+		}
+	}()
+
 	log.Info("handling connection to ", serverUrl)
 
-	go ReadMessagesFromConnToChanWithoutClosing(conn, c.fromConnChan, finishChan, c.commsManager)
-	go WriteTextMessagesFromChanToConn(conn, c.commsManager, outChan, finishChan)
-
-	return nil
+	return
 }
 
 func (c *LocationClient) restartConnections(authToken string) {
@@ -348,15 +377,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 		}
 
 		if isNewServer {
-			log.Infof("%s is a new server", servers[i])
-			err := c.handleLocationConnection(servers[i], authToken)
-			if err != nil {
-				if strings.Contains(err.Error(), ws.ErrConnRefused) {
-					log.Warnf("location server %s is no longer up. ignoring...", servers[i])
-				} else {
-					return errors2.WrapUpdateConnectionsError(err)
-				}
-			}
+			go c.restartConnectionIfFails(servers[i], authToken)
 			newServers = append(newServers, servers[i])
 		}
 	}
@@ -433,7 +454,7 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 10 * time.Second,
+		HandshakeTimeout: ws.Timeout,
 	}
 
 	var (
@@ -455,13 +476,9 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 		}
 	}
 
-	err = conn.SetReadDeadline(time.Now().Add(utils.Timeout))
-	if err != nil {
-		log.Error(err)
-	}
-
+	err = conn.SetReadDeadline(time.Now().Add(ws.Timeout))
 	conn.SetPingHandler(func(string) error {
-		if err = conn.SetReadDeadline(time.Now().Add(utils.Timeout)); err != nil {
+		if err = conn.SetReadDeadline(time.Now().Add(ws.Timeout)); err != nil {
 			return err
 		}
 		outChan <- ws.NewControlMsg(websocket.PongMessage)
@@ -542,7 +559,7 @@ func (c *LocationClient) updateLocation() {
 		}
 
 		conn := connValue.(connectionsValueType)
-		err := conn.SetReadDeadline(time.Now().Add(utils.Timeout))
+		err := conn.SetReadDeadline(time.Now().Add(ws.Timeout))
 		if err != nil {
 			panic("error setting deadline")
 		}
@@ -580,7 +597,7 @@ func (c *LocationClient) updateLocationWithCells(tilesPerServer map[string]s2.Ce
 		log.Info("sending precomputed tiles to ", serverUrl)
 
 		conn := connValue.(connectionsValueType)
-		err := conn.SetReadDeadline(time.Now().Add(utils.Timeout))
+		err := conn.SetReadDeadline(time.Now().Add(ws.Timeout))
 		if err != nil {
 			panic("error setting deadline")
 		}

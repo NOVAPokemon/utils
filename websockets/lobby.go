@@ -9,11 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	PongWait   = 2 * time.Second
-	PingPeriod = (PongWait * 9) / 10
-)
-
 // Lobby maintains the connections from both trainers and the status of the battle
 type Lobby struct {
 	Id              string
@@ -86,11 +81,11 @@ func AddTrainer(lobby *Lobby, username string, trainerConn *websocket.Conn,
 func sendFromChanToConn(lobby *Lobby, trainerNum int, writer CommunicationManager) (done chan interface{}) {
 	done = make(chan interface{})
 	go func() {
-		pingTicker := time.NewTicker(PingPeriod)
+		pingTicker := time.NewTicker(TimeoutVal * (6. / 10.) * time.Second)
 		conn := lobby.trainerConnections[trainerNum]
 		outChannel := lobby.TrainerOutChannels[trainerNum]
 		conn.SetPongHandler(func(_ string) error {
-			return conn.SetReadDeadline(time.Now().Add(PongWait))
+			return conn.SetReadDeadline(time.Now().Add(Timeout))
 		})
 
 		defer close(done)

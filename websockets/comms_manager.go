@@ -24,8 +24,18 @@ type CommsManagerWithCounter struct {
 	RequestsCount int64
 }
 
-func (d *CommsManagerWithCounter) LogRequestAndRetry(err error, ts int64) (success bool) {
+func (d *CommsManagerWithCounter) LogRequestAndRetry(resp *http.Response, err error, ts int64) (success bool) {
 	success = true
+
+	statusCodeIsTimeout := false
+	if resp != nil {
+		statusCodeIsTimeout = resp.StatusCode == http.StatusRequestTimeout || resp.StatusCode == http.StatusGatewayTimeout
+	}
+
+	// statusCodeIsTimeout is only true when resp is != than nil, therefore not sure why nilness analyzer fails
+	if statusCodeIsTimeout {
+		err = fmt.Errorf("got timeout status code %d", resp.StatusCode)
+	}
 
 	log.Infof("[REQ] %d %d", ts, atomic.AddInt64(&d.RequestsCount, 1))
 

@@ -68,7 +68,7 @@ func (client *NotificationClient) ListenToNotifications(authToken string,
 
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 10 * time.Second,
+		HandshakeTimeout: ws.Timeout,
 	}
 
 	var (

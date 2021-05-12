@@ -24,8 +24,8 @@ func NewTransport() *http.Transport {
 		Proxy:             http.ProxyFromEnvironment,
 		DisableKeepAlives: true,
 		DialContext: (&net.Dialer{
-			Timeout:   utils.Timeout,
-			KeepAlive: utils.Timeout,
+			Timeout:   ws.Timeout,
+			KeepAlive: ws.Timeout,
 		}).DialContext,
 		ForceAttemptHTTP2:     true,
 		IdleConnTimeout:       90 * time.Second,
@@ -81,7 +81,7 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *ws.Websocket
 	for {
 		connChan, err := commsManager.ReadMessageFromConn(conn)
 		if err != nil {
-			log.Warn(err)
+			log.Error(err)
 			return
 		}
 		select {
@@ -96,31 +96,34 @@ func ReadMessagesFromConnToChan(conn *websocket.Conn, msgChan chan *ws.Websocket
 }
 
 func WriteTextMessagesFromChanToConn(conn *websocket.Conn, commsManager ws.CommunicationManager,
-	writeChannel <-chan *ws.WebsocketMsg, finished chan struct{}) {
-	defer log.Info("closing write routine")
+	writeChannel <-chan *ws.WebsocketMsg, finished chan struct{}) error {
+	defer func() {
+		log.Infof("finished write routine to %s", conn.RemoteAddr().String())
+	}()
 
 	for {
 		select {
 		case <-finished:
-			return
+			return nil
 		case msg, ok := <-writeChannel:
 			if !ok {
-				return
+				return nil
 			}
 
 			err := commsManager.WriteGenericMessageToConn(conn, msg)
 			if err != nil {
-				log.Warn(err)
-				return
+				log.Error(err)
+				return err
 			}
 		}
 	}
 }
 
 func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan *ws.WebsocketMsg,
-	finished chan struct{}, manager ws.CommunicationManager) {
-	messagesQueue := make(chan (<-chan *websockets.WebsocketMsg), 10)
+	finished chan struct{}, manager ws.CommunicationManager) error {
+	defer log.Infof("finished read routine to %s", conn.RemoteAddr().String())
 
+	messagesQueue := make(chan (<-chan *websockets.WebsocketMsg), 10)
 	cancel := make(chan struct{})
 
 	go func() {
@@ -139,13 +142,13 @@ func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan
 	for {
 		select {
 		case <-finished:
-			return
+			return nil
 		default:
 			connChan, err := manager.ReadMessageFromConn(conn)
 			if err != nil {
-				log.Warn(err)
+				log.Error(err)
 				close(cancel)
-				return
+				return err
 			}
 
 			if connChan != nil {
@@ -156,10 +159,10 @@ func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan
 }
 
 func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan *ws.WebsocketMsg) {
-	_ = conn.SetReadDeadline(time.Now().Add(utils.Timeout))
+	_ = conn.SetReadDeadline(time.Now().Add(ws.Timeout))
 	conn.SetPingHandler(func(string) error {
 		writeChannel <- ws.NewControlMsg(websocket.PongMessage)
-		return conn.SetReadDeadline(time.Now().Add(utils.Timeout))
+		return conn.SetReadDeadline(time.Now().Add(ws.Timeout))
 	})
 }
 

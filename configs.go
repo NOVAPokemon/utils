@@ -1,13 +1,5 @@
 package utils
 
-import (
-	"time"
-)
-
-const (
-	Timeout = 5 * time.Second
-)
-
 type ClientConfig struct {
 	TradeConfig    TradesClientConfig   `json:"trades"`
 	LocationConfig LocationClientConfig `json:"location"`
