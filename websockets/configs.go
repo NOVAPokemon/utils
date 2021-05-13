@@ -5,6 +5,7 @@ import (
 )
 
 const (
-	TimeoutVal = 5
-	Timeout    = TimeoutVal * time.Second
+	TimeoutVal       = 5
+	Timeout          = TimeoutVal * time.Second
+	WebsocketTimeout = 30 * time.Second
 )

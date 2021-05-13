@@ -159,10 +159,10 @@ func ReadMessagesFromConnToChanWithoutClosing(conn *websocket.Conn, msgChan chan
 }
 
 func SetDefaultPingHandler(conn *websocket.Conn, writeChannel chan *ws.WebsocketMsg) {
-	_ = conn.SetReadDeadline(time.Now().Add(ws.Timeout))
+	_ = conn.SetReadDeadline(time.Now().Add(ws.WebsocketTimeout))
 	conn.SetPingHandler(func(string) error {
 		writeChannel <- ws.NewControlMsg(websocket.PongMessage)
-		return conn.SetReadDeadline(time.Now().Add(ws.Timeout))
+		return conn.SetReadDeadline(time.Now().Add(ws.WebsocketTimeout))
 	})
 }
 

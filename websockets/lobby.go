@@ -85,7 +85,7 @@ func sendFromChanToConn(lobby *Lobby, trainerNum int, writer CommunicationManage
 		conn := lobby.trainerConnections[trainerNum]
 		outChannel := lobby.TrainerOutChannels[trainerNum]
 		conn.SetPongHandler(func(_ string) error {
-			return conn.SetReadDeadline(time.Now().Add(Timeout))
+			return conn.SetReadDeadline(time.Now().Add(WebsocketTimeout))
 		})
 
 		defer close(done)

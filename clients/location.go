@@ -476,9 +476,9 @@ func (c *LocationClient) connect(serverUrl string, outChan chan *ws.WebsocketMsg
 		}
 	}
 
-	err = conn.SetReadDeadline(time.Now().Add(ws.Timeout))
+	err = conn.SetReadDeadline(time.Now().Add(ws.WebsocketTimeout))
 	conn.SetPingHandler(func(string) error {
-		if err = conn.SetReadDeadline(time.Now().Add(ws.Timeout)); err != nil {
+		if err = conn.SetReadDeadline(time.Now().Add(ws.WebsocketTimeout)); err != nil {
 			return err
 		}
 		outChan <- ws.NewControlMsg(websocket.PongMessage)
@@ -559,7 +559,7 @@ func (c *LocationClient) updateLocation() {
 		}
 
 		conn := connValue.(connectionsValueType)
-		err := conn.SetReadDeadline(time.Now().Add(ws.Timeout))
+		err := conn.SetReadDeadline(time.Now().Add(ws.WebsocketTimeout))
 		if err != nil {
 			panic("error setting deadline")
 		}
