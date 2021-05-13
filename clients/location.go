@@ -125,13 +125,24 @@ func NewLocationClient(config utils.LocationClientConfig, startLocation s2.CellI
 func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	catchPokemonResponses = make(chan *location.CatchWildPokemonMessageResponse)
 
+OUT_LOOP:
 	for {
 		serverUrl, err := c.GetServerForLocation(c.CurrentLocation)
 		if err != nil {
 			return errors2.WrapStartLocationUpdatesError(err)
 		}
 
-	go c.restartConnectionIfFails(serverURL, authToken)
+		success := make(chan struct{})
+		errChan := make(chan struct{})
+		go c.restartConnectionIfFails(serverUrl, authToken, success, errChan)
+
+		select {
+		case <-errChan:
+			continue
+		case <-success:
+			break OUT_LOOP
+		}
+	}
 
 	go c.updateLocationLoop()
 	go c.restartConnections(authToken)
@@ -151,7 +162,7 @@ func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	return errors.New("stopped updating location")
 }
 
-func (c *LocationClient) restartConnectionIfFails(serverUrl, authToken string) {
+func (c *LocationClient) restartConnectionIfFails(serverUrl, authToken string, success, errChan chan struct{}) {
 	defer func() {
 		log.Infof("stopping conection routine to %s", serverUrl)
 	}()
@@ -159,7 +170,15 @@ func (c *LocationClient) restartConnectionIfFails(serverUrl, authToken string) {
 	for {
 		err, finish, failed := c.handleLocationConnection(serverUrl, authToken)
 		if err != nil {
-			log.Error(err)
+			if strings.Contains(err.Error(), ws.ErrConnRefused) {
+				log.Warnf("conn refused for server %s", serverUrl)
+				time.Sleep(10 * time.Second)
+				close(errChan)
+			} else {
+				log.Panic(err)
+			}
+		} else {
+			close(success)
 		}
 
 		select {
