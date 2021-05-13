@@ -447,19 +447,6 @@ func (c *LocationClient) updateLocationWithCells(tilesPerServer map[string]s2.Ce
 		toConnChan := toConnChanValue.(toConnChansValueType)
 		toConnChan <- locationMsg.ConvertToWSMessage()
 
-		connValue, ok := c.connections.Load(serverUrl)
-		if !ok {
-			panic("tried to write to a connection that is not in the map")
-		}
-
-		log.Info("sending precomputed tiles to ", serverUrl)
-
-		conn := connValue.(connectionsValueType)
-		err := conn.SetReadDeadline(time.Now().Add(ws.Timeout))
-		if err != nil {
-			panic("error setting deadline")
-		}
-
 		return true
 	})
 }
