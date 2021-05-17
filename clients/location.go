@@ -173,12 +173,16 @@ func (c *LocationClient) restartConnectionIfFails(serverUrl, authToken string, s
 			if strings.Contains(err.Error(), ws.ErrConnRefused) {
 				log.Warnf("conn refused for server %s", serverUrl)
 				time.Sleep(10 * time.Second)
-				close(errChan)
+				if errChan != nil {
+					close(errChan)
+				}
 			} else {
 				log.Panic(err)
 			}
 		} else {
-			close(success)
+			if success != nil {
+				close(success)
+			}
 		}
 
 		select {
@@ -287,10 +291,7 @@ func (c *LocationClient) restartConnections(authToken string) {
 
 		log.Info("establishing connection to %s", serverUrl)
 
-		err = c.handleLocationConnection(serverUrl, authToken)
-		if err != nil {
-			log.Panic(errors2.WrapStartLocationUpdatesError(err))
-		}
+		go c.restartConnectionIfFails(serverUrl, authToken, nil, nil)
 
 		useConnLock.Unlock()
 	}
@@ -396,7 +397,7 @@ func (c *LocationClient) updateConnections(servers []string, authToken string) e
 		}
 
 		if isNewServer {
-			go c.restartConnectionIfFails(servers[i], authToken)
+			go c.restartConnectionIfFails(servers[i], authToken, nil, nil)
 			newServers = append(newServers, servers[i])
 		}
 	}
