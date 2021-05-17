@@ -14,6 +14,7 @@ import (
 	"github.com/NOVAPokemon/utils/experience"
 	"github.com/NOVAPokemon/utils/items"
 	"github.com/NOVAPokemon/utils/pokemons"
+	"github.com/NOVAPokemon/utils/websockets"
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 	cedUtils "github.com/bruno-anjos/cloud-edge-deployment/pkg/utils"
 	"github.com/golang/geo/s2"
@@ -61,7 +62,7 @@ func InitTrainersDBClient(archimedesEnabled bool) {
 
 		client := &http.Client{
 			Client: originalHTTP.Client{
-				Timeout:   clients.RequestTimeout,
+				Timeout:   websockets.Timeout,
 				Transport: clients.NewTransport(),
 			},
 		}
@@ -270,7 +271,7 @@ func AddItemsToTrainer(username string, itemsToAdd []items.Item) (map[string]ite
 	return trainer.Items, wrapAddItemsToTrainerError(err, username)
 }
 
-func RemoveItemFromTrainer(username string, itemId string) (map[string]items.Item, error) {
+func RemoveItemFromTrainer(username, itemId string) (map[string]items.Item, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 	filter := bson.M{"username": username}
@@ -353,7 +354,7 @@ func UpdateTrainerPokemon(username string, pokemonId primitive.ObjectID, pokemon
 	return trainer.Pokemons, wrapUpdateTrainerPokemonError(err, username)
 }
 
-func RemovePokemonFromTrainer(username string, pokemonId string) (map[string]pokemons.Pokemon, error) {
+func RemovePokemonFromTrainer(username, pokemonId string) (map[string]pokemons.Pokemon, error) {
 	ctx := dbClient.Ctx
 	collection := dbClient.Collection
 

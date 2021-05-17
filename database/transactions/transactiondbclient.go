@@ -11,6 +11,7 @@ import (
 	"github.com/NOVAPokemon/utils"
 	"github.com/NOVAPokemon/utils/clients"
 	"github.com/NOVAPokemon/utils/database"
+	"github.com/NOVAPokemon/utils/websockets"
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 	cedUtils "github.com/bruno-anjos/cloud-edge-deployment/pkg/utils"
 	"github.com/golang/geo/s2"
@@ -58,7 +59,7 @@ func InitTransactionsDBClient(archimedesEnabled bool) {
 
 		client := &http.Client{
 			Client: originalHTTP.Client{
-				Timeout:   clients.RequestTimeout,
+				Timeout:   websockets.Timeout,
 				Transport: clients.NewTransport(),
 			},
 		}

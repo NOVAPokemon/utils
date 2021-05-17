@@ -1,6 +1,7 @@
 package websockets
 
 import (
+	"fmt"
 	"strings"
 	"sync/atomic"
 

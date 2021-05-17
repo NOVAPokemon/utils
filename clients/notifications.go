@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	http "github.com/bruno-anjos/archimedesHTTPClient"
 

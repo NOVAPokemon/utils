@@ -9,13 +9,13 @@ import (
 	"os"
 	"time"
 
-	http "github.com/bruno-anjos/archimedesHTTPClient"
-
 	"github.com/NOVAPokemon/utils/websockets"
 	"github.com/NOVAPokemon/utils/websockets/comms_manager"
+	http "github.com/bruno-anjos/archimedesHTTPClient"
 	"github.com/golang/geo/s2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+	originalHTTP "net/http"
 )
 
 type (
@@ -72,8 +72,8 @@ func StartServer(serviceName, host string, port int, routes Routes, manager webs
 	r.Use(manager.HTTPRequestInterceptor)
 
 	log.Infof("Starting %s server in port %d...\n", serviceName, port)
-	
-	server := http.Server{
+
+	server := &originalHTTP.Server{
 		Addr:              addr,
 		Handler:           r,
 		TLSConfig:         nil,
@@ -82,7 +82,7 @@ func StartServer(serviceName, host string, port int, routes Routes, manager webs
 		WriteTimeout:      websockets.Timeout,
 		IdleTimeout:       websockets.Timeout,
 	}
-	log.Fatal(server.ListenAndServe())
+	log.Fatal(http.ListenAndServeWithServer(server))
 }
 
 func SetLogFile(serviceName string) {
@@ -111,7 +111,7 @@ func createDelayedCommunicationManager(delayedCommsFilename, clientDelaysFilenam
 	if optConfigs.CellID.ToToken() == "X" {
 		log.Panicf("invalid cellID %s", optConfigs.CellID.ToToken())
 	}
-	
+
 	delaysConfig := getDelayedConfig(delayedCommsFilename)
 
 	log.Infof("starting delayed comms with region tag %s",
