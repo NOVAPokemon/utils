@@ -378,7 +378,7 @@ func (d *S2DelayedCommsManager) GetCellID() s2.CellID {
 }
 
 const (
-	defaultNodeLatenciesPath = "/service/lat.txt"
+	defaultNodeLatenciesPath = "/service/lats.txt"
 )
 
 func loadNodeLatencies() (latencies map[int][]float64) {

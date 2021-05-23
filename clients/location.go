@@ -125,7 +125,7 @@ func NewLocationClient(config utils.LocationClientConfig, startLocation s2.CellI
 func (c *LocationClient) StartLocationUpdates(authToken string) error {
 	catchPokemonResponses = make(chan *location.CatchWildPokemonMessageResponse)
 
-OUT_LOOP:
+OutLoop:
 	for {
 		serverUrl, err := c.GetServerForLocation(c.CurrentLocation)
 		if err != nil {
@@ -140,7 +140,7 @@ OUT_LOOP:
 		case <-errChan:
 			continue
 		case <-success:
-			break OUT_LOOP
+			break OutLoop
 		}
 	}
 
@@ -167,6 +167,11 @@ func (c *LocationClient) restartConnectionIfFails(serverUrl, authToken string, s
 		log.Infof("stopping conection routine to %s", serverUrl)
 	}()
 
+	succeeded := sync.Once{}
+	succeed := func() {
+		close(success)
+	}
+
 	for {
 		err, finish, failed := c.handleLocationConnection(serverUrl, authToken)
 		if err != nil {
@@ -181,7 +186,7 @@ func (c *LocationClient) restartConnectionIfFails(serverUrl, authToken string, s
 			}
 		} else {
 			if success != nil {
-				close(success)
+				succeeded.Do(succeed)
 			}
 		}
 
