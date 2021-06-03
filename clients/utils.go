@@ -16,13 +16,13 @@ import (
 )
 
 const (
-	maxIdleConns = 5000
+	maxIdleConns = 500000
 )
 
 func NewTransport() *http.Transport {
 	return &http.Transport{
 		Proxy:             http.ProxyFromEnvironment,
-		DisableKeepAlives: true,
+		DisableKeepAlives: false,
 		DialContext: (&net.Dialer{
 			Timeout:   ws.Timeout,
 			KeepAlive: ws.Timeout,
