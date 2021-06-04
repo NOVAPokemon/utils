@@ -227,7 +227,8 @@ func (d *S2DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Req
 
 		resp, err = client.Do(req)
 
-		if d.CommsManagerWithCounter.LogRequestAndRetry(resp, err, ts) {
+		if d.IsClient && d.CommsManagerWithCounter.LogRequestAndRetry(resp, err,
+			ts) {
 			break
 		}
 
@@ -320,11 +321,11 @@ func (d *S2DelayedCommsManager) getHTTPDelay(requesterCell s2.CellID, requesterI
 		// add the delay from closestNode -> targetNode
 
 		delay = 2 * (*d.DelaysMatrix)[requesterRegionTag][requesterRegionTag]
-		log.Infof("adding %f ms from client to node", delay)
-
 		if requesterRegionTag != myRegionTag {
 			delay += latencies[requesterClosestNode][d.MyClosestNode] + latencies[d.MyClosestNode][requesterClosestNode]
 		}
+
+		log.Infof("adding %f ms from client to node", delay)
 	} else {
 		// requests between nodes are already being delay at the OS level
 		delay = 0
@@ -344,11 +345,12 @@ func (d *S2DelayedCommsManager) getWSDelay(requesterCell s2.CellID,
 	// add the delay from closestNode -> targetNode
 
 	delay = 2 * (*d.DelaysMatrix)[requesterRegionTag][requesterRegionTag]
-	log.Infof("adding %f ms from client to node", delay)
 
 	if requesterRegionTag != myRegionTag {
 		delay += latencies[requesterClosestNode][d.MyClosestNode] + latencies[d.MyClosestNode][requesterClosestNode]
 	}
+
+	log.Infof("adding %f ms from client to node", delay)
 
 	return
 }
