@@ -227,8 +227,8 @@ func (d *S2DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Req
 
 		resp, err = client.Do(req)
 
-		if d.IsClient && d.CommsManagerWithCounter.LogRequestAndRetry(resp, err,
-			ts) {
+		if d.CommsManagerWithCounter.LogRequestAndRetry(resp, err,
+			ts, d.IsClient) {
 			break
 		}
 

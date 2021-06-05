@@ -25,7 +25,8 @@ type CommsManagerWithCounter struct {
 	RequestsCount int64
 }
 
-func (d *CommsManagerWithCounter) LogRequestAndRetry(resp *http.Response, err error, ts int64) (success bool) {
+func (d *CommsManagerWithCounter) LogRequestAndRetry(resp *http.Response,
+	err error, ts int64, isClient bool) (success bool) {
 	success = true
 
 	statusCodeIsTimeout := false
@@ -38,12 +39,19 @@ func (d *CommsManagerWithCounter) LogRequestAndRetry(resp *http.Response, err er
 		err = fmt.Errorf("got timeout status code %d", resp.StatusCode)
 	}
 
-	log.Infof("[REQ] %d %d", ts, atomic.AddInt64(&d.RequestsCount, 1))
+	if isClient {
+		log.Infof("[REQ] %d %d", ts, atomic.AddInt64(&d.RequestsCount, 1))
+	}
 
 	if err != nil {
-		log.Warnf("[REQ_ERR] %d %s", ts, err.Error())
+		if isClient {
+			log.Warnf("[REQ_ERR] %d %s", ts, err.Error())
+		}
 		success = false
-		log.Infof("[RET] %d %d", ts, atomic.AddInt64(&d.RetriesCount, 1))
+
+		if isClient {
+			log.Infof("[RET] %d %d", ts, atomic.AddInt64(&d.RetriesCount, 1))
+		}
 	}
 
 	return

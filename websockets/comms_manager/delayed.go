@@ -126,7 +126,8 @@ func (d *DelayedCommsManager) DoHTTPRequest(client *http.Client, req *http.Reque
 	for {
 		resp, err = client.Do(req)
 		ts := websockets.MakeTimestamp()
-		if d.CommsManagerWithCounter.LogRequestAndRetry(resp, err, ts) {
+		if d.CommsManagerWithCounter.LogRequestAndRetry(resp, err, ts,
+			d.IsClient) {
 			break
 		}
 
