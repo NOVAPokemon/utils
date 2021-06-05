@@ -248,7 +248,10 @@ func (c *LocationClient) handleLocationConnection(serverUrl, authToken string) (
 func (c *LocationClient) restartConnections(authToken string) {
 	for {
 		log.Info("waiting on restart")
-		<-c.restart
+		select {
+		case <-c.restart:
+		case <-time.After(time.Minute):
+		}
 
 		log.Info("acquiring lock")
 		useConnLock.Lock()
