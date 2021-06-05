@@ -78,7 +78,7 @@ func (d *DefaultCommsManager) DoHTTPRequest(client *http.Client, req *http.Reque
 		log.Infof("Requests count: %d", atomic.AddInt64(&d.RequestsCount, 1))
 
 		ts := websockets.MakeTimestamp()
-		if d.CommsManagerWithCounter.LogRequestAndRetry(resp, err, ts) {
+		if d.CommsManagerWithCounter.LogRequestAndRetry(resp, err, ts, false) {
 			break
 		}
 
